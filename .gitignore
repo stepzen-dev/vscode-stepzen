@@ -1,0 +1,23 @@
+# Node modules
+node_modules/
+
+# Compiled output
+out/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# VSCode settings
+.vscode/
+
+# Extension packaging output
+*.vsix
+
+# Temporary files
+*.log
+*.tmp
+
+# Webview temp files (if any)
+webview/libs/*.map
+
+directives.graphql

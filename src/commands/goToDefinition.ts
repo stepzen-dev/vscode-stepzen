@@ -1,0 +1,74 @@
+import * as vscode from "vscode";
+import { findDefinition } from "../utils/stepzenProjectScanner";
+import { stepzenOutput } from "../extension";
+
+/**
+ * Implements Go to Definition functionality for GraphQL symbols
+ * Finds the definition of the symbol under the cursor and navigates to it
+ * If multiple definitions exist, shows a quick-pick to let the user choose
+ * 
+ * @returns Promise that resolves when navigation is complete or cancelled
+ */
+export async function goToDefinition() {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
+    vscode.window.showWarningMessage("No active editor.");
+    return;
+  }
+
+  const document = editor.document;
+  const position = editor.selection.active;
+  const wordRange = document.getWordRangeAtPosition(position);
+  if (!wordRange) {
+    vscode.window.showWarningMessage("No symbol selected.");
+    return;
+  }
+
+  const token = document.getText(wordRange);
+  const locations = findDefinition(token);
+  if (!locations || locations.length === 0) {
+    vscode.window.showWarningMessage(`No definition found for "${token}".`);
+    stepzenOutput.appendLine(`No definition found for "${token}".`);
+    return;
+  }
+
+  // Single location found - jump directly to it
+  if (locations.length === 1) {
+    const loc = locations[0];
+    const uri = vscode.Uri.file(loc.filePath);
+    const pos = new vscode.Position(loc.line, loc.character);
+    const doc = await vscode.workspace.openTextDocument(uri);
+    await vscode.window.showTextDocument(doc, {
+      selection: new vscode.Range(pos, pos),
+    });
+    return;
+  }
+
+  // Multiple locations found - offer a quick-pick list for user selection
+  // Log message to the output channel for debugging
+  stepzenOutput.appendLine(`Multiple definitions for "${token}" found. Prompting user to select one.`);
+  const pick = await vscode.window.showQuickPick(
+    locations.map((loc) => {
+      const rel = vscode.workspace.asRelativePath(loc.filePath);
+      const container = loc.container ?? "<type>"; // null for type-level symbols
+      return {
+        label: `${container}  —  ${rel}`,
+        description: `line ${loc.line + 1}`,
+        loc,
+      } as const;
+    }),
+    {
+      placeHolder: `Multiple definitions for "${token}" found…`,
+    }
+  );
+
+  if (pick) {
+    const loc = pick.loc as (typeof locations)[number];
+    const uri = vscode.Uri.file(loc.filePath);
+    const pos = new vscode.Position(loc.line, loc.character);
+    const doc = await vscode.workspace.openTextDocument(uri);
+    await vscode.window.showTextDocument(doc, {
+      selection: new vscode.Range(pos, pos),
+    });
+  }
+}

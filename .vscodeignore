@@ -1,0 +1,7 @@
+node_modules/**
+out/**
+!out/extension.js
+src/**
+*.ts
+tsconfig.json
+.vscode/**

@@ -1,0 +1,118 @@
+{
+  "name": "vscode-stepzen",
+  "displayName": "StepZen: GraphQL Toolkit",
+  "description": "Build, explore, and deploy StepZen GraphQL schemas without leaving VS Code.",
+  "keywords": [
+    "stepzen",
+    "graphql"
+  ],
+  "version": "0.1.2",
+  "repository": {
+    "type": "git",
+    "url": "https://github.ibm.com/carlose-ibm/stepzen-tools"
+  },
+  "engines": {
+    "vscode": "^1.99.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "stepzen.initializeProject",
+        "title": "Initialize Project",
+        "category": "StepZen"
+      },
+      {
+        "command": "stepzen.deploy",
+        "title": "Deploy Project",
+        "category": "StepZen"
+      },
+      {
+        "command": "stepzen.runRequest",
+        "title": "Run GraphQL Request",
+        "category": "StepZen"
+      },
+      {
+        "command": "stepzen.openExplorer",
+        "title": "Open Query Explorer",
+        "category": "StepZen"
+      },
+      {
+        "command": "stepzen.goToDefinition",
+        "title": "Go to Definition",
+        "category": "StepZen"
+      },
+      {
+        "command": "stepzen.addMaterializer",
+        "title": "Add Materializer",
+        "category": "StepZen"
+      },
+      {
+        "command": "stepzen.openSchemaVisualizer",
+        "title": "Open Schema Visualizer",
+        "category": "StepZen"
+      },
+      {
+        "command": "stepzen.generateOperations",
+        "title": "Generate Operations from Schema",
+        "category": "StepZen"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "stepzen.initializeProject",
+          "group": "0_stepzen@1"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "stepzen.goToDefinition",
+          "when": "editorLangId == graphql && editorTextFocus",
+          "group": "0_stepzen@1"
+        },
+        {
+          "command": "stepzen.addMaterializer",
+          "when": "editorLangId == graphql && editorTextFocus",
+          "group": "0_stepzen@2"
+        },
+        {
+          "command": "stepzen.openSchemaVisualizer",
+          "when": "editorLangId == graphql && editorTextFocus",
+          "group": "0_stepzen@3"
+        }
+      ]
+    },
+    "configuration": {
+      "stepzen.request.debugLevel": {
+        "type": "number",
+        "default": 1,
+        "enum": [
+          0,
+          1
+        ],
+        "description": "0 = stream raw output to terminal (legacy); 1 = capture JSON and show the StepZen Results panel."
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "bundle": "esbuild out/extension.js --bundle --minify --platform=node --external:vscode --outfile=out/extension.js --allow-overwrite",
+    "watch": "tsc --watch -p ./",
+    "clean": "rm -rf out/",
+    "vscode:prepublish": "npm run clean && npm run compile && npm run bundle"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.99.1",
+    "esbuild": "^0.25.3",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "graphql": "^16.11.0"
+  }
+}

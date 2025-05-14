@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir":  "out",
+
+    "module":  "commonjs",
+    "target":  "es2020",
+
+    // --- source-map settings ---
+    "sourceMap":    true,    // generate *.js.map
+    "inlineSources": true,   // embed the original TS text
+    "inlineSourceMap": false // keep maps in their own files
+  },
+  "include": ["src"]
+}

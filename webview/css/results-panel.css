@@ -1,0 +1,191 @@
+/* Base styles */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+    color: var(--vscode-foreground);
+    background-color: var(--vscode-editor-background);
+  }
+  
+  /* Tab navigation */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--vscode-panel-border);
+    background-color: var(--vscode-tab-inactiveBackground);
+  }
+  
+  .tab {
+    padding: 8px 16px;
+    cursor: pointer;
+    user-select: none;
+    border-right: 1px solid var(--vscode-panel-border);
+    color: var(--vscode-tab-inactiveForeground);
+  }
+  
+  .tab.active {
+    background-color: var(--vscode-tab-activeBackground);
+    color: var(--vscode-tab-activeForeground);
+    border-bottom: 2px solid var(--vscode-tab-activeBorder);
+  }
+  
+  .panel {
+    padding: 8px;
+    height: calc(100vh - 40px);
+    overflow: auto;
+  }
+  
+  .no-trace-data {
+    padding: 20px;
+    text-align: center;
+    color: var(--vscode-descriptionForeground);
+  }
+  
+  /* Styles for React JSON View component */
+  .rjv {
+    --bg: var(--vscode-editor-background);
+    --fg: var(--vscode-editor-foreground);
+    --key: var(--vscode-symbolIcon-classForeground);
+    --num: var(--vscode-debugConsole-infoForeground);
+    --str: var(--vscode-debugConsole-stringForeground);
+    --null: var(--vscode-symbolIcon-nullForeground);
+    --hover: var(--vscode-list-inactiveSelectionBackground);
+    
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--vscode-editor-font-family, monospace);
+    font-size: 13px;
+    line-height: 1.45;
+    padding: 8px 12px;
+    border-radius: 6px;
+  }
+  
+  .rjv span.key { color: var(--key) !important; }
+  .rjv span.string { color: var(--str) !important; }
+  .rjv span.number,
+  .rjv span.boolean-no,
+  .rjv span.boolean-yes { color: var(--num) !important; }
+  .rjv span.null { color: var(--null) !important; }
+  .rjv ul { margin-block-start: 2px; }
+  
+  /* Trace viewer styles */
+  .trace-viewer {
+    font-family: var(--vscode-editor-font-family, monospace);
+    font-size: 12px;
+    line-height: 1.4;
+    margin: 0;
+    padding: 10px;
+  }
+  
+  .trace-header {
+    margin-bottom: 16px;
+  }
+  
+  .trace-labels {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 4px 4px 4px;
+    border-bottom: 1px solid var(--vscode-panel-border);
+  }
+  
+  .trace-title {
+    font-weight: bold;
+  }
+  
+  .trace-timeline-header {
+    position: relative;
+    height: 20px;
+    margin-top: 8px;
+  }
+  
+  .trace-time-marker {
+    position: absolute;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--vscode-descriptionForeground);
+  }
+  
+  .trace-spans-container {
+    overflow-y: auto;
+    max-height: calc(100vh - 120px);
+  }
+  
+  .trace-spans {
+    position: relative;
+  }
+  
+  .trace-span {
+    display: flex;
+    height: 24px;
+    margin-bottom: 4px;
+    align-items: center;
+  }
+  
+  .trace-span-info {
+    width: 250px;
+    display: flex;
+    justify-content: space-between;
+    padding-right: 10px;
+  }
+  
+  .trace-span-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .trace-span-duration {
+    flex-shrink: 0;
+    text-align: right;
+    color: var(--vscode-descriptionForeground);
+    margin-left: 8px;
+  }
+  
+  .trace-span-timeline {
+    flex: 1;
+    position: relative;
+    height: 16px;
+    background-color: var(--vscode-editor-background);
+  }
+  
+  .trace-span-bar {
+    position: absolute;
+    height: 16px;
+    background-color: var(--vscode-progressBar-background);
+    border-radius: 2px;
+    min-width: 2px;
+  }
+  
+  /* Color coding for different span types */
+  .span-http {
+    background-color: var(--vscode-charts-blue);
+  }
+  
+  .span-db {
+    background-color: var(--vscode-charts-green);
+  }
+  
+  .span-resolve {
+    background-color: var(--vscode-charts-purple);
+  }
+  
+  .span-server {
+    background-color: var(--vscode-charts-yellow);
+  }
+  
+  .span-client {
+    background-color: var(--vscode-charts-orange);
+  }
+  
+  .span-factory {
+    background-color: var(--vscode-charts-red);
+  }
+  
+  .span-materialization {
+    background-color: var(--vscode-charts-green);
+  }
+  
+  .trace-span-error {
+    background-color: var(--vscode-errorForeground) !important;
+  }
