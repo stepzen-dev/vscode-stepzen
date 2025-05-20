@@ -1,7 +1,14 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
-import { getRootOperationsMap, getFieldIndex, scanStepZenProject, FieldInfo, ArgInfo, getFullType } from "../utils/stepzenProjectScanner";
+import {
+  getRootOperationsMap,
+  getFieldIndex,
+  scanStepZenProject,
+  FieldInfo,
+  ArgInfo,
+  getFullType,
+} from "../utils/stepzenProjectScanner";
 import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
 import { stepzenOutput } from "../extension";
 import { FILE_PATTERNS, GRAPHQL } from "../utils/constants";
@@ -11,7 +18,13 @@ import { createError, formatError } from "../utils/errors";
 const DEFAULT_MAX_DEPTH = 4;
 
 // Types we should stop recursing into
-const STOP_RECURSION_TYPES = [...GRAPHQL.SCALAR_TYPES, "Date", "DateTime", "Time", "JSON"];
+const STOP_RECURSION_TYPES = [
+  ...GRAPHQL.SCALAR_TYPES,
+  "Date",
+  "DateTime",
+  "Time",
+  "JSON",
+];
 
 /**
  * Generates GraphQL operation files for each query field in the schema
@@ -21,7 +34,9 @@ export async function generateOperations() {
   try {
     // Resolve StepZen project root
     const projectRoot = await resolveStepZenProjectRoot();
-    stepzenOutput.appendLine(`Generating operations for project at: ${projectRoot}`);
+    stepzenOutput.appendLine(
+      `Generating operations for project at: ${projectRoot}`,
+    );
 
     // Ensure index.graphql exists
     const indexPath = path.join(projectRoot, FILE_PATTERNS.MAIN_SCHEMA_FILE);
@@ -30,7 +45,7 @@ export async function generateOperations() {
         `Main schema file (${FILE_PATTERNS.MAIN_SCHEMA_FILE}) not found`,
         "Generate Operations",
         undefined,
-        "filesystem"
+        "filesystem",
       );
     }
 
@@ -38,7 +53,9 @@ export async function generateOperations() {
     const operationsDir = path.join(projectRoot, "operations");
     if (!fs.existsSync(operationsDir)) {
       fs.mkdirSync(operationsDir, { recursive: true });
-      stepzenOutput.appendLine(`Created operations directory at: ${operationsDir}`);
+      stepzenOutput.appendLine(
+        `Created operations directory at: ${operationsDir}`,
+      );
     }
 
     // Scan the project to get the latest schema information
@@ -49,31 +66,41 @@ export async function generateOperations() {
     const fieldIdx = getFieldIndex();
 
     // Debug logging
-    stepzenOutput.appendLine(`Root Operations count: ${Object.keys(rootOps).length}`);
-    stepzenOutput.appendLine(`Field Index Types: ${Object.keys(fieldIdx).join(', ')}`);
-    
+    stepzenOutput.appendLine(
+      `Root Operations count: ${Object.keys(rootOps).length}`,
+    );
+    stepzenOutput.appendLine(
+      `Field Index Types: ${Object.keys(fieldIdx).join(", ")}`,
+    );
+
     // Find Query fields from the field index
     const queryType = fieldIdx["Query"];
-    
+
     // If Query type doesn't exist in the field index, try to find Query fields
     // by inspecting root operations directly
     if (!queryType || queryType.length === 0) {
-      stepzenOutput.appendLine("No Query type found in field index, trying root operations");
+      stepzenOutput.appendLine(
+        "No Query type found in field index, trying root operations",
+      );
       // We'll proceed with all root operations for now
     }
-    
+
     // If we have no root operations at all, show error
     if (Object.keys(rootOps).length === 0) {
       throw createError(
         "No Query fields found in schema",
         "Generate Operations",
         undefined,
-        "parse"
+        "parse",
       );
     }
 
     // Generate timestamp for versioning
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "").replace("T", "_").replace("Z", "");
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[:.]/g, "")
+      .replace("T", "_")
+      .replace("Z", "");
 
     // Track the generated files
     const generatedFiles: string[] = [];
@@ -82,7 +109,11 @@ export async function generateOperations() {
     for (const [fieldName, fieldInfo] of Object.entries(rootOps)) {
       stepzenOutput.appendLine(`Processing field: ${fieldName}`);
       try {
-        const queryContent = generateQueryOperation(fieldName, fieldInfo, fieldIdx);
+        const queryContent = generateQueryOperation(
+          fieldName,
+          fieldInfo,
+          fieldIdx,
+        );
         const fileName = `query_${fieldName}.graphql`;
         const filePath = path.join(operationsDir, fileName);
 
@@ -92,7 +123,9 @@ export async function generateOperations() {
           const versionedFilePath = path.join(operationsDir, versionedFileName);
           fs.writeFileSync(versionedFilePath, queryContent);
           generatedFiles.push(versionedFilePath);
-          stepzenOutput.appendLine(`Generated versioned operation file: ${versionedFilePath}`);
+          stepzenOutput.appendLine(
+            `Generated versioned operation file: ${versionedFilePath}`,
+          );
         } else {
           // Create new file
           fs.writeFileSync(filePath, queryContent);
@@ -100,7 +133,9 @@ export async function generateOperations() {
           stepzenOutput.appendLine(`Generated operation file: ${filePath}`);
         }
       } catch (err) {
-        stepzenOutput.appendLine(`Error generating operation for ${fieldName}: ${err}`);
+        stepzenOutput.appendLine(
+          `Error generating operation for ${fieldName}: ${err}`,
+        );
       }
     }
 
@@ -108,7 +143,7 @@ export async function generateOperations() {
     if (generatedFiles.length > 0) {
       updateSdlDirective(indexPath, generatedFiles, projectRoot);
       vscode.window.showInformationMessage(
-        `Generated ${generatedFiles.length} operation files in the operations directory.`
+        `Generated ${generatedFiles.length} operation files in the operations directory.`,
       );
     } else {
       vscode.window.showWarningMessage("No operation files were generated.");
@@ -118,34 +153,42 @@ export async function generateOperations() {
       "Failed to generate operations",
       "Generate Operations",
       err,
-      "unknown"
+      "unknown",
     );
     stepzenOutput.appendLine(formatError(error, true));
-    vscode.window.showErrorMessage(`Error generating operations: ${formatError(error)}`);
+    vscode.window.showErrorMessage(
+      `Error generating operations: ${formatError(error)}`,
+    );
   }
 }
 
 /**
  * Generates a GraphQL query operation for a given field
- * 
+ *
  * @param fieldName The name of the query field
  * @param fieldInfo The field information
  * @param fieldIdx The complete field index
  * @returns A string containing the generated GraphQL query
  */
-function generateQueryOperation(fieldName: string, fieldInfo: any, fieldIdx: Record<string, any>) {
+function generateQueryOperation(
+  fieldName: string,
+  fieldInfo: any,
+  fieldIdx: Record<string, any>,
+) {
   stepzenOutput.appendLine(`Generating query operation for: ${fieldName}`);
   stepzenOutput.appendLine(`Field info: ${JSON.stringify(fieldInfo, null, 2)}`);
-  
+
   // Start with query declaration
   let query = `query ${fieldName}`;
 
   // Add arguments if any
   const args = fieldInfo.args || [];
   if (args.length > 0) {
-    const argsList = args.map((arg: ArgInfo) => {
-      return `$${arg.name}: ${arg.type}`; // Already contains the full type including nullability
-    }).join(", ");
+    const argsList = args
+      .map((arg: ArgInfo) => {
+        return `$${arg.name}: ${arg.type}`; // Already contains the full type including nullability
+      })
+      .join(", ");
     query += `(${argsList})`;
   }
 
@@ -153,9 +196,11 @@ function generateQueryOperation(fieldName: string, fieldInfo: any, fieldIdx: Rec
 
   // Add arguments to the field if any
   if (args.length > 0) {
-    const argsUsage = args.map((arg: ArgInfo) => {
-      return `${arg.name}: $${arg.name}`;
-    }).join(", ");
+    const argsUsage = args
+      .map((arg: ArgInfo) => {
+        return `${arg.name}: $${arg.name}`;
+      })
+      .join(", ");
     query += `(${argsUsage})`;
   }
 
@@ -171,7 +216,7 @@ function generateQueryOperation(fieldName: string, fieldInfo: any, fieldIdx: Rec
 
 /**
  * Recursively generates field selections for a given type
- * 
+ *
  * @param typeName The name of the type to generate fields for
  * @param fieldIdx The complete field index
  * @param depth Current depth in the recursion
@@ -181,8 +226,8 @@ function generateQueryOperation(fieldName: string, fieldInfo: any, fieldIdx: Rec
 function generateFieldSelection(
   typeName: string,
   fieldIdx: Record<string, any[]>,
-  depth: number, 
-  maxDepth: number
+  depth: number,
+  maxDepth: number,
 ): string {
   // Stop recursion if type is a scalar or we've reached max depth
   if (STOP_RECURSION_TYPES.includes(typeName) || depth > maxDepth) {
@@ -210,10 +255,15 @@ function generateFieldSelection(
 
     // Check if field is an object type that needs recursion
     const fieldType = fieldInfo.type.replace(/[!\[\]]/g, "");
-    
+
     if (fieldType && fieldIdx[fieldType] && depth < maxDepth) {
       // Recursive call for nested objects
-      fields += generateFieldSelection(fieldType, fieldIdx, depth + 1, maxDepth);
+      fields += generateFieldSelection(
+        fieldType,
+        fieldIdx,
+        depth + 1,
+        maxDepth,
+      );
     }
     fields += "\n";
   }
@@ -224,50 +274,59 @@ function generateFieldSelection(
 
 /**
  * Updates the SDL directive in index.graphql to include the generated files
- * 
+ *
  * @param indexPath Path to the index.graphql file
  * @param generatedFiles List of generated file paths
  * @param projectRoot Path to the project root
  */
-function updateSdlDirective(indexPath: string, generatedFiles: string[], projectRoot: string) {
+function updateSdlDirective(
+  indexPath: string,
+  generatedFiles: string[],
+  projectRoot: string,
+) {
   try {
     // Read the index file content
     let content = fs.readFileSync(indexPath, "utf8");
 
     // Convert absolute paths to relative paths from the project root
-    const relativeFiles = generatedFiles.map(filePath => 
-      path.relative(path.dirname(indexPath), filePath)
-        .replace(/\\/g, "/") // Ensure forward slashes for GraphQL declarations
+    const relativeFiles = generatedFiles.map(
+      (filePath) =>
+        path.relative(path.dirname(indexPath), filePath).replace(/\\/g, "/"), // Ensure forward slashes for GraphQL declarations
     );
 
     // First, check for SDL directive with executables
-    const executablesRegex = /@sdl\(\s*(?:files\s*:.*?,\s*)?executables\s*:\s*\[(.*?)\]\s*\)/s;
+    const executablesRegex =
+      /@sdl\(\s*(?:files\s*:.*?,\s*)?executables\s*:\s*\[(.*?)\]\s*\)/s;
     const executablesMatch = content.match(executablesRegex);
 
     // Also check for SDL directive without executables
     const sdlRegex = /@sdl\(([^)]*)\)/gs;
     let sdlWithoutExecutablesMatch = null;
-    let matchIndentation = '';
-    let originalLineEnding = content.includes('\r\n') ? '\r\n' : '\n';
-    
+    let matchIndentation = "";
+    let originalLineEnding = content.includes("\r\n") ? "\r\n" : "\n";
+
     // Find the schema directive that doesn't include executables
     let isSchemaDirective = false;
     for (const match of content.matchAll(sdlRegex)) {
       // If this SDL directive doesn't have 'executables:', capture it
-      if (!match[1].includes('executables:')) {
+      if (!match[1].includes("executables:")) {
         // Check if this is in a schema directive (which is what we want)
-        const schemaCheck = content.substring(Math.max(0, match.index - 20), match.index + 30);
+        const schemaCheck = content.substring(
+          Math.max(0, match.index - 20),
+          match.index + 30,
+        );
         isSchemaDirective = /schema\s+@sdl/.test(schemaCheck);
-        
+
         sdlWithoutExecutablesMatch = match;
-        
+
         // Capture indentation from the line containing the SDL directive
         const upToMatch = content.substring(0, match.index);
-        const lastNewline = upToMatch.lastIndexOf('\n');
+        const lastNewline = upToMatch.lastIndexOf("\n");
         if (lastNewline !== -1) {
-          matchIndentation = upToMatch.substring(lastNewline + 1).match(/^\s*/)?.[0] || '';
+          matchIndentation =
+            upToMatch.substring(lastNewline + 1).match(/^\s*/)?.[0] || "";
         }
-        
+
         // If this is the schema directive, we found what we wanted
         if (isSchemaDirective) {
           break;
@@ -278,27 +337,34 @@ function updateSdlDirective(indexPath: string, generatedFiles: string[], project
     if (executablesMatch) {
       // SDL with executables found, append to the existing list
       let executablesList = executablesMatch[1];
-      
+
       // Get current executables from both formats - strings and objects with document
       const currentExecutables = new Set<string>();
-      
+
       // Look for object style { document: "file.graphql", persist: true/false }
       const documentRegex = /document:\s*["']([^"\\]*(?:\\.[^"\\]*)*)["']/g;
       for (const m of executablesList.matchAll(documentRegex)) {
         const exec = m[1].trim();
-        if (exec) currentExecutables.add(exec);
+        if (exec) {
+          currentExecutables.add(exec);
+        }
       }
-      
+
       // Also detect string-only executables for backward compatibility ("file.graphql")
-      const stringRegex = /"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'/g;
+      const stringRegex =
+        /"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'/g;
       for (const m of executablesList.matchAll(stringRegex)) {
         const exec = (m[1] ?? m[2]).trim();
-        if (exec && !exec.includes("document:")) currentExecutables.add(exec);
+        if (exec && !exec.includes("document:")) {
+          currentExecutables.add(exec);
+        }
       }
 
       // Add new executables
-      const newExecutables = relativeFiles.filter(file => !currentExecutables.has(file));
-      
+      const newExecutables = relativeFiles.filter(
+        (file) => !currentExecutables.has(file),
+      );
+
       // If there are new executables to add
       if (newExecutables.length > 0) {
         let newList = executablesList;
@@ -309,10 +375,14 @@ function updateSdlDirective(indexPath: string, generatedFiles: string[], project
             newList += ",";
           }
           newList += " ";
-          newList += newExecutables.map(file => `{ document: "${file}", persist: false }`).join(", ");
+          newList += newExecutables
+            .map((file) => `{ document: "${file}", persist: false }`)
+            .join(", ");
         } else {
           // Empty list, add the new executables
-          newList = newExecutables.map(file => `{ document: "${file}", persist: false }`).join(", ");
+          newList = newExecutables
+            .map((file) => `{ document: "${file}", persist: false }`)
+            .join(", ");
         }
 
         // Replace the old executables list with the new one
@@ -322,21 +392,27 @@ function updateSdlDirective(indexPath: string, generatedFiles: string[], project
 
         // Write back to the file
         fs.writeFileSync(indexPath, content);
-        stepzenOutput.appendLine(`Updated SDL directive in ${indexPath} with ${newExecutables.length} new operation files`);
+        stepzenOutput.appendLine(
+          `Updated SDL directive in ${indexPath} with ${newExecutables.length} new operation files`,
+        );
       } else {
-        stepzenOutput.appendLine("All generated files already in SDL directive, nothing to update.");
+        stepzenOutput.appendLine(
+          "All generated files already in SDL directive, nothing to update.",
+        );
       }
     } else if (sdlWithoutExecutablesMatch) {
       // SDL directive exists but doesn't have executables
-      stepzenOutput.appendLine("Found SDL directive without executables in index.graphql. Adding executables array.");
-      
+      stepzenOutput.appendLine(
+        "Found SDL directive without executables in index.graphql. Adding executables array.",
+      );
+
       try {
         // Get the existing SDL directive content
         const existingDirectiveContent = sdlWithoutExecutablesMatch[1];
-        const executablesValue = relativeFiles.map(file => 
-          `{ document: "${file}", persist: false }`
-        ).join(", ");
-      
+        const executablesValue = relativeFiles
+          .map((file) => `{ document: "${file}", persist: false }`)
+          .join(", ");
+
         // Format the updated directive
         let updatedDirective;
         if (existingDirectiveContent.trim().endsWith(",")) {
@@ -349,36 +425,40 @@ function updateSdlDirective(indexPath: string, generatedFiles: string[], project
           // Empty content
           updatedDirective = `@sdl(executables: [${executablesValue}])`;
         }
-      
-      // Replace the specific SDL directive that doesn't have executables
-      const fullMatch = sdlWithoutExecutablesMatch[0];
-      
-      // Safety check to avoid replacing all occurrences (which might be dangerous)
-      // We'll only replace the first occurrence, which should be the one we matched
-      const replaceIndex = content.indexOf(fullMatch);
-      if (replaceIndex !== -1) {
-        content = 
-          content.substring(0, replaceIndex) + 
-          updatedDirective + 
-          content.substring(replaceIndex + fullMatch.length);
-      } else {
-        content = content.replace(fullMatch, updatedDirective);
-      }
-      
-      // Write back to the file
-      fs.writeFileSync(indexPath, content);
-      stepzenOutput.appendLine(`Added executables to SDL directive in ${indexPath} with ${relativeFiles.length} operation files`);
+
+        // Replace the specific SDL directive that doesn't have executables
+        const fullMatch = sdlWithoutExecutablesMatch[0];
+
+        // Safety check to avoid replacing all occurrences (which might be dangerous)
+        // We'll only replace the first occurrence, which should be the one we matched
+        const replaceIndex = content.indexOf(fullMatch);
+        if (replaceIndex !== -1) {
+          content =
+            content.substring(0, replaceIndex) +
+            updatedDirective +
+            content.substring(replaceIndex + fullMatch.length);
+        } else {
+          content = content.replace(fullMatch, updatedDirective);
+        }
+
+        // Write back to the file
+        fs.writeFileSync(indexPath, content);
+        stepzenOutput.appendLine(
+          `Added executables to SDL directive in ${indexPath} with ${relativeFiles.length} operation files`,
+        );
       } catch (err) {
         stepzenOutput.appendLine(`Error formatting SDL directive: ${err}`);
         vscode.window.showWarningMessage(
-          "Error updating SDL directive. Please add executables manually or check file format."
+          "Error updating SDL directive. Please add executables manually or check file format.",
         );
       }
     } else {
       // No SDL directive found at all
-      stepzenOutput.appendLine("Could not find SDL directive in index.graphql.");
+      stepzenOutput.appendLine(
+        "Could not find SDL directive in index.graphql.",
+      );
       vscode.window.showWarningMessage(
-        "Could not find @sdl directive in index.graphql. Please add the generated operations manually."
+        "Could not find @sdl directive in index.graphql. Please add the generated operations manually.",
       );
     }
   } catch (err) {
@@ -386,9 +466,11 @@ function updateSdlDirective(indexPath: string, generatedFiles: string[], project
       "Failed to update SDL directive",
       "Generate Operations",
       err,
-      "filesystem"
+      "filesystem",
     );
     stepzenOutput.appendLine(formatError(error, true));
-    vscode.window.showErrorMessage(`Error updating SDL directive: ${formatError(error)}`);
+    vscode.window.showErrorMessage(
+      `Error updating SDL directive: ${formatError(error)}`,
+    );
   }
 }

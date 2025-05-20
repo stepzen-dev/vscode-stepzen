@@ -159,13 +159,13 @@ export async function activate(context: vscode.ExtensionContext) {
     ),
     safeRegisterCommand("stepzen.goToDefinition", goToDefinition),
     safeRegisterCommand("stepzen.addMaterializer", addMaterializer),
-    safeRegisterCommand("stepzen.runOperation", runOperation),
-    safeRegisterCommand("stepzen.runPersisted", runPersisted),
+    safeRegisterCommand("stepzen.runOperation", ((...args: unknown[]) => runOperation(args[0] as any))),
+    safeRegisterCommand("stepzen.runPersisted", ((...args: unknown[]) => runPersisted(args[0] as string, args[1] as string))),
     safeRegisterCommand("stepzen.clearResults", clearResults),
     safeRegisterCommand(
       "stepzen.openSchemaVisualizer",
-      async (typeName?: string) =>
-        await openSchemaVisualizer(context, typeName),
+      async (...args: unknown[]) =>
+        await openSchemaVisualizer(context, args[0] as string | undefined),
     ),
     safeRegisterCommand("stepzen.generateOperations", generateOperations),
   );

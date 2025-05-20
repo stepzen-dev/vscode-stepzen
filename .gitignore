@@ -1,23 +1,17 @@
 # Node modules
-node_modules/
+node_modules
 
 # Compiled output
-out/
-
-# TypeScript cache
-*.tsbuildinfo
-
-# VSCode settings
-.vscode/
+out
+dist
 
 # Extension packaging output
 *.vsix
 
-# Temporary files
-*.log
-*.tmp
+# testing
+.vscode-test/
 
-# Webview temp files (if any)
-webview/libs/*.map
-
+# directives.graphql
 directives.graphql
+
+vsc-extension-quickstart.md

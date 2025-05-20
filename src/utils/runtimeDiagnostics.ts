@@ -50,12 +50,14 @@ export function summariseDiagnostics(raw: StepZenDiagnostic[]): Record<string, R
   const spanById = new Map<string, RawSpan>();
   const fetchSpans: RawSpan[] = [];
   const otelEntry = raw.find(d => !!d.otel?.traces?.resourceSpans);
-  if (otelEntry) {
+  if (otelEntry && otelEntry.otel?.traces?.resourceSpans) {
     for (const rs of otelEntry.otel.traces.resourceSpans) {
       for (const ss of rs.scopeSpans || []) {
         for (const s of ss.spans || []) {
           const span = s as RawSpan;
-          if (span.spanId) spanById.set(span.spanId, span);
+          if (span.spanId) {
+            spanById.set(span.spanId, span);
+          }
           if (span.name?.startsWith('fetch:')) {
             fetchSpans.push(span);
           }
@@ -71,7 +73,9 @@ export function summariseDiagnostics(raw: StepZenDiagnostic[]): Record<string, R
   function isAncestor(span: RawSpan, targetId: string): boolean {
     let pid = span.parentSpanId;
     while (pid) {
-      if (pid === targetId) return true;
+      if (pid === targetId) {
+        return true;
+      }
       const parent = spanById.get(pid);
       pid = parent?.parentSpanId;
     }
@@ -103,14 +107,14 @@ export function summariseDiagnostics(raw: StepZenDiagnostic[]): Record<string, R
     }
     // direct DB/GraphQL timing
     const ns = d.duration ?? d.execution?.duration ?? d.prepare?.duration;
-    if (ns != null) {
+    if (ns !== null && ns !== undefined) {
       const ms = ns / 1e6;
       bucket.maxMs = Math.max(bucket.maxMs ?? 0, ms);
     }
 
     // match fetch spans by ancestor
     if (d.spanID) {
-      const matches = fetchSpans.filter(span => isAncestor(span, d.spanID));
+      const matches = fetchSpans.filter(span => isAncestor(span, d.spanID || ''));
       if (matches.length) {
         // stepzenOutput.appendLine(`[*] matched ${matches.length} fetch span(s) for spanID=${d.spanID} at path=${key}`);
       }
@@ -167,16 +171,22 @@ function toVsLoc(l: { filePath: string; line: number; character: number }): { ur
  * @returns VS Code location of the field or undefined if not found
  */
 function locateField(pathKey: string): { uri: vscode.Uri; range: vscode.Range } | undefined {
-  if (pathKey === '$operation') return;
+  if (pathKey === '$operation') {
+    return;
+  }
   const parts = pathKey.split('.');
   if (parts.length === 2) {
     const locs = findDefinition(parts[1]) || [];
     const match = locs.find((l) => l.container === parts[0]);
-    if (match) return toVsLoc(match);
+    if (match) {
+      return toVsLoc(match);
+    }
   } else if (parts.length === 1) {
     const locs = findDefinition(parts[0]) || [];
-    const match = locs.find((l) => ['Query','Mutation','Subscription'].includes(l.container));
-    if (match) return toVsLoc(match);
+    const match = locs.find((l) => ['Query','Mutation','Subscription'].includes(l.container || ''));
+    if (match) {
+      return toVsLoc(match);
+    }
   }
 }
 
@@ -187,8 +197,12 @@ function locateField(pathKey: string): { uri: vscode.Uri; range: vscode.Range } 
  * @returns Information for 2xx/3xx, Warning for 4xx, Error for 5xx
  */
 export function severityForStatus(status?: number): vscode.DiagnosticSeverity {
-  if (!status || status < 400) return vscode.DiagnosticSeverity.Information;
-  if (status >= 500) return vscode.DiagnosticSeverity.Error;
+  if (!status || status < 400) {
+    return vscode.DiagnosticSeverity.Information;
+  }
+  if (status >= 500) {
+    return vscode.DiagnosticSeverity.Error;
+  }
   return vscode.DiagnosticSeverity.Warning;
 }
 
@@ -207,7 +221,9 @@ export function publishDiagnostics(
   const perFile = new Map<string, vscode.Diagnostic[]>();
   for (const s of Object.values(summaries)) {
     const loc = locateField(s.pathKey) || (s.originalField && locateField(s.originalField));
-    if (!loc) continue;
+    if (!loc) {
+      continue;
+    }
     const diag = new vscode.Diagnostic(loc.range, `${s.pathKey} → ${s.maxStatus ?? ''}${s.maxMs ? ` ${s.maxMs.toFixed(1)} ms` : ''}`, severityForStatus(s.maxStatus));
     diag.source = 'StepZen';
     const key = loc.uri.toString();

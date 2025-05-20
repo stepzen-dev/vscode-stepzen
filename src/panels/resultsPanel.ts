@@ -64,7 +64,7 @@ function getHtml(
 
   const nonce = getNonce();
   const payloadJs = JSON.stringify(payload);
-  const hasErrors = payload?.errors?.length > 0;
+  const hasErrors = Array.isArray(payload?.errors) && payload.errors.length > 0;
   
   return /* html */ `
   <!DOCTYPE html>

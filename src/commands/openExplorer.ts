@@ -48,14 +48,16 @@ function getStepZenInfo(workspaceFolderPath: string): {
     
     const endpoint = endpointJson.endpoint;
     return { account, domain, apiKey, endpoint };
-  } catch (err) {
+  } catch (err: unknown) {
     // Re-throw with better context if it's not already a StepZenError
-    if (err.name !== 'StepZenError') {
+    if (typeof err === 'object' && err !== null && 'name' in err && err.name !== 'StepZenError') {
       throw createError(
         "Failed to retrieve StepZen project information", 
         "Get StepZen Info", 
         err, 
-        err.toString().includes('command failed') ? "cli" : "config"
+        typeof err === 'object' && err !== null && 'toString' in err && 
+        typeof err.toString === 'function' && err.toString().includes('command failed') 
+          ? "cli" : "config"
       );
     }
     throw err;
