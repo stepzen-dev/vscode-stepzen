@@ -86,14 +86,20 @@ async function collectVariableArgs(query: string, chosenOp?: string): Promise<st
     } else if (opNodes.length === 1) {
       target = opNodes[0];
     }
-    if (!target || !target.variableDefinitions?.length) return [];
+    if (!target || !target.variableDefinitions?.length) {
+      return [];
+    }
 
     const vDefs = target.variableDefinitions;
 
     const allScalar = vDefs.every((v) => {
       let t: NamedTypeNode | undefined;
-      if (v.type.kind === "NamedType") t = v.type;
-      else if (v.type.kind === "NonNullType" && v.type.type.kind === "NamedType") t = v.type.type;
+      if (v.type.kind === "NamedType") {
+        t = v.type;
+      }
+      else if (v.type.kind === "NonNullType" && v.type.type.kind === "NamedType") {
+        t = v.type.type;
+      }
       return t ? SCALARS.has(t.name.value) : false;
     });
 
@@ -115,7 +121,9 @@ async function collectVariableArgs(query: string, chosenOp?: string): Promise<st
         filters: { JSON: ["json"] },
         openLabel: "Use variables file",
       });
-      if (!uris || !uris[0]) return undefined; // cancelled
+      if (!uris || !uris[0]) {
+        return undefined; // cancelled
+      }
       return ["--var-file", uris[0].fsPath];
     }
 
@@ -126,7 +134,9 @@ async function collectVariableArgs(query: string, chosenOp?: string): Promise<st
         const val = await vscode.window.showInputBox({
           prompt: `Value for $${name}`,
         });
-        if (val === undefined) return undefined; // user cancelled
+        if (val === undefined) {
+          return undefined; // user cancelled
+        }
         args.push("--var", `${name}=${val}`);
       }
       return args;
@@ -297,7 +307,7 @@ async function executeStepZenRequest(options: {
       const graphqlUrl = `https://${account}.${domain}/${endpoint}/graphql`;
 
       // Prepare variables from varArgs
-      let variables = {};
+      let variables: Record<string, string> = {};
       for (let i = 0; i < varArgs.length; i += 2) {
         if (varArgs[i] === "--var" && i + 1 < varArgs.length) {
           const [name, value] = varArgs[i + 1].split("=");
@@ -444,7 +454,9 @@ async function executeStepZenRequest(options: {
     vscode.window.showErrorMessage(`StepZen request failed: ${errorMsg}`);
     logger.error("StepZen request failed", err); // Include details in output channel
   } finally {
-    if (tmpFile) cleanupLater(tmpFile);
+    if (tmpFile) {
+      cleanupLater(tmpFile);
+    }
   }
 }
 
@@ -485,12 +497,16 @@ export async function runGraphQLRequest() {
     operationName = await vscode.window.showQuickPick(ops, {
       placeHolder: "Multiple operations found. Select one to execute.",
     });
-    if (!operationName) return; // cancelled
+    if (!operationName) {
+      return; // cancelled
+    }
   }
 
   // Collect variable args
   const varArgs = await collectVariableArgs(query, operationName);
-  if (varArgs === undefined) return; // user cancelled
+  if (varArgs === undefined) {
+    return; // user cancelled
+  }
 
   // Execute using file-based approach
   await executeStepZenRequest({
@@ -546,7 +562,9 @@ export async function runOperation(operation: OperationEntry) {
   
   // Collect variable args for the operation
   const varArgs = await collectVariableArgs(operationText, operation.name);
-  if (varArgs === undefined) return; // user cancelled
+  if (varArgs === undefined) {
+    return; // user cancelled
+  }
   
   // Execute using file-based approach
   await executeStepZenRequest({
@@ -631,7 +649,9 @@ export async function runPersisted(documentId: string, operationName: string) {
     
     // Collect variable args
     const varArgs = await collectVariableArgs(operationText, operationName);
-    if (varArgs === undefined) return; // user cancelled
+    if (varArgs === undefined) {
+      return; // user cancelled
+    }
     
     // Execute using document ID approach
     await executeStepZenRequest({

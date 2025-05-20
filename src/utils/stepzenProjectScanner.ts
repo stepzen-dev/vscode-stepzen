@@ -17,7 +17,8 @@ import {
   ListValueNode,
   ObjectValueNode,
   StringValueNode,
-  BooleanValueNode
+  BooleanValueNode,
+  ArgumentNode
 } from "graphql";
 import * as vscode from 'vscode';
 import { Uri } from 'vscode';
@@ -136,7 +137,9 @@ export function findDefinition(name: string): SymbolLocation[] | undefined {
  */
 export function dumpDefinitionIndex(): string {
   const obj: Record<string, SymbolLocation[]> = {};
-  for (const [k, v] of definitionIndex.entries()) obj[k] = v;
+  for (const [k, v] of definitionIndex.entries()) {
+    obj[k] = v;
+  }
   return JSON.stringify(obj, null, 2);
 }
 
@@ -156,7 +159,9 @@ function addLocation(key: string, loc: SymbolLocation) {
 
 function isRootObject(def: DefinitionNode): def is ObjectTypeDefinitionNode | ObjectTypeExtensionNode {
   const isObjectType = def.kind === Kind.OBJECT_TYPE_DEFINITION || def.kind === Kind.OBJECT_TYPE_EXTENSION;
-  if (!isObjectType) return false;
+  if (!isObjectType) {
+    return false;
+  }
   
   const typeName = (def as ObjectTypeDefinitionNode | ObjectTypeExtensionNode).name.value;
   const isRoot = ROOT_TYPES.has(typeName);
@@ -192,7 +197,9 @@ function indexDefinitions(document: DocumentNode, filePath: string) {
     if (isRootObject(def) && (def as ObjectTypeDefinitionNode | ObjectTypeExtensionNode).fields) {
       const parentName = (def as ObjectTypeDefinitionNode | ObjectTypeExtensionNode).name.value;
       for (const field of (def as ObjectTypeDefinitionNode | ObjectTypeExtensionNode).fields as FieldDefinitionNode[]) {
-        if (!field.loc) continue;
+        if (!field.loc) {
+          continue;
+        }
         addLocation(field.name.value, {
           container: parentName,
           filePath,
@@ -250,7 +257,9 @@ function indexDefinitions(document: DocumentNode, filePath: string) {
       
       // Store all fields
       for (const field of (def as ObjectTypeDefinitionNode | ObjectTypeExtensionNode).fields as FieldDefinitionNode[]) {
-        if (!field.loc) continue;
+        if (!field.loc) {
+          continue;
+        }
         
         // Record field type information for visualization
         const returnType = unwrapType(field.type);
@@ -342,15 +351,19 @@ function scanSDLExecutables(schemaSDL: string, workspaceRoot: string) {
       return;
     }
     
-    const execArg = sdlDir.arguments.find(a => a?.name?.value === 'executables');
-    if (!execArg || execArg.value?.kind !== Kind.LIST) return;
+    const execArg = sdlDir.arguments.find((a: ArgumentNode) => a?.name?.value === 'executables');
+    if (!execArg || execArg.value?.kind !== Kind.LIST) {
+      return;
+    }
     const values = (execArg.value as ListValueNode).values;
     if (!values || !Array.isArray(values)) {
       return;
     }
     
     values.forEach(v => {
-      if (!v || v.kind !== Kind.OBJECT) return;
+      if (!v || v.kind !== Kind.OBJECT) {
+        return;
+      }
       let documentPath = '';
       let persist = false;
       
@@ -434,7 +447,9 @@ function scanSDLExecutables(schemaSDL: string, workspaceRoot: string) {
       const ops: OperationEntry[] = [];
       visit(docAST, {
         OperationDefinition(node: OperationDefinitionNode) {
-          if (!node.loc) return;
+          if (!node || !node.loc) {
+            return;
+          }
           ops.push({
             name: node.name?.value || '<anonymous>',
             type: node.operation,
@@ -444,7 +459,9 @@ function scanSDLExecutables(schemaSDL: string, workspaceRoot: string) {
           });
         },
         FragmentDefinition(node: FragmentDefinitionNode) {
-          if (!node.loc) return;
+          if (!node.loc) {
+            return;
+          }
           ops.push({
             name: node.name.value,
             type: 'fragment',
@@ -507,7 +524,9 @@ export async function scanStepZenProject(entryFile: string): Promise<void> {
     while (queue.length) {
       const file = queue.pop()!;
       logger.debug(`Parsing ${file}`);
-      if (visited.has(file)) continue;
+      if (visited.has(file)) {
+        continue;
+      }
       visited.add(file);
       schemaFiles.push(file);
       
@@ -527,9 +546,13 @@ export async function scanStepZenProject(entryFile: string): Promise<void> {
         const pathRegex = /"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'/g;
         for (const m of raw.matchAll(pathRegex)) {
           const rel = (m[1] ?? m[2]).trim();
-          if (!rel) continue;
+          if (!rel) {
+            continue;
+          }
           const abs = path.join(path.dirname(file), rel);
-          if (!visited.has(abs)) queue.push(abs);
+          if (!visited.has(abs)) {
+            queue.push(abs);
+          }
         }
       }
     }
@@ -618,7 +641,9 @@ export function unwrapType(type: TypeNode): string {
     return '';
   }
   
-  if (type.kind === Kind.NAMED_TYPE) return type.name.value;
+  if (type.kind === Kind.NAMED_TYPE) {
+    return type.name.value;
+  }
   if (type.kind === Kind.NON_NULL_TYPE || type.kind === Kind.LIST_TYPE) {
     return unwrapType(type.type);
   }
@@ -663,8 +688,12 @@ function isListType(type: TypeNode): boolean {
     return false;
   }
   
-  if (type.kind === Kind.LIST_TYPE) return true;
-  if (type.kind === Kind.NON_NULL_TYPE) return isListType(type.type);
+  if (type.kind === Kind.LIST_TYPE) {
+    return true;
+  }
+  if (type.kind === Kind.NON_NULL_TYPE) {
+    return isListType(type.type);
+  }
   return false;
 }
 
