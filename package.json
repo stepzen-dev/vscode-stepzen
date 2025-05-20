@@ -19,6 +19,20 @@
     "Other"
   ],
   "main": "./out/extension.js",
+  "activationEvents": [
+    "onCommand:stepzen.initializeProject",
+    "onCommand:stepzen.deploy",
+    "onCommand:stepzen.runRequest",
+    "onCommand:stepzen.openExplorer",
+    "onCommand:stepzen.goToDefinition",
+    "onCommand:stepzen.addMaterializer",
+    "onCommand:stepzen.runOperation",
+    "onCommand:stepzen.runPersisted",
+    "onCommand:stepzen.clearResults",
+    "onCommand:stepzen.openSchemaVisualizer",
+    "onCommand:stepzen.generateOperations",
+    "workspaceContains:**/stepzen.config.json"
+  ],
   "contributes": {
     "commands": [
       {
