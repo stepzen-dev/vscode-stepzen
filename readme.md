@@ -120,6 +120,71 @@ Choose one of the following installation methods:
 - The extension expects your project to define included schemas via the `@sdl` directive.
 - Advanced GraphQL language server features (e.g., full IntelliSense) are not yet implemented.
 
+## Development
+
+### Building
+
+```bash
+# Install dependencies
+npm install
+
+# Build the extension
+npm run compile
+
+# Watch for changes during development
+npm run watch
+```
+
+### Testing
+
+The extension uses the standard VS Code testing framework with Mocha. The tests are located in the `src/test` directory.
+
+#### Running Tests
+
+To run tests, use the following commands:
+
+```bash
+# Compile the tests and run them
+npm run test
+
+# Just compile the tests
+npm run compile-tests
+
+# Watch for changes in tests
+npm run watch-tests
+```
+
+The recommended approach for testing during development:
+
+1. Make changes to the extension code
+2. Run `npm run compile-tests` to compile the tests
+3. Use VS Code's built-in Test Explorer to run and debug tests
+4. For CI/CD pipelines, use `npm run test` to run all tests
+
+#### Writing Tests
+
+Tests are written using Mocha's test suite format in TypeScript. Examples of tests include:
+
+1. **Unit tests** - Test individual functions or components
+2. **Integration tests** - Test how components work together
+3. **Extension tests** - Test extension commands and functionality
+
+A simple test follows this pattern:
+
+```typescript
+import * as assert from "assert";
+import * as vscode from "vscode";
+
+suite("Your Test Suite Name", () => {
+  test("Your Test Name", () => {
+    // Your test code here
+    assert.strictEqual(actual, expected);
+  });
+});
+```
+
+All tests will be automatically compiled to the `out/test` directory and run by the VS Code test runner.
+
 ## Feedback
 
 Feel free to open issues or suggest improvements!
