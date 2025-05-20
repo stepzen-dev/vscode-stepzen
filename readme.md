@@ -40,7 +40,7 @@ Choose one of the following installation methods:
 
 ### Download Latest Release
 
-1. Download the `.vsix` file from the [Releases page](https://github.ibm.com/carlose-ibm/stepzen-tools/releases/latest)
+1. Download the `.vsix` file from the [Releases page](https://github.com/stepzen-dev/vscode-stepzen/releases/latest)
 
 2. Install the extension into VS Code:
    - Open the Command Palette (`Ctrl+Shift+P`)
