@@ -4,24 +4,10 @@ import * as fs from "fs";
 import { formatError, createError } from "./utils/errors";
 import { UI, FILE_PATTERNS } from "./utils/constants";
 import { stepzenOutput, logger } from "./utils/logger";
-
-import { deployStepZen } from "./commands/deploy";
-import {
-  clearResults,
-  runGraphQLRequest,
-  runOperation,
-  runPersisted,
-} from "./commands/runRequest";
-import { openQueryExplorer } from "./commands/openExplorer";
-import { goToDefinition } from "./commands/goToDefinition";
 import { safeRegisterCommand } from "./utils/safeRegisterCommand";
 import { scanStepZenProject } from "./utils/stepzenProjectScanner";
 import { resolveStepZenProjectRoot } from "./utils/stepzenProject";
-import { addMaterializer } from "./commands/addMaterializer";
 import { StepZenCodeLensProvider } from "./utils/codelensProvider";
-import { openSchemaVisualizer } from "./commands/openSchemaVisualizer";
-import { initializeProject } from "./commands/initializeProject";
-import { generateOperations } from "./commands/generateOperations";
 
 export { stepzenOutput };
 export let stepzenTerminal: vscode.Terminal | undefined;
@@ -151,23 +137,53 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // command registration --------------------------------------------------
   context.subscriptions.push(
-    safeRegisterCommand("stepzen.initializeProject", initializeProject),
-    safeRegisterCommand("stepzen.deploy", deployStepZen),
-    safeRegisterCommand("stepzen.runRequest", runGraphQLRequest),
-    safeRegisterCommand("stepzen.openExplorer", () =>
-      openQueryExplorer(context),
-    ),
-    safeRegisterCommand("stepzen.goToDefinition", goToDefinition),
-    safeRegisterCommand("stepzen.addMaterializer", addMaterializer),
-    safeRegisterCommand("stepzen.runOperation", ((...args: unknown[]) => runOperation(args[0] as any))),
-    safeRegisterCommand("stepzen.runPersisted", ((...args: unknown[]) => runPersisted(args[0] as string, args[1] as string))),
-    safeRegisterCommand("stepzen.clearResults", clearResults),
+    safeRegisterCommand("stepzen.initializeProject", async () => {
+      const { initializeProject } = await import("./commands/initializeProject.js");
+      return initializeProject();
+    }),
+    safeRegisterCommand("stepzen.deploy", async () => {
+      const { deployStepZen } = await import("./commands/deploy.js");
+      return deployStepZen();
+    }),
+    safeRegisterCommand("stepzen.runRequest", async () => {
+      const { runGraphQLRequest } = await import("./commands/runRequest.js");
+      return runGraphQLRequest();
+    }),
+    safeRegisterCommand("stepzen.openExplorer", async () => {
+      const { openQueryExplorer } = await import("./commands/openExplorer.js");
+      return openQueryExplorer(context);
+    }),
+    safeRegisterCommand("stepzen.goToDefinition", async () => {
+      const { goToDefinition } = await import("./commands/goToDefinition.js");
+      return goToDefinition();
+    }),
+    safeRegisterCommand("stepzen.addMaterializer", async () => {
+      const { addMaterializer } = await import("./commands/addMaterializer.js");
+      return addMaterializer();
+    }),
+    safeRegisterCommand("stepzen.runOperation", async (...args: unknown[]) => {
+      const { runOperation } = await import("./commands/runRequest.js");
+      return runOperation(args[0] as any);
+    }),
+    safeRegisterCommand("stepzen.runPersisted", async (...args: unknown[]) => {
+      const { runPersisted } = await import("./commands/runRequest.js");
+      return runPersisted(args[0] as string, args[1] as string);
+    }),
+    safeRegisterCommand("stepzen.clearResults", async () => {
+      const { clearResults } = await import("./commands/runRequest.js");
+      return clearResults();
+    }),
     safeRegisterCommand(
       "stepzen.openSchemaVisualizer",
-      async (...args: unknown[]) =>
-        await openSchemaVisualizer(context, args[0] as string | undefined),
+      async (...args: unknown[]) => {
+        const { openSchemaVisualizer } = await import("./commands/openSchemaVisualizer.js");
+        return openSchemaVisualizer(context, args[0] as string | undefined);
+      },
     ),
-    safeRegisterCommand("stepzen.generateOperations", generateOperations),
+    safeRegisterCommand("stepzen.generateOperations", async () => {
+      const { generateOperations } = await import("./commands/generateOperations.js");
+      return generateOperations();
+    }),
   );
 
   // Register the codelens provider
