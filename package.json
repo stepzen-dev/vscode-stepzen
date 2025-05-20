@@ -31,7 +31,7 @@
     "onCommand:stepzen.runOperation",
     "onCommand:stepzen.runPersisted",
     "onCommand:stepzen.runRequest",
-    "workspaceContains:**/stepzen.config.json"
+    "workspaceContains:stepzen.config.json"
   ],
   "contributes": {
     "commands": [
