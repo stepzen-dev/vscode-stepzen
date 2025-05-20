@@ -10,6 +10,14 @@ import { formatError, createError } from '../utils/errors';
  * @returns Promise that resolves when deployment command is initiated
  */
 export async function deployStepZen() {
+  // Check workspace trust first
+  if (!vscode.workspace.isTrusted) {
+    const message = "StepZen deployment is not available in untrusted workspaces. Open this folder in a trusted workspace to enable deployment.";
+    vscode.window.showWarningMessage(message);
+    stepzenOutput.appendLine(`Deploy failed: ${message}`);
+    return;
+  }
+
   let projectRoot: string;
   try {
     projectRoot = await resolveStepZenProjectRoot();
