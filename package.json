@@ -19,6 +19,9 @@
     "Other"
   ],
   "main": "./out/extension.js",
+  "activationEvents": [
+    "workspaceContains:stepzen.config.json"
+  ],
   "contributes": {
     "commands": [
       {
