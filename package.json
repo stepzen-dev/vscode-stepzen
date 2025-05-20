@@ -20,17 +20,6 @@
   ],
   "main": "./out/extension.js",
   "activationEvents": [
-    "onCommand:stepzen.addMaterializer",
-    "onCommand:stepzen.clearResults",
-    "onCommand:stepzen.deploy",
-    "onCommand:stepzen.generateOperations",
-    "onCommand:stepzen.goToDefinition",
-    "onCommand:stepzen.initializeProject",
-    "onCommand:stepzen.openExplorer",
-    "onCommand:stepzen.openSchemaVisualizer",
-    "onCommand:stepzen.runOperation",
-    "onCommand:stepzen.runPersisted",
-    "onCommand:stepzen.runRequest",
     "workspaceContains:stepzen.config.json"
   ],
   "contributes": {
