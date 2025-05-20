@@ -118,6 +118,11 @@
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.5.2"
   },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false
+    }
+  },
   "dependencies": {
     "graphql": "^16.11.0"
   }

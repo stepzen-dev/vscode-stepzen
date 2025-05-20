@@ -470,6 +470,13 @@ async function executeStepZenRequest(options: {
  * If multiple operations are found, prompts the user to select one
  */
 export async function runGraphQLRequest() {
+  // Check workspace trust first
+  if (!vscode.workspace.isTrusted) {
+    const message = "Running GraphQL requests is not available in untrusted workspaces. Open this folder in a trusted workspace to enable this feature.";
+    vscode.window.showWarningMessage(message);
+    return;
+  }
+  
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
     vscode.window.showErrorMessage("No active editor with GraphQL request.");
@@ -523,6 +530,13 @@ export async function runGraphQLRequest() {
  * @param operation The operation entry to run
  */
 export async function runOperation(operation: OperationEntry) {
+  // Check workspace trust first
+  if (!vscode.workspace.isTrusted) {
+    const message = "Running GraphQL operations is not available in untrusted workspaces. Open this folder in a trusted workspace to enable this feature.";
+    vscode.window.showWarningMessage(message);
+    return;
+  }
+
   // Validate operation parameter
   if (!operation || !operation.fileUri) {
     const error = createError(
@@ -587,6 +601,13 @@ export async function runOperation(operation: OperationEntry) {
  * @param operationName The name of the operation within the document
  */
 export async function runPersisted(documentId: string, operationName: string) {
+  // Check workspace trust first
+  if (!vscode.workspace.isTrusted) {
+    const message = "Running persisted GraphQL operations is not available in untrusted workspaces. Open this folder in a trusted workspace to enable this feature.";
+    vscode.window.showWarningMessage(message);
+    return;
+  }
+  
   // Validate parameters
   if (!documentId || typeof documentId !== 'string') {
     vscode.window.showErrorMessage("Invalid document ID provided");
