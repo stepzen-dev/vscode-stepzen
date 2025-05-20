@@ -5,6 +5,9 @@ node_modules
 out
 dist
 
+# code coverage
+coverage
+
 # Extension packaging output
 *.vsix
 
