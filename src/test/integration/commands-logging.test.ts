@@ -1,6 +1,5 @@
 import * as assert from 'assert';
-import * as vscode from 'vscode';
-import { LogLevel, logger } from '../../services/logger';
+import { logger } from '../../services/logger';
 
 // This test suite verifies that extension commands properly use the logger
 suite('Commands Logging Integration Test Suite', () => {

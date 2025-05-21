@@ -182,16 +182,17 @@ export async function openSchemaVisualizerPanel(
   }
 }
 
-/**
- * Clears the schema visualizer panel by disposing the webview panel
- * Used when closing the visualizer or when the extension is deactivated
- */
-export function clearSchemaVisualizerPanel(): void {
-  if (panel) {
-    panel.dispose();
-    panel = undefined;
-  }
-}
+// TODO: CLEANUP
+// /**
+//  * Clears the schema visualizer panel by disposing the webview panel
+//  * Used when closing the visualizer or when the extension is deactivated
+//  */
+// function clearSchemaVisualizerPanel(): void {
+//   if (panel) {
+//     panel.dispose();
+//     panel = undefined;
+//   }
+// }
 
 /**
  * Ensures that schema data is loaded before the visualizer is opened.

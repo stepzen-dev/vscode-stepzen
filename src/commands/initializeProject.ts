@@ -2,9 +2,7 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
 import { execSync } from "child_process";
-import { getOrCreateStepZenTerminal } from "../extension";
-import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
-import { formatError, createError } from "../utils/errors";
+import { StepZenError, handleError } from "../errors";
 import { FILE_PATTERNS } from "../utils/constants";
 import { services } from "../services";
 
@@ -58,8 +56,7 @@ async function checkStepZenCLI(): Promise<boolean> {
 
     return true;
   } catch (err) {
-    vscode.window.showErrorMessage(`StepZen CLI error: ${formatError(err)}`);
-    services.logger.error(`StepZen CLI error: ${formatError(err, true)}`, err);
+    handleError(err);
     return false;
   }
 }
@@ -286,11 +283,10 @@ query HelloWorld {
       `Created StepZen project at: ${projectDir} with endpoint ${endpoint}`,
     );
   } catch (err) {
-    throw createError(
+    throw new StepZenError(
       `Failed to create project: ${err}`,
-      "Initialize Project",
-      err,
-      "filesystem",
+      "FILESYSTEM_ERROR",
+      err
     );
   }
 }
@@ -464,13 +460,6 @@ export async function initializeProject() {
       }
     }
   } catch (err) {
-    const error = formatError(err);
-    vscode.window.showErrorMessage(
-      `Failed to initialize StepZen project: ${error}`,
-    );
-    services.logger.error(
-      `Project initialization failed: ${formatError(err, true)}`,
-      err
-    );
+    handleError(err);
   }
 }

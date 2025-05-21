@@ -15,7 +15,7 @@ import { StepZenDiagnostic } from "../types";
  * Summary of request information collected from diagnostics
  * Used to display timing and status information in the editor
  */
-export interface RequestSummary {
+interface RequestSummary {
   pathKey: string;        // Path in the GraphQL response (e.g. "Query.users")
   originalField?: string; // Original field name if different from path
   maxStatus?: number;     // HTTP status code (highest if multiple)
@@ -172,7 +172,7 @@ function toVsLoc(l: { filePath: string; line: number; character: number }): { ur
  */
 function locateField(pathKey: string): { uri: vscode.Uri; range: vscode.Range } | undefined {
   if (pathKey === '$operation') {
-    return;
+    return undefined;
   }
   const parts = pathKey.split('.');
   if (parts.length === 2) {
@@ -181,13 +181,16 @@ function locateField(pathKey: string): { uri: vscode.Uri; range: vscode.Range } 
     if (match) {
       return toVsLoc(match);
     }
+    return undefined;
   } else if (parts.length === 1) {
     const locs = findDefinition(parts[0]) || [];
     const match = locs.find((l) => ['Query','Mutation','Subscription'].includes(l.container || ''));
     if (match) {
       return toVsLoc(match);
     }
+    return undefined;
   }
+  return undefined;
 }
 
 /**
@@ -196,7 +199,7 @@ function locateField(pathKey: string): { uri: vscode.Uri; range: vscode.Range } 
  * @param status HTTP status code
  * @returns Information for 2xx/3xx, Warning for 4xx, Error for 5xx
  */
-export function severityForStatus(status?: number): vscode.DiagnosticSeverity {
+function severityForStatus(status?: number): vscode.DiagnosticSeverity {
   if (!status || status < 400) {
     return vscode.DiagnosticSeverity.Information;
   }

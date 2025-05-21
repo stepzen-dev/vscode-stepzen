@@ -5,14 +5,12 @@ import {
   getRootOperationsMap,
   getFieldIndex,
   scanStepZenProject,
-  FieldInfo,
   ArgInfo,
-  getFullType,
 } from "../utils/stepzenProjectScanner";
 import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
 import { services } from "../services";
 import { FILE_PATTERNS, GRAPHQL } from "../utils/constants";
-import { createError, formatError } from "../utils/errors";
+import { handleError, StepZenError } from "../errors";
 
 // Maximum depth for field traversal
 const DEFAULT_MAX_DEPTH = 4;
@@ -41,11 +39,9 @@ export async function generateOperations() {
     // Ensure index.graphql exists
     const indexPath = path.join(projectRoot, FILE_PATTERNS.MAIN_SCHEMA_FILE);
     if (!fs.existsSync(indexPath)) {
-      throw createError(
+      throw new StepZenError(
         `Main schema file (${FILE_PATTERNS.MAIN_SCHEMA_FILE}) not found`,
-        "Generate Operations",
-        undefined,
-        "filesystem",
+        "FILE_NOT_FOUND"
       );
     }
 
@@ -53,9 +49,7 @@ export async function generateOperations() {
     const operationsDir = path.join(projectRoot, "operations");
     if (!fs.existsSync(operationsDir)) {
       fs.mkdirSync(operationsDir, { recursive: true });
-      services.logger.info(
-        `Created operations directory at: ${operationsDir}`,
-      );
+      services.logger.info(`Created operations directory at: ${operationsDir}`);
     }
 
     // Scan the project to get the latest schema information
@@ -87,11 +81,9 @@ export async function generateOperations() {
 
     // If we have no root operations at all, show error
     if (Object.keys(rootOps).length === 0) {
-      throw createError(
+      throw new StepZenError(
         "No Query fields found in schema",
-        "Generate Operations",
-        undefined,
-        "parse",
+        "SCHEMA_VALIDATION_ERROR"
       );
     }
 
@@ -135,14 +127,14 @@ export async function generateOperations() {
       } catch (err) {
         services.logger.error(
           `Error generating operation for ${fieldName}: ${err}`,
-          err
+          err,
         );
       }
     }
 
     // Update SDL directive in index.graphql
     if (generatedFiles.length > 0) {
-      updateSdlDirective(indexPath, generatedFiles, projectRoot);
+      updateSdlDirective(indexPath, generatedFiles); // TODO: cleanup when safe, projectRoot);
       vscode.window.showInformationMessage(
         `Generated ${generatedFiles.length} operation files in the operations directory.`,
       );
@@ -150,16 +142,7 @@ export async function generateOperations() {
       vscode.window.showWarningMessage("No operation files were generated.");
     }
   } catch (err) {
-    const error = createError(
-      "Failed to generate operations",
-      "Generate Operations",
-      err,
-      "unknown",
-    );
-    services.logger.error(formatError(error, true), error);
-    vscode.window.showErrorMessage(
-      `Error generating operations: ${formatError(error)}`,
-    );
+    handleError(err);
   }
 }
 
@@ -283,7 +266,7 @@ function generateFieldSelection(
 function updateSdlDirective(
   indexPath: string,
   generatedFiles: string[],
-  projectRoot: string,
+  // projectRoot: string,
 ) {
   try {
     // Read the index file content
@@ -303,8 +286,8 @@ function updateSdlDirective(
     // Also check for SDL directive without executables
     const sdlRegex = /@sdl\(([^)]*)\)/gs;
     let sdlWithoutExecutablesMatch = null;
-    let matchIndentation = "";
-    let originalLineEnding = content.includes("\r\n") ? "\r\n" : "\n";
+    // TODO: remove
+    // let originalLineEnding = content.includes("\r\n") ? "\r\n" : "\n";
 
     // Find the schema directive that doesn't include executables
     let isSchemaDirective = false;
@@ -319,14 +302,6 @@ function updateSdlDirective(
         isSchemaDirective = /schema\s+@sdl/.test(schemaCheck);
 
         sdlWithoutExecutablesMatch = match;
-
-        // Capture indentation from the line containing the SDL directive
-        const upToMatch = content.substring(0, match.index);
-        const lastNewline = upToMatch.lastIndexOf("\n");
-        if (lastNewline !== -1) {
-          matchIndentation =
-            upToMatch.substring(lastNewline + 1).match(/^\s*/)?.[0] || "";
-        }
 
         // If this is the schema directive, we found what we wanted
         if (isSchemaDirective) {
@@ -455,23 +430,12 @@ function updateSdlDirective(
       }
     } else {
       // No SDL directive found at all
-      services.logger.warn(
-        "Could not find SDL directive in index.graphql.",
-      );
+      services.logger.warn("Could not find SDL directive in index.graphql.");
       vscode.window.showWarningMessage(
         "Could not find @sdl directive in index.graphql. Please add the generated operations manually.",
       );
     }
   } catch (err) {
-    const error = createError(
-      "Failed to update SDL directive",
-      "Generate Operations",
-      err,
-      "filesystem",
-    );
-    services.logger.error(formatError(error, true), error);
-    vscode.window.showErrorMessage(
-      `Error updating SDL directive: ${formatError(error)}`,
-    );
+    handleError(err);
   }
 }

@@ -2,25 +2,23 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import * as cp from "child_process";
 import * as https from "https";
-import { parse, NamedTypeNode, OperationDefinitionNode } from "graphql";
 import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
-import { formatError } from "../utils/errors";
 import { clearResultsPanel, openResultsPanel } from "../panels/resultsPanel";
 import { summariseDiagnostics, publishDiagnostics } from "../utils/runtimeDiagnostics";
 import { runtimeDiag } from "../extension";
-import { getOperationMap, getPersistedDocMap, OperationEntry } from "../utils/stepzenProjectScanner";
 import { UI, TIMEOUTS } from "../utils/constants";
 import { services } from "../services";
-import { StepZenConfig, StepZenResponse, StepZenDiagnostic } from "../types";
+import { StepZenResponse, StepZenDiagnostic } from "../types";
 import { ValidationError, NetworkError, handleError } from "../errors";
 
+/* CLEANUP - DELETE WHEN SAFE
 // Export utility functions for use in other files
 export {
   createTempGraphQLFile,
   cleanupLater
 };
+*/
 
 /**
  * Creates a temporary GraphQL file with the provided query content

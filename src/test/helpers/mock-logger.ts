@@ -1,9 +1,8 @@
-import * as vscode from 'vscode';
-import { Logger, LogLevel } from '../../services/logger';
+import { Logger, LogLevel } from "../../services/logger";
 
 /**
  * Creates a mock logger for testing purposes
- * 
+ *
  * @returns An object with the mock logger and tracking arrays for log calls
  */
 export function createMockLogger() {
@@ -12,18 +11,18 @@ export function createMockLogger() {
     warn: [] as string[],
     info: [] as string[],
     debug: [] as string[],
-    all: [] as Array<{ level: LogLevel, message: string, error?: unknown }>,
+    all: [] as Array<{ level: LogLevel; message: string; error?: unknown }>,
   };
 
   const mockOutputChannel = {
-    appendLine: (text: string) => {},
-    append: (text: string) => {},
+    appendLine: (_text: string) => {},
+    append: (_text: string) => {},
     clear: () => {},
     show: () => {},
     hide: () => {},
     dispose: () => {},
-    name: 'StepZen',
-    replace: (value: string) => {},
+    name: "StepZen",
+    replace: (_value: string) => {},
     processId: undefined as string | undefined,
   };
 
@@ -46,8 +45,8 @@ export function createMockLogger() {
       logCalls.all.push({ level: LogLevel.DEBUG, message });
     },
     getOutputChannel: () => mockOutputChannel,
-    setLogLevel: (level: LogLevel) => {},
-    setLogToFile: (enabled: boolean) => {},
+    setLogLevel: (_level: LogLevel) => {},
+    setLogToFile: (_enabled: boolean) => {},
     updateConfigFromSettings: () => {},
     dispose: () => {},
   };
@@ -59,14 +58,14 @@ export function createMockLogger() {
     setupMocks: () => {
       // Store original prototype methods
       const originalGetInstance = Logger.getInstance;
-      
+
       // Replace with mock implementations
       Logger.getInstance = () => mockLogger as unknown as Logger;
-      
+
       return () => {
         // Restore original methods
         Logger.getInstance = originalGetInstance;
       };
-    }
+    },
   };
 }

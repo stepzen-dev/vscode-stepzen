@@ -2,8 +2,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
 import { execSync } from "child_process";
-import { formatError, createError } from "../utils/errors";
-import { services } from "../services";
+import { StepZenError, handleError } from "../errors";
 import { StepZenConfig } from "../types";
 
 /**
@@ -26,11 +25,9 @@ function getStepZenInfo(workspaceFolderPath: string): {
     
     const configPath = path.join(workspaceFolderPath, "stepzen.config.json");
     if (!fs.existsSync(configPath)) {
-      throw createError(
+      throw new StepZenError(
         `StepZen configuration file not found at: ${configPath}`, 
-        "Get StepZen Info", 
-        undefined, 
-        "config"
+        "CONFIG_FILE_NOT_FOUND"
       );
     }
     
@@ -38,11 +35,9 @@ function getStepZenInfo(workspaceFolderPath: string): {
     const endpointJson = JSON.parse(configContent) as StepZenConfig;
     
     if (!endpointJson.endpoint) {
-      throw createError(
+      throw new StepZenError(
         "Missing 'endpoint' field in StepZen configuration", 
-        "Get StepZen Info", 
-        undefined, 
-        "config"
+        "CONFIG_VALIDATION_ERROR"
       );
     }
     
@@ -51,13 +46,10 @@ function getStepZenInfo(workspaceFolderPath: string): {
   } catch (err: unknown) {
     // Re-throw with better context if it's not already a StepZenError
     if (typeof err === 'object' && err !== null && 'name' in err && err.name !== 'StepZenError') {
-      throw createError(
+      throw new StepZenError(
         "Failed to retrieve StepZen project information", 
-        "Get StepZen Info", 
-        err, 
-        typeof err === 'object' && err !== null && 'toString' in err && 
-        typeof err.toString === 'function' && err.toString().includes('command failed') 
-          ? "cli" : "config"
+        "CONFIG_ERROR",
+        err
       );
     }
     throw err;
@@ -82,14 +74,12 @@ export function openQueryExplorer(context: vscode.ExtensionContext) {
 
   const workspaceFolders = vscode.workspace.workspaceFolders;
   if (!workspaceFolders) {
-    const error = createError(
+    const error = new StepZenError(
       "No workspace open", 
-      "Open Query Explorer", 
-      undefined, 
-      "user"
+      "WORKSPACE_ERROR"
     );
-    vscode.window.showErrorMessage(formatError(error));
-    services.logger.error(formatError(error, true), error);
+    vscode.window.showErrorMessage("No workspace open");
+    handleError(error);
     return;
   }
   const workspaceFolderPath = workspaceFolders[0].uri.fsPath;
@@ -98,9 +88,7 @@ export function openQueryExplorer(context: vscode.ExtensionContext) {
   try {
     stepzenInfo = getStepZenInfo(workspaceFolderPath);
   } catch (err) {
-    const errorMsg = formatError(err);
-    vscode.window.showErrorMessage(`Failed to get StepZen project info: ${errorMsg}`);
-    services.logger.error(formatError(err, true), err);
+    handleError(err);
     return;
   }
 

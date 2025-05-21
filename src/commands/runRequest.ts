@@ -1,20 +1,10 @@
 // src/commands/runRequest.ts
 import * as vscode from "vscode";
-import * as fs from "fs";
-import * as path from "path";
-import * as os from "os";
-import * as cp from "child_process";
-import * as https from "https";
 import { parse, NamedTypeNode, OperationDefinitionNode } from "graphql";
-import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
-import { formatError, createError } from "../utils/errors";
-import { clearResultsPanel, openResultsPanel } from "../panels/resultsPanel";
-import { summariseDiagnostics, publishDiagnostics } from "../utils/runtimeDiagnostics";
+import { clearResultsPanel } from "../panels/resultsPanel";
 import { runtimeDiag } from "../extension";
-import { getOperationMap, getPersistedDocMap, OperationEntry } from "../utils/stepzenProjectScanner";
-import { UI, TIMEOUTS } from "../utils/constants";
+import { getPersistedDocMap, OperationEntry } from "../utils/stepzenProjectScanner";
 import { services } from "../services";
-import { StepZenConfig, StepZenResponse, StepZenDiagnostic } from "../types";
 // Import executeStepZenRequest from separate file
 import { executeStepZenRequest } from "./executeStepZenRequest";
 import { handleError, ValidationError } from "../errors";
@@ -43,25 +33,25 @@ function extractOperationNames(query: string): string[] {
  * @returns Path to the created temporary file
  * @throws Error if query is invalid
  */
-function createTempGraphQLFile(query: string): string {
-  // Add validation
-  if (!query || typeof query !== 'string') {
-    throw new ValidationError(
-      "Invalid query: expected a non-empty string",
-      "INVALID_QUERY"
-    );
-  }
+// function createTempGraphQLFile(query: string): string {
+//   // Add validation
+//   if (!query || typeof query !== 'string') {
+//     throw new ValidationError(
+//       "Invalid query: expected a non-empty string",
+//       "INVALID_QUERY"
+//     );
+//   }
 
-  const tmpDir = os.tmpdir();
-  const timestamp = new Date().getTime();
-  const tmp = path.join(
-    tmpDir,
-    `stepzen-request-${timestamp}.graphql`
-  );
-  fs.writeFileSync(tmp, query);
-  services.logger.debug(`Created temporary query file: ${tmp}`);
-  return tmp;
-}
+//   const tmpDir = os.tmpdir();
+//   const timestamp = new Date().getTime();
+//   const tmp = path.join(
+//     tmpDir,
+//     `stepzen-request-${timestamp}.graphql`
+//   );
+//   fs.writeFileSync(tmp, query);
+//   services.logger.debug(`Created temporary query file: ${tmp}`);
+//   return tmp;
+// }
 
 const SCALARS = new Set(["String", "ID", "Int", "Float", "Boolean"]);
 
@@ -409,69 +399,72 @@ export function clearResults(): void {
  * 
  * Note: For StepZen CLI operations, prefer using the StepzenCliService instead.
  */
+
+// TODO: cleanup old comments
 // This function is kept for backward compatibility with other parts of the code
 // that might still be using it, but for StepZen CLI operations we now prefer the StepzenCliService
-function execAsync(command: string, options: cp.ExecOptions = {}): Promise<{ stdout: string }> {
-  // Validate inputs
-  if (!command || typeof command !== 'string') {
-    return Promise.reject(new ValidationError(
-      "Invalid command: expected a non-empty string",
-      "INVALID_COMMAND"
-    ));
-  }
+// function execAsync(command: string, options: cp.ExecOptions = {}): Promise<{ stdout: string }> {
+//   // Validate inputs
+//   if (!command || typeof command !== 'string') {
+//     return Promise.reject(new ValidationError(
+//       "Invalid command: expected a non-empty string",
+//       "INVALID_COMMAND"
+//     ));
+//   }
   
-  return new Promise<{ stdout: string }>((resolve, reject) => {
-    cp.exec(command, { ...options, maxBuffer: 10_000_000 }, (err, stdout, stderr) => {
-      if (err) {
-        reject(new ValidationError(
-          `Command failed: ${command}`,
-          "COMMAND_FAILED",
-          err
-        ));
-      } else if (!stdout) {
-        resolve({ stdout: "" });
-      } else {
-        resolve({ stdout });
-      }
-    });
-  });
-}
+//   return new Promise<{ stdout: string }>((resolve, reject) => {
+//     cp.exec(command, { ...options, maxBuffer: 10_000_000 }, (err, stdout, stderr) => {
+//       if (err) {
+//         reject(new ValidationError(
+//           `Command failed: ${command}`,
+//           "COMMAND_FAILED",
+//           err
+//         ));
+//       } else if (!stdout) {
+//         resolve({ stdout: "" });
+//       } else {
+//         resolve({ stdout });
+//       }
+//     });
+//   });
+// }
 
-/**
- * Schedules a temporary file for cleanup after a delay
- * 
- * @param file Path to the temporary file to delete
- */
-/**
- * Safely deletes a temporary file after a delay
- * @param file Path to the temporary file to delete
- * @param delayMs Delay in milliseconds before deletion attempt
- */
-function cleanupLater(file: string, delayMs: number = TIMEOUTS.FILE_CLEANUP_DELAY_MS): void {
-  // Add validation
-  if (!file || typeof file !== "string") {
-    services.logger.warn("Invalid file path provided for cleanup");
-    return;
-  }
+// TODO: cleanup dead code
+// /**
+//  * Schedules a temporary file for cleanup after a delay
+//  * 
+//  * @param file Path to the temporary file to delete
+//  */
+// /**
+//  * Safely deletes a temporary file after a delay
+//  * @param file Path to the temporary file to delete
+//  * @param delayMs Delay in milliseconds before deletion attempt
+//  */
+// function cleanupLater(file: string, delayMs: number = TIMEOUTS.FILE_CLEANUP_DELAY_MS): void {
+//   // Add validation
+//   if (!file || typeof file !== "string") {
+//     services.logger.warn("Invalid file path provided for cleanup");
+//     return;
+//   }
 
-  // Only attempt to clean up files in the temp directory
-  if (!file.startsWith(os.tmpdir())) {
-    services.logger.warn(`Refusing to clean up non-temporary file: ${file}`);
-    return;
-  }
+//   // Only attempt to clean up files in the temp directory
+//   if (!file.startsWith(os.tmpdir())) {
+//     services.logger.warn(`Refusing to clean up non-temporary file: ${file}`);
+//     return;
+//   }
 
-  setTimeout(() => {
-    try {
-      if (fs.existsSync(file)) {
-        fs.unlinkSync(file);
-        services.logger.debug(`Temporary file cleaned up: ${file}`);
-      }
-    } catch (err) {
-      handleError(new ValidationError(
-        `Failed to clean up temporary file: ${file}`,
-        "FILE_CLEANUP_FAILED",
-        err
-      ));
-    }
-  }, delayMs);
-}
+//   setTimeout(() => {
+//     try {
+//       if (fs.existsSync(file)) {
+//         fs.unlinkSync(file);
+//         services.logger.debug(`Temporary file cleaned up: ${file}`);
+//       }
+//     } catch (err) {
+//       handleError(new ValidationError(
+//         `Failed to clean up temporary file: ${file}`,
+//         "FILE_CLEANUP_FAILED",
+//         err
+//       ));
+//     }
+//   }, delayMs);
+// }

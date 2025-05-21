@@ -1,6 +1,5 @@
 import * as vscode from "vscode";
 import { services } from "../services";
-import { UI } from "../utils/constants";
 import { handleError } from "../errors";
 
 /**
@@ -31,7 +30,7 @@ export async function deployStepZen() {
     try {
       // Use the CLI service to perform the deployment
       progress.report({ increment: 50, message: "Uploading schema to StepZen..." });
-      await services.cli.deploy("");
+      await services.cli.deploy();
       
       // Show success message to the user
       progress.report({ increment: 100, message: "Deployment completed!" });

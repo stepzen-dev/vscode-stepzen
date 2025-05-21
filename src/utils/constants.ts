@@ -2,13 +2,6 @@
  * Constants used throughout the StepZen Tools extension
  */
 
-// Extension identifiers and names
-export const EXTENSION = {
-  /** Extension name used for terminal, channel, etc. */
-  NAME: "StepZen Tools",
-  /** Extension command prefix for all registered commands */
-  COMMAND_PREFIX: "stepzen.",
-};
 
 // UI component names
 export const UI = {
@@ -34,14 +27,6 @@ export const FILE_PATTERNS = {
   CONFIG_FILE: "stepzen.config.json",
 };
 
-// Configuration keys
-export const CONFIG = {
-  /** Debug level config key */
-  DEBUG_LEVEL: "stepzen.request.debugLevel",
-};
-
-// Log levels now defined in src/services/logger.ts
-
 // Timeouts and delays
 export const TIMEOUTS = {
   /** Default delay (ms) before cleaning up temporary files */
@@ -56,8 +41,3 @@ export const GRAPHQL = {
   SCALAR_TYPES: ["String", "Int", "Float", "Boolean", "ID"],
 };
 
-// API versioning
-export const API = {
-  /** API version for extension API */
-  VERSION: "0.1.0",
-};
