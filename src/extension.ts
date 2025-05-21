@@ -3,7 +3,7 @@ import * as path from "path";
 import * as fs from "fs";
 import { formatError, createError } from "./utils/errors";
 import { UI, FILE_PATTERNS } from "./utils/constants";
-import { stepzenOutput, logger } from "./utils/logger";
+import { stepzenOutput, logger } from "./services/logger";
 import { safeRegisterCommand } from "./utils/safeRegisterCommand";
 import { scanStepZenProject } from "./utils/stepzenProjectScanner";
 import { resolveStepZenProjectRoot } from "./utils/stepzenProject";
@@ -224,6 +224,19 @@ export async function activate(context: vscode.ExtensionContext) {
   );
   context.subscriptions.push(runtimeDiag);
 
+  // Update logger configuration from settings
+  logger.updateConfigFromSettings();
+  
+  // Listen for configuration changes to update logger settings
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration(e => {
+      if (e.affectsConfiguration('stepzen.logLevel') || 
+          e.affectsConfiguration('stepzen.logToFile')) {
+        logger.updateConfigFromSettings();
+      }
+    })
+  );
+  
   logger.info("StepZen Tools activated");
 }
 
@@ -234,4 +247,5 @@ export async function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
   watcher?.dispose();
   stepzenTerminal?.dispose();
+  logger.dispose();
 }

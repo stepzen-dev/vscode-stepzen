@@ -40,14 +40,7 @@ export const CONFIG = {
   DEBUG_LEVEL: "stepzen.request.debugLevel",
 };
 
-// Log levels
-export enum LogLevel {
-  ERROR = "ERROR",
-  WARN = "WARN",
-  INFO = "INFO",
-  DEBUG = "DEBUG",
-  TRACE = "TRACE",
-}
+// Log levels now defined in src/services/logger.ts
 
 // Timeouts and delays
 export const TIMEOUTS = {

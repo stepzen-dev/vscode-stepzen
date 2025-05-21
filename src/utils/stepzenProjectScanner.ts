@@ -1,7 +1,7 @@
 import { readFileSync, existsSync } from "fs";
 import * as path from "path";
-import { logger } from './logger';
-import { LogLevel, GRAPHQL } from './constants';
+import { logger, stepzenOutput } from '../services/logger';
+import { GRAPHQL } from './constants';
 import {
   parse,
   visit,
@@ -22,7 +22,6 @@ import {
 } from "graphql";
 import * as vscode from 'vscode';
 import { Uri } from 'vscode';
-import { stepzenOutput } from "./logger";
 import { createError, formatError } from "./errors";
 
 /** Location of a symbol inside a file (0‑based). */
