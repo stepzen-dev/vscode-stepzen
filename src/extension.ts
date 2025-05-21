@@ -3,16 +3,18 @@ import * as path from "path";
 import * as fs from "fs";
 import { formatError, createError } from "./utils/errors";
 import { UI, FILE_PATTERNS } from "./utils/constants";
-import { stepzenOutput, logger } from "./services/logger";
+import { logger, stepzenOutput } from "./services/logger";
 import { safeRegisterCommand } from "./utils/safeRegisterCommand";
 import { scanStepZenProject } from "./utils/stepzenProjectScanner";
 import { resolveStepZenProjectRoot } from "./utils/stepzenProject";
 import { StepZenCodeLensProvider } from "./utils/codelensProvider";
+import { StepzenCliService } from "./services/cli";
 
 export { stepzenOutput };
 export let stepzenTerminal: vscode.Terminal | undefined;
 export let EXTENSION_URI: vscode.Uri;
 export let runtimeDiag: vscode.DiagnosticCollection;
+export let cliService: StepzenCliService;
 
 /**
  * Gets or creates a terminal for StepZen operations
@@ -67,16 +69,16 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
     vscode.window.showWarningMessage(
       `StepZen Tools: could not locate a StepZen project under ${folder.name}`,
     );
-    logger.error(`Could not locate a StepZen project under ${folder.name}`, err);
+    logger.error(`Could not locate a StepZen project under ${folder.name}: ${formatError(err)}`, err);
     return;
   }
 
   const indexPath = path.join(projectRoot, FILE_PATTERNS.MAIN_SCHEMA_FILE);
 
   if (!fs.existsSync(indexPath)) {
-    vscode.window.showWarningMessage(
-      `StepZen Tools: ${folder.name} does not appear to contain an ${FILE_PATTERNS.MAIN_SCHEMA_FILE}. Commands will be disabled until a valid project is opened.`,
-    );
+    const message = `StepZen Tools: ${folder.name} does not appear to contain an ${FILE_PATTERNS.MAIN_SCHEMA_FILE}. Commands will be disabled until a valid project is opened.`;
+    vscode.window.showWarningMessage(message);
+    logger.warn(message);
     return;
   }
 
@@ -91,7 +93,7 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
       err,
       "filesystem"
     );
-    logger.error(formatError(error), error);
+    logger.error(`Extension initialization error: ${formatError(error)}`, error);
   }
 
   // watch only inside the actual project root
@@ -117,7 +119,7 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
         err,
         "filesystem"
       );
-      logger.error(formatError(error), error);
+      logger.error(`Project watcher error: ${formatError(error)}`, error);
     }
   };
 
@@ -134,6 +136,10 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
 export async function activate(context: vscode.ExtensionContext) {
   // Store extension URI for global access
   EXTENSION_URI = context.extensionUri;
+  
+  // Initialize the CLI service
+  cliService = new StepzenCliService();
+  logger.info("StepZen CLI service initialized");
 
   // command registration --------------------------------------------------
   context.subscriptions.push(

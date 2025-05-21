@@ -11,13 +11,15 @@ import { formatError, createError } from "../utils/errors";
 import { clearResultsPanel, openResultsPanel } from "../panels/resultsPanel";
 import { stepzenOutput, logger } from "../services/logger";
 import { summariseDiagnostics, publishDiagnostics } from "../utils/runtimeDiagnostics";
-import { runtimeDiag } from "../extension";
+import { runtimeDiag, cliService } from "../extension";
 import { getOperationMap, getPersistedDocMap, OperationEntry } from "../utils/stepzenProjectScanner";
 import { UI, TIMEOUTS } from "../utils/constants";
 import { StepZenConfig, StepZenResponse, StepZenDiagnostic } from "../types";
+// Import executeStepZenRequest from separate file
+import { executeStepZenRequest } from "./executeStepZenRequest";
 
 /* -------------------------------------------------------------
- * Helpers that existed previously (kept verbatim)
+ * Helpers
  * ------------------------------------------------------------*/
 /**
  * Extracts operation names from a GraphQL query string
@@ -52,11 +54,13 @@ function createTempGraphQLFile(query: string): string {
   }
 
   const tmpDir = os.tmpdir();
+  const timestamp = new Date().getTime();
   const tmp = path.join(
     tmpDir,
-    `stepzen-request-${Math.random().toString(36).slice(2)}.graphql`
+    `stepzen-request-${timestamp}.graphql`
   );
   fs.writeFileSync(tmp, query);
+  logger.debug(`Created temporary query file: ${tmp}`);
   return tmp;
 }
 
@@ -152,313 +156,7 @@ async function collectVariableArgs(query: string, chosenOp?: string): Promise<st
 /* -------------------------------------------------------------
  * Common execution function with support for persisted documents
  * ------------------------------------------------------------*/
-/**
- * Executes a StepZen GraphQL request either using a file-based approach or persisted document
- * Handles displaying results to the user and processing diagnostics
- * 
- * @param options Request options object
- * @param options.queryText Optional GraphQL query text for file-based requests
- * @param options.documentId Optional document ID for persisted document requests
- * @param options.operationName Optional name of the operation to execute
- * @param options.varArgs Optional variable arguments (--var, --var-file)
- * @returns Promise that resolves when execution completes
- */
-async function executeStepZenRequest(options: {
-  queryText?: string;
-  documentId?: string;
-  operationName?: string;
-  varArgs?: string[];
-}): Promise<void> {
-  // Validate options object
-  if (!options || typeof options !== 'object') {
-    vscode.window.showErrorMessage("Invalid request options provided");
-    return;
-  }
-
-  const { queryText, documentId, operationName, varArgs = [] } = options;
-
-  // Validate at least one of queryText or documentId is provided and valid
-  if (documentId === undefined && (!queryText || typeof queryText !== 'string')) {
-    vscode.window.showErrorMessage("Invalid request: either documentId or queryText must be provided");
-    return;
-  }
-
-  // Validate operationName if provided
-  if (operationName !== undefined && typeof operationName !== 'string') {
-    vscode.window.showErrorMessage("Invalid operation name provided");
-    return;
-  }
-
-  // Validate varArgs is an array
-  if (!Array.isArray(varArgs)) {
-    vscode.window.showErrorMessage("Invalid variable arguments: expected an array");
-    return;
-  }
-
-  // Resolve project root
-  let projectRoot: string;
-  try {
-    projectRoot = await resolveStepZenProjectRoot();
-  } catch (err) {
-    const errorMsg = formatError(err);
-    vscode.window.showErrorMessage(errorMsg);
-    logger.error(`Failed to resolve project root`, err);
-    return;
-  }
-
-  const cfg = vscode.workspace.getConfiguration("stepzen");
-  const debugLevel = cfg.get<number>("request.debugLevel", 1);
-
-  // For persisted documents, we need to make an HTTP request directly
-  if (documentId) {
-    try {
-      // Get StepZen config to build the endpoint URL
-      const configPath = path.join(projectRoot, "stepzen.config.json");
-      
-      // Verify config file exists
-      if (!fs.existsSync(configPath)) {
-        const error = createError(
-          `StepZen configuration file not found at: ${configPath}`,
-          "Execute StepZen Request",
-          undefined,
-          "config"
-        );
-        vscode.window.showErrorMessage(formatError(error));
-        logger.error(formatError(error), error);
-        return;
-      }
-      
-      let endpoint: string;
-      let apiKey: string;
-
-      try {
-        const configContent = fs.readFileSync(configPath, "utf8");
-        
-        if (!configContent) {
-          vscode.window.showErrorMessage("StepZen configuration file is empty");
-          return;
-        }
-        
-        const config = JSON.parse(configContent);
-        
-        if (!config || !config.endpoint) {
-          vscode.window.showErrorMessage("Invalid StepZen configuration: missing endpoint");
-          return;
-        }
-        
-        endpoint = config.endpoint;
-        
-        // Get API key using the CLI
-        const apiKeyOutput = cp.execSync("stepzen whoami --apikey");
-        if (!apiKeyOutput) {
-          vscode.window.showErrorMessage("Failed to retrieve StepZen API key");
-          return;
-        }
-        
-        apiKey = apiKeyOutput.toString().trim();
-        
-        if (!apiKey) {
-          vscode.window.showErrorMessage("Empty API key returned from StepZen CLI");
-          return;
-        }
-      } catch (err) {
-        const error = createError(
-          "Failed to read StepZen configuration file",
-          "Execute StepZen Request",
-          err,
-          "filesystem"
-        );
-        vscode.window.showErrorMessage(formatError(error));
-        logger.error(formatError(error), error);
-        return;
-      }
-
-      // Get account and domain using the CLI
-      let account, domain;
-      try {
-        const accountOutput = cp.execSync("stepzen whoami --account");
-        const domainOutput = cp.execSync("stepzen whoami --domain");
-        
-        if (!accountOutput || !domainOutput) {
-          vscode.window.showErrorMessage("Failed to retrieve StepZen account or domain information");
-          return;
-        }
-        
-        account = accountOutput.toString().trim();
-        domain = domainOutput.toString().trim();
-        
-        if (!account || !domain) {
-          vscode.window.showErrorMessage("Empty account or domain returned from StepZen CLI");
-          return;
-        }
-      } catch (err) {
-        const error = createError(
-          "Failed to retrieve StepZen account information",
-          "Execute StepZen Request",
-          err,
-          "cli"
-        );
-        vscode.window.showErrorMessage(formatError(error));
-        logger.error(formatError(error), error);
-        return;
-      }
-
-      // Construct the GraphQL endpoint URL
-      const graphqlUrl = `https://${account}.${domain}/${endpoint}/graphql`;
-
-      // Prepare variables from varArgs
-      let variables: Record<string, string> = {};
-      for (let i = 0; i < varArgs.length; i += 2) {
-        if (varArgs[i] === "--var" && i + 1 < varArgs.length) {
-          const [name, value] = varArgs[i + 1].split("=");
-          variables[name] = value;
-        } else if (varArgs[i] === "--var-file" && i + 1 < varArgs.length) {
-          try {
-            const fileContent = fs.readFileSync(varArgs[i + 1], "utf8");
-            variables = JSON.parse(fileContent);
-          } catch (err) {
-            const error = createError(
-              "Failed to read variables file",
-              "Execute StepZen Request",
-              err,
-              "filesystem"
-            );
-            vscode.window.showErrorMessage(formatError(error));
-            logger.error(formatError(error), error);
-            return;
-          }
-        }
-      }
-
-      // Prepare the request body
-      const requestBody = {
-        documentId,
-        operationName,
-        variables
-      };
-
-      // Show a progress notification
-      await vscode.window.withProgress(
-        {
-          location: vscode.ProgressLocation.Notification,
-          title: "Executing StepZen request...",
-          cancellable: false
-        },
-        async () => {
-          // Use Node.js https module to make the request
-          const result = await new Promise<StepZenResponse>((resolve, reject) => {
-            const req = https.request(
-              graphqlUrl,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Apikey ${apiKey}`,
-                  'stepzen-debug-level': debugLevel.toString()
-                },
-              },
-              (res) => {
-                let data = "";
-                res.on("data", (chunk) => (data += chunk));
-
-                res.on('end', () => {
-                  try {
-                    resolve(JSON.parse(data) as StepZenResponse);
-                  } catch (err) {
-                    reject(createError(
-                      "Failed to parse StepZen response",
-                      "Execute StepZen Request",
-                      err,
-                      "parse"
-                    ));
-                  }
-                });
-              }
-            );
-
-            req.on('error', reject);
-            req.write(JSON.stringify(requestBody));
-            req.end();
-          });
-
-          // Process results as before
-          const rawDiags = (result.extensions?.stepzen?.diagnostics ?? []) as StepZenDiagnostic[];
-          logger.info("Processing diagnostics for persisted document request...");
-          const summaries = summariseDiagnostics(rawDiags);
-          publishDiagnostics(summaries, runtimeDiag);
-
-          // Show results
-          await openResultsPanel(result);
-        }
-      );
-    } catch (err: unknown) {
-      const errorMsg = formatError(err);
-      vscode.window.showErrorMessage(`StepZen request failed: ${errorMsg}`);
-      logger.error("StepZen request failed", err); // Include details in output channel
-    }
-    return;
-  }
-
-  // For regular file-based requests, use the CLI as before
-  if (!queryText) {
-    vscode.window.showErrorMessage("No query provided for file-based request.");
-    return;
-  }
-
-  let tmpFile: string | undefined;
-  try {
-    tmpFile = createTempGraphQLFile(queryText);
-    
-    // Build CLI command
-    const parts = [
-      "stepzen request",
-      `--file "${tmpFile}"`,
-      operationName ? `--operation-name ${operationName}` : "",
-      debugLevel > 0 ? `-H "stepzen-debug-level: ${debugLevel}"` : "",
-      ...varArgs,
-    ].filter(Boolean);
-    
-    const cmd = parts.join(" ");
-
-    // Terminal output mode
-    if (debugLevel === 0) {
-      const term = vscode.window.createTerminal(UI.TERMINAL_NAME);
-      term.show();
-      term.sendText(`cd "${projectRoot}" && ${cmd}`);
-      cleanupLater(tmpFile);
-      return;
-    }
-
-    // JSON result mode with progress notification
-    await vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Notification,
-        title: "Executing StepZen request...",
-        cancellable: false
-      },
-      async () => {
-        const { stdout } = await execAsync(cmd, { cwd: projectRoot });
-        const json = JSON.parse(stdout) as StepZenResponse;
-
-        // Process results
-        const rawDiags = (json.extensions?.stepzen?.diagnostics ?? []) as StepZenDiagnostic[];
-        logger.info("Processing diagnostics for file-based request...");
-        const summaries = summariseDiagnostics(rawDiags);
-        publishDiagnostics(summaries, runtimeDiag);
-
-        await openResultsPanel(json);
-      }
-    );
-  } catch (err: unknown) {
-    const errorMsg = formatError(err);
-    vscode.window.showErrorMessage(`StepZen request failed: ${errorMsg}`);
-    logger.error("StepZen request failed", err); // Include details in output channel
-  } finally {
-    if (tmpFile) {
-      cleanupLater(tmpFile);
-    }
-  }
-}
+// Note: executeStepZenRequest has been moved to executeStepZenRequest.ts and exported
 
 /* -------------------------------------------------------------
  * Command implementations
@@ -721,7 +419,11 @@ export function clearResults(): void {
  * @param options Options for the child process
  * @returns Promise resolving to the command's stdout
  * @throws StepZenError if the command fails
+ * 
+ * Note: For StepZen CLI operations, prefer using the StepzenCliService instead.
  */
+// This function is kept for backward compatibility with other parts of the code
+// that might still be using it, but for StepZen CLI operations we now prefer the StepzenCliService
 function execAsync(command: string, options: cp.ExecOptions = {}): Promise<{ stdout: string }> {
   // Validate inputs
   if (!command || typeof command !== 'string') {
@@ -765,6 +467,12 @@ function cleanupLater(file: string, delayMs: number = TIMEOUTS.FILE_CLEANUP_DELA
   // Add validation
   if (!file || typeof file !== 'string') {
     logger.warn("Invalid file path provided for cleanup");
+    return;
+  }
+
+  // Only attempt to clean up files in the temp directory
+  if (!file.startsWith(os.tmpdir())) {
+    logger.warn(`Refusing to clean up non-temporary file: ${file}`);
     return;
   }
 

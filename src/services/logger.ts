@@ -144,6 +144,14 @@ export class Logger {
   }
 
   /**
+   * Show the output channel in the VS Code UI
+   * Brings the output channel into view
+   */
+  public showOutput(): void {
+    this.outputChannel.show();
+  }
+
+  /**
    * Internal log method that formats messages with timestamp and level
    * and respects the configured level
    * @param level The log level
