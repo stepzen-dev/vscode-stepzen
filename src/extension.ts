@@ -4,7 +4,7 @@ import * as fs from "fs";
 import { StepZenError, handleError } from "./errors";
 import { UI, FILE_PATTERNS } from "./utils/constants";
 import { safeRegisterCommand } from "./utils/safeRegisterCommand";
-import { scanStepZenProject } from "./utils/stepzenProjectScanner";
+import { scanStepZenProject, computeHash } from "./utils/stepzenProjectScanner";
 import { resolveStepZenProjectRoot } from "./utils/stepzenProject";
 import { StepZenCodeLensProvider } from "./utils/codelensProvider";
 import { services } from "./services";
@@ -48,6 +48,8 @@ function getActiveWorkspaceFolder(
 
 let activeFolder: vscode.WorkspaceFolder | undefined;
 let watcher: vscode.FileSystemWatcher | undefined;
+let lastSchemaHash: string | undefined;
+let debounceTimer: NodeJS.Timeout | undefined;
 
 /**
  * Initializes the extension for a specific workspace folder
@@ -83,6 +85,23 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
   try {
     // Ensure schema is loaded immediately instead of lazily
     services.logger.info(`Initial scan of project at ${indexPath}`);
+    
+    // Compute initial hash of schema files
+    const schemaFiles = await vscode.workspace.findFiles(
+      new vscode.RelativePattern(projectRoot, FILE_PATTERNS.SCHEMA_FILES),
+      null,
+      100
+    );
+    
+    const contents = await Promise.all(
+      schemaFiles.map(async file => {
+        return await fs.promises.readFile(file.fsPath, 'utf8');
+      })
+    );
+    
+    const fullSDL = contents.join('\n');
+    lastSchemaHash = computeHash(fullSDL);
+    
     await scanStepZenProject(indexPath);
   } catch (err) {
     const error = new StepZenError(
@@ -106,17 +125,52 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
     ) {
       return;
     }
-    try {
-      services.logger.info(`Rescanning project after change in ${uri.fsPath}`);
-      await scanStepZenProject(indexPath);
-    } catch (err) {
-      const error = new StepZenError(
-        `Error rescanning project after change in ${uri.fsPath}`,
-        "PROJECT_WATCHER_ERROR",
-        err
-      );
-      handleError(error);
+
+    // Clear any existing debounce timer
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
     }
+
+    // Set a new debounce timer (250ms)
+    debounceTimer = setTimeout(async () => {
+      try {
+        // Compute hash of all schema files to check for actual changes
+        const schemaFiles = vscode.workspace.findFiles(
+          new vscode.RelativePattern(projectRoot, FILE_PATTERNS.SCHEMA_FILES),
+          null,
+          100
+        );
+        
+        const files = await schemaFiles;
+        const contents = await Promise.all(
+          files.map(async file => {
+            return await fs.promises.readFile(file.fsPath, 'utf8');
+          })
+        );
+        
+        const fullSDL = contents.join('\n');
+        const currentHash = computeHash(fullSDL);
+        
+        // Skip parsing if schema hasn't changed
+        if (lastSchemaHash && lastSchemaHash === currentHash) {
+          services.logger.debug(`Rescan skipped (no changes) after event in ${uri.fsPath}`);
+          return;
+        }
+        
+        services.logger.info(`Rescanning project after change in ${uri.fsPath}`);
+        await scanStepZenProject(indexPath);
+        
+        // Update hash after successful scan
+        lastSchemaHash = currentHash;
+      } catch (err) {
+        const error = new StepZenError(
+          `Error rescanning project after change in ${uri.fsPath}`,
+          "PROJECT_WATCHER_ERROR",
+          err
+        );
+        handleError(error);
+      }
+    }, 250);
   };
 
   watcher.onDidChange(rescan);
