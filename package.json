@@ -9,7 +9,7 @@
   "version": "0.1.2",
   "repository": {
     "type": "git",
-    "url": "https://github.ibm.com/carlose-ibm/stepzen-tools"
+    "url": "https://github.com/stepzen-dev/vscode-stepzen"
   },
   "engines": {
     "vscode": "^1.100.0"
@@ -65,6 +65,22 @@
         "category": "StepZen"
       }
     ],
+    "configuration": {
+      "title": "StepZen",
+      "properties": {
+        "stepzen.logLevel": {
+          "type": "string",
+          "enum": ["error", "warn", "info", "debug"],
+          "default": "info",
+          "description": "Controls the verbosity of StepZen extension logging"
+        },
+        "stepzen.logToFile": {
+          "type": "boolean",
+          "default": false,
+          "description": "When enabled, logs will be written to disk (requires trusted workspace)"
+        }
+      }
+    },
     "menus": {
       "explorer/context": [
         {

@@ -10,7 +10,7 @@ import {
   DirectiveInfo,
   TypeRelationship,
 } from "../utils/stepzenProjectScanner";
-import { stepzenOutput } from "../extension";
+import { logger } from "../services/logger";
 import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
 import * as path from "path";
 import * as fs from "fs";
@@ -39,7 +39,7 @@ export async function openSchemaVisualizerPanel(
   extensionUri: Uri,
   focusedType?: string,
 ) {
-  stepzenOutput.appendLine(
+  logger.info(
     `Opening Schema Visualizer${focusedType ? ` focused on type: ${focusedType}` : ""}`,
   );
 
@@ -76,7 +76,7 @@ export async function openSchemaVisualizerPanel(
           return;
         case "debug-log":
           // Log messages from the webview to the StepZen output channel
-          stepzenOutput.appendLine(`[Webview] ${message.message}`);
+          logger.debug(`[Webview] ${message.message}`);
           return;
       }
     });
@@ -156,14 +156,14 @@ export async function openSchemaVisualizerPanel(
     const schemaModel = buildSchemaModel();
 
     // Debug logging
-    stepzenOutput.appendLine(
+    logger.debug(
       `Schema model built: ${Object.keys(schemaModel.types).length} types, ${
         Object.keys(schemaModel.fields).length
       } fields with entries, ${schemaModel.relationships.length} relationships`,
     );
 
     if (Object.keys(schemaModel.types).length === 0) {
-      stepzenOutput.appendLine("Warning: No types found in schema model");
+      logger.warn("No types found in schema model");
       panel.webview.html = getNoProjectHtml();
       return;
     }
@@ -177,7 +177,7 @@ export async function openSchemaVisualizerPanel(
     );
     
   } catch (error) {
-    stepzenOutput.appendLine(`Error loading schema visualizer: ${error}`);
+    logger.error(`Error loading schema visualizer`, error);
     panel.webview.html = getNoProjectHtml();
   }
 }
@@ -203,11 +203,11 @@ async function ensureSchemaDataLoaded(): Promise<boolean> {
 
   // If we already have schema data, return true
   if (Object.keys(fieldIndex).length > 0) {
-    stepzenOutput.appendLine("Using existing schema data");
+    logger.debug("Using existing schema data");
     return true;
   }
 
-  stepzenOutput.appendLine("Schema data not found, attempting to load project...");
+  logger.info("Schema data not found, attempting to load project...");
 
   try {
     // Find StepZen project root using the active editor or workspace folders
@@ -225,7 +225,7 @@ async function ensureSchemaDataLoaded(): Promise<boolean> {
 
     // If we have no hint, we can't proceed
     if (!hintUri) {
-      stepzenOutput.appendLine("No workspace folder or active editor available");
+      logger.warn("No workspace folder or active editor available");
       return false;
     }
 
@@ -235,17 +235,17 @@ async function ensureSchemaDataLoaded(): Promise<boolean> {
 
     // Verify that the index file exists
     if (!fs.existsSync(indexPath)) {
-      stepzenOutput.appendLine(`Index file not found at ${indexPath}`);
+      logger.warn(`Index file not found at ${indexPath}`);
       return false;
     }
 
     // Scan the project
-    stepzenOutput.appendLine(`Scanning StepZen project at ${indexPath}`);
+    logger.info(`Scanning StepZen project at ${indexPath}`);
     await scanStepZenProject(indexPath);
-    stepzenOutput.appendLine("Schema scan completed successfully");
+    logger.debug("Schema scan completed successfully");
     return true;
   } catch (error) {
-    stepzenOutput.appendLine(`Failed to load schema data: ${error}`);
+    logger.error(`Failed to load schema data`, error);
     return false;
   }
 }
@@ -438,14 +438,22 @@ function getSchemaVisualizerHtml(
       <script>
         // Get VSCode theme info from body class
         const vscodeTheme = document.body.classList.contains('vscode-dark') ? 'dark' : 'light';
-        console.log('VSCode theme detected:', vscodeTheme);
+        // Use debug message for theme detection
+        vscode.postMessage({
+          command: 'debug-log',
+          message: 'VSCode theme detected: ' + vscodeTheme
+        });
 
         // Watch for theme changes (if user switches VS Code theme)
         const observer = new MutationObserver(mutations => {
           mutations.forEach(mutation => {
             if (mutation.attributeName === 'class') {
               const newTheme = document.body.classList.contains('vscode-dark') ? 'dark' : 'light';
-              console.log('VSCode theme changed to:', newTheme);
+              // Use debug message for theme change
+              vscode.postMessage({
+                command: 'debug-log',
+                message: 'VSCode theme changed to: ' + newTheme
+              });
               // Let the page reload to apply the new theme
               location.reload();
             }
@@ -470,15 +478,23 @@ function getSchemaVisualizerHtml(
 
         // Display JointJS version in logs if available
         if (typeof joint !== 'undefined' && joint.version) {
-          console.log('JointJS version:', joint.version);
+          vscode.postMessage({
+            command: 'debug-log',
+            message: 'JointJS version: ' + joint.version
+          });
         } else {
-          console.log('JointJS not detected');
+          vscode.postMessage({
+            command: 'debug-log',
+            message: 'JointJS not detected'
+          });
         }
 
         // Helper to log debug messages
         function debugLog(message) {
-          // Log to console for developer tools access
-          console.log(message);
+          // Log to console for developer tools access only in development
+          if (typeof message === 'object') {
+            message = JSON.stringify(message);
+          }
 
           // Send message back to extension
           vscode.postMessage({
