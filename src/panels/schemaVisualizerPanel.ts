@@ -10,7 +10,7 @@ import {
   DirectiveInfo,
   TypeRelationship,
 } from "../utils/stepzenProjectScanner";
-import { logger } from "../services/logger";
+import { services } from "../services";
 import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
 import * as path from "path";
 import * as fs from "fs";
@@ -39,7 +39,7 @@ export async function openSchemaVisualizerPanel(
   extensionUri: Uri,
   focusedType?: string,
 ) {
-  logger.info(
+  services.logger.info(
     `Opening Schema Visualizer${focusedType ? ` focused on type: ${focusedType}` : ""}`,
   );
 
@@ -76,7 +76,7 @@ export async function openSchemaVisualizerPanel(
           return;
         case "debug-log":
           // Log messages from the webview to the StepZen output channel
-          logger.debug(`[Webview] ${message.message}`);
+          services.logger.debug(`[Webview] ${message.message}`);
           return;
       }
     });
@@ -156,14 +156,14 @@ export async function openSchemaVisualizerPanel(
     const schemaModel = buildSchemaModel();
 
     // Debug logging
-    logger.debug(
+    services.logger.debug(
       `Schema model built: ${Object.keys(schemaModel.types).length} types, ${
         Object.keys(schemaModel.fields).length
       } fields with entries, ${schemaModel.relationships.length} relationships`,
     );
 
     if (Object.keys(schemaModel.types).length === 0) {
-      logger.warn("No types found in schema model");
+      services.logger.warn("No types found in schema model");
       panel.webview.html = getNoProjectHtml();
       return;
     }
@@ -177,7 +177,7 @@ export async function openSchemaVisualizerPanel(
     );
     
   } catch (error) {
-    logger.error(`Error loading schema visualizer`, error);
+    services.logger.error(`Error loading schema visualizer`, error);
     panel.webview.html = getNoProjectHtml();
   }
 }
@@ -203,11 +203,11 @@ async function ensureSchemaDataLoaded(): Promise<boolean> {
 
   // If we already have schema data, return true
   if (Object.keys(fieldIndex).length > 0) {
-    logger.debug("Using existing schema data");
+    services.logger.debug("Using existing schema data");
     return true;
   }
 
-  logger.info("Schema data not found, attempting to load project...");
+  services.logger.info("Schema data not found, attempting to load project...");
 
   try {
     // Find StepZen project root using the active editor or workspace folders
@@ -225,7 +225,7 @@ async function ensureSchemaDataLoaded(): Promise<boolean> {
 
     // If we have no hint, we can't proceed
     if (!hintUri) {
-      logger.warn("No workspace folder or active editor available");
+      services.logger.warn("No workspace folder or active editor available");
       return false;
     }
 
@@ -235,17 +235,17 @@ async function ensureSchemaDataLoaded(): Promise<boolean> {
 
     // Verify that the index file exists
     if (!fs.existsSync(indexPath)) {
-      logger.warn(`Index file not found at ${indexPath}`);
+      services.logger.warn(`Index file not found at ${indexPath}`);
       return false;
     }
 
     // Scan the project
-    logger.info(`Scanning StepZen project at ${indexPath}`);
+    services.logger.info(`Scanning StepZen project at ${indexPath}`);
     await scanStepZenProject(indexPath);
-    logger.debug("Schema scan completed successfully");
+    services.logger.debug("Schema scan completed successfully");
     return true;
   } catch (error) {
-    logger.error(`Failed to load schema data`, error);
+    services.logger.error(`Failed to load schema data`, error);
     return false;
   }
 }

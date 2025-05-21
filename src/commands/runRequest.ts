@@ -9,11 +9,11 @@ import { parse, NamedTypeNode, OperationDefinitionNode } from "graphql";
 import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
 import { formatError, createError } from "../utils/errors";
 import { clearResultsPanel, openResultsPanel } from "../panels/resultsPanel";
-import { logger } from "../services/logger";
 import { summariseDiagnostics, publishDiagnostics } from "../utils/runtimeDiagnostics";
-import { runtimeDiag, cliService } from "../extension";
+import { runtimeDiag } from "../extension";
 import { getOperationMap, getPersistedDocMap, OperationEntry } from "../utils/stepzenProjectScanner";
 import { UI, TIMEOUTS } from "../utils/constants";
+import { services } from "../services";
 import { StepZenConfig, StepZenResponse, StepZenDiagnostic } from "../types";
 // Import executeStepZenRequest from separate file
 import { executeStepZenRequest } from "./executeStepZenRequest";
@@ -28,8 +28,8 @@ import { handleError, ValidationError } from "../errors";
  * @returns Array of operation names found in the query
  */
 function extractOperationNames(query: string): string[] {
-  if (!query || typeof query !== 'string') {
-    logger.warn("Invalid query provided to extractOperationNames");
+  if (!query || typeof query !== "string") {
+    services.logger.warn("Invalid query provided to extractOperationNames");
     return [];
   }
   
@@ -59,7 +59,7 @@ function createTempGraphQLFile(query: string): string {
     `stepzen-request-${timestamp}.graphql`
   );
   fs.writeFileSync(tmp, query);
-  logger.debug(`Created temporary query file: ${tmp}`);
+  services.logger.debug(`Created temporary query file: ${tmp}`);
   return tmp;
 }
 
@@ -379,7 +379,7 @@ export async function runPersisted(documentId: string, operationName: string) {
 export function clearResults(): void {
   clearResultsPanel();
   runtimeDiag.clear(); // Also clear any diagnostics
-  logger.info("Results cleared");
+  services.logger.info("Results cleared");
 }
 
 /* -------------------------------------------------------------
@@ -449,14 +449,14 @@ function execAsync(command: string, options: cp.ExecOptions = {}): Promise<{ std
  */
 function cleanupLater(file: string, delayMs: number = TIMEOUTS.FILE_CLEANUP_DELAY_MS): void {
   // Add validation
-  if (!file || typeof file !== 'string') {
-    logger.warn("Invalid file path provided for cleanup");
+  if (!file || typeof file !== "string") {
+    services.logger.warn("Invalid file path provided for cleanup");
     return;
   }
 
   // Only attempt to clean up files in the temp directory
   if (!file.startsWith(os.tmpdir())) {
-    logger.warn(`Refusing to clean up non-temporary file: ${file}`);
+    services.logger.warn(`Refusing to clean up non-temporary file: ${file}`);
     return;
   }
 
@@ -464,7 +464,7 @@ function cleanupLater(file: string, delayMs: number = TIMEOUTS.FILE_CLEANUP_DELA
     try {
       if (fs.existsSync(file)) {
         fs.unlinkSync(file);
-        logger.debug(`Temporary file cleaned up: ${file}`);
+        services.logger.debug(`Temporary file cleaned up: ${file}`);
       }
     } catch (err) {
       handleError(new ValidationError(

@@ -6,7 +6,7 @@ import { getOrCreateStepZenTerminal } from "../extension";
 import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
 import { formatError, createError } from "../utils/errors";
 import { FILE_PATTERNS } from "../utils/constants";
-import { logger } from "../services/logger";
+import { services } from "../services";
 
 /**
  * Checks if the StepZen CLI is installed and properly configured
@@ -15,11 +15,11 @@ import { logger } from "../services/logger";
  */
 async function checkStepZenCLI(): Promise<boolean> {
   try {
-    logger.info("Checking StepZen CLI installation...");
+    services.logger.info("Checking StepZen CLI installation...");
 
     try {
       const version = execSync("stepzen --version").toString().trim();
-      logger.info(`Found StepZen CLI version: ${version}`);
+      services.logger.info(`Found StepZen CLI version: ${version}`);
     } catch (err) {
       const installOption = await vscode.window.showErrorMessage(
         "StepZen CLI is not installed. You need to install it to create a StepZen project.",
@@ -39,7 +39,7 @@ async function checkStepZenCLI(): Promise<boolean> {
     // Verify that user is logged in
     try {
       execSync("stepzen whoami");
-      logger.info("StepZen CLI is properly configured.");
+      services.logger.info("StepZen CLI is properly configured.");
     } catch (err) {
       const loginOption = await vscode.window.showErrorMessage(
         "You need to log in to StepZen before creating a project.",
@@ -59,7 +59,7 @@ async function checkStepZenCLI(): Promise<boolean> {
     return true;
   } catch (err) {
     vscode.window.showErrorMessage(`StepZen CLI error: ${formatError(err)}`);
-    logger.error(`StepZen CLI error: ${formatError(err, true)}`, err);
+    services.logger.error(`StepZen CLI error: ${formatError(err, true)}`, err);
     return false;
   }
 }
@@ -282,7 +282,7 @@ query HelloWorld {
 `;
     fs.writeFileSync(sampleOperationPath, sampleOperationContent);
 
-    logger.info(
+    services.logger.info(
       `Created StepZen project at: ${projectDir} with endpoint ${endpoint}`,
     );
   } catch (err) {
@@ -425,7 +425,7 @@ export async function initializeProject() {
 
     const endpoint = await promptForEndpoint();
     if (!endpoint) {
-      logger.info("Project initialization cancelled.");
+      services.logger.info("Project initialization cancelled.");
       return;
     }
 
@@ -468,7 +468,7 @@ export async function initializeProject() {
     vscode.window.showErrorMessage(
       `Failed to initialize StepZen project: ${error}`,
     );
-    logger.error(
+    services.logger.error(
       `Project initialization failed: ${formatError(err, true)}`,
       err
     );

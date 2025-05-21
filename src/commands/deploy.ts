@@ -1,6 +1,5 @@
 import * as vscode from "vscode";
-import { cliService } from "../extension";
-import { logger } from "../services/logger";
+import { services } from "../services";
 import { UI } from "../utils/constants";
 import { handleError } from "../errors";
 
@@ -15,11 +14,11 @@ export async function deployStepZen() {
   if (!vscode.workspace.isTrusted) {
     const message = "StepZen deployment is not available in untrusted workspaces. Open this folder in a trusted workspace to enable deployment.";
     vscode.window.showWarningMessage(message);
-    logger.warn(`Deploy failed: ${message}`);
+    services.logger.warn(`Deploy failed: ${message}`);
     return;
   }
 
-  logger.info("Starting deployment of StepZen project...");
+  services.logger.info("Starting deployment of StepZen project...");
 
   // Show deployment progress to the user
   return vscode.window.withProgress({
@@ -32,7 +31,7 @@ export async function deployStepZen() {
     try {
       // Use the CLI service to perform the deployment
       progress.report({ increment: 50, message: "Uploading schema to StepZen..." });
-      await cliService.deploy("");
+      await services.cli.deploy("");
       
       // Show success message to the user
       progress.report({ increment: 100, message: "Deployment completed!" });
@@ -42,7 +41,7 @@ export async function deployStepZen() {
         "OK"
       );
       
-      logger.info("Deployment completed successfully");
+      services.logger.info("Deployment completed successfully");
     } catch (err) {
       handleError(err);
     }

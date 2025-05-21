@@ -3,18 +3,17 @@ import * as path from "path";
 import * as fs from "fs";
 import { formatError, createError } from "./utils/errors";
 import { UI, FILE_PATTERNS } from "./utils/constants";
-import { logger } from "./services/logger";
 import { safeRegisterCommand } from "./utils/safeRegisterCommand";
 import { scanStepZenProject } from "./utils/stepzenProjectScanner";
 import { resolveStepZenProjectRoot } from "./utils/stepzenProject";
 import { StepZenCodeLensProvider } from "./utils/codelensProvider";
-import { StepzenCliService } from "./services/cli";
+import { services } from "./services";
 
 
 export let stepzenTerminal: vscode.Terminal | undefined;
 export let EXTENSION_URI: vscode.Uri;
 export let runtimeDiag: vscode.DiagnosticCollection;
-export let cliService: StepzenCliService;
+
 
 /**
  * Gets or creates a terminal for StepZen operations
@@ -69,7 +68,7 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
     vscode.window.showWarningMessage(
       `StepZen Tools: could not locate a StepZen project under ${folder.name}`,
     );
-    logger.error(`Could not locate a StepZen project under ${folder.name}: ${formatError(err)}`, err);
+    services.logger.error(`Could not locate a StepZen project under ${folder.name}: ${formatError(err)}`, err);
     return;
   }
 
@@ -78,13 +77,13 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
   if (!fs.existsSync(indexPath)) {
     const message = `StepZen Tools: ${folder.name} does not appear to contain an ${FILE_PATTERNS.MAIN_SCHEMA_FILE}. Commands will be disabled until a valid project is opened.`;
     vscode.window.showWarningMessage(message);
-    logger.warn(message);
+    services.logger.warn(message);
     return;
   }
 
   try {
     // Ensure schema is loaded immediately instead of lazily
-    logger.info(`Initial scan of project at ${indexPath}`);
+    services.logger.info(`Initial scan of project at ${indexPath}`);
     await scanStepZenProject(indexPath);
   } catch (err) {
     const error = createError(
@@ -93,7 +92,7 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
       err,
       "filesystem"
     );
-    logger.error(`Extension initialization error: ${formatError(error)}`, error);
+    services.logger.error(`Extension initialization error: ${formatError(error)}`, error);
   }
 
   // watch only inside the actual project root
@@ -110,7 +109,7 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
       return;
     }
     try {
-      logger.info(`Rescanning project after change in ${uri.fsPath}`);
+      services.logger.info(`Rescanning project after change in ${uri.fsPath}`);
       await scanStepZenProject(indexPath);
     } catch (err) {
       const error = createError(
@@ -119,7 +118,7 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
         err,
         "filesystem"
       );
-      logger.error(`Project watcher error: ${formatError(error)}`, error);
+      services.logger.error(`Project watcher error: ${formatError(error)}`, error);
     }
   };
 
@@ -137,9 +136,8 @@ export async function activate(context: vscode.ExtensionContext) {
   // Store extension URI for global access
   EXTENSION_URI = context.extensionUri;
   
-  // Initialize the CLI service
-  cliService = new StepzenCliService();
-  logger.info("StepZen CLI service initialized");
+  // CLI service is initialized via service registry
+  services.logger.info("StepZen CLI service initialized");
 
   // command registration --------------------------------------------------
   context.subscriptions.push(
@@ -231,19 +229,19 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(runtimeDiag);
 
   // Update logger configuration from settings
-  logger.updateConfigFromSettings();
+  services.logger.updateConfigFromSettings();
   
   // Listen for configuration changes to update logger settings
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration(e => {
       if (e.affectsConfiguration('stepzen.logLevel') || 
           e.affectsConfiguration('stepzen.logToFile')) {
-        logger.updateConfigFromSettings();
+        services.logger.updateConfigFromSettings();
       }
     })
   );
   
-  logger.info("StepZen Tools activated");
+  services.logger.info("StepZen Tools activated");
 }
 
 /**
@@ -253,5 +251,5 @@ export async function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
   watcher?.dispose();
   stepzenTerminal?.dispose();
-  logger.dispose();
+  services.logger.dispose();
 }

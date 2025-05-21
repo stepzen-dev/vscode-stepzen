@@ -7,7 +7,7 @@
  * ---------------------------------------------------------*/
 import * as vscode from "vscode";
 import { findDefinition } from "../utils/stepzenProjectScanner";
-import { logger } from "../services/logger";
+import { services } from "../services";
 import { StepZenDiagnostic } from "../types";
 
 /*────────────────────────────── types ─────────────────────────────*/
@@ -64,9 +64,9 @@ export function summariseDiagnostics(raw: StepZenDiagnostic[]): Record<string, R
         }
       }
     }
-    logger.debug(`[*] Collected ${spanById.size} spans, of which ${fetchSpans.length} are fetch spans`);
+    services.logger.debug(`[*] Collected ${spanById.size} spans, of which ${fetchSpans.length} are fetch spans`);
   } else {
-    logger.debug(`[*] No OTel entry found in diagnostics`);
+    services.logger.debug(`[*] No OTel entry found in diagnostics`);
   }
 
   // ancestor-check helper
@@ -234,5 +234,5 @@ export function publishDiagnostics(
   for (const [file, diags] of perFile) {
     collection.set(vscode.Uri.parse(file), diags);
   }
-  logger.info(`StepZen runtime diagnostics → ${perFile.size} file(s)`);
+  services.logger.info(`StepZen runtime diagnostics → ${perFile.size} file(s)`);
 }

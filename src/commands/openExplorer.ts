@@ -3,7 +3,7 @@ import * as path from "path";
 import * as fs from "fs";
 import { execSync } from "child_process";
 import { formatError, createError } from "../utils/errors";
-import { logger } from "../services/logger";
+import { services } from "../services";
 import { StepZenConfig } from "../types";
 
 /**
@@ -89,7 +89,7 @@ export function openQueryExplorer(context: vscode.ExtensionContext) {
       "user"
     );
     vscode.window.showErrorMessage(formatError(error));
-    logger.error(formatError(error, true), error);
+    services.logger.error(formatError(error, true), error);
     return;
   }
   const workspaceFolderPath = workspaceFolders[0].uri.fsPath;
@@ -100,7 +100,7 @@ export function openQueryExplorer(context: vscode.ExtensionContext) {
   } catch (err) {
     const errorMsg = formatError(err);
     vscode.window.showErrorMessage(`Failed to get StepZen project info: ${errorMsg}`);
-    logger.error(formatError(err, true), err);
+    services.logger.error(formatError(err, true), err);
     return;
   }
 
