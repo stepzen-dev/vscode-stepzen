@@ -8,11 +8,11 @@ import { parse, NamedTypeNode, OperationDefinitionNode } from "graphql";
 import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
 import { formatError } from "../utils/errors";
 import { clearResultsPanel, openResultsPanel } from "../panels/resultsPanel";
-import { logger } from "../services/logger";
 import { summariseDiagnostics, publishDiagnostics } from "../utils/runtimeDiagnostics";
-import { runtimeDiag, cliService } from "../extension";
+import { runtimeDiag } from "../extension";
 import { getOperationMap, getPersistedDocMap, OperationEntry } from "../utils/stepzenProjectScanner";
 import { UI, TIMEOUTS } from "../utils/constants";
+import { services } from "../services";
 import { StepZenConfig, StepZenResponse, StepZenDiagnostic } from "../types";
 import { ValidationError, NetworkError, handleError } from "../errors";
 
@@ -43,7 +43,7 @@ function createTempGraphQLFile(content: string): string {
   
   try {
     fs.writeFileSync(filePath, content, 'utf8');
-    logger.debug(`Created temporary query file: ${filePath}`);
+    services.logger.debug(`Created temporary query file: ${filePath}`);
     return filePath;
   } catch (err) {
     throw new ValidationError(
@@ -58,18 +58,17 @@ function createTempGraphQLFile(content: string): string {
  * Schedules cleanup of a temporary file
  * @param filePath Path to the temporary file to clean up
  */
-function cleanupLater(filePath: string): void {
-  // Validate the path isn't empty
+function cleanupLater(filePath: string) {
   if (!filePath || typeof filePath !== 'string') {
-    logger.warn("Invalid path provided to cleanupLater");
+    services.logger.warn("Invalid path provided to cleanupLater");
     return;
   }
-
+  
   setTimeout(() => {
     try {
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
-        logger.debug(`Cleaned up temporary file: ${filePath}`);
+        services.logger.debug(`Cleaned up temporary file: ${filePath}`);
       }
     } catch (e) {
       handleError(new ValidationError(
@@ -143,7 +142,7 @@ export async function executeStepZenRequest(options: {
     try {
       // Get StepZen config to build the endpoint URL
       const configPath = path.join(projectRoot, "stepzen.config.json");
-      logger.debug(`Looking for config file at: ${configPath}`);
+      services.logger.debug(`Looking for config file at: ${configPath}`);
         
       // Verify config file exists
       if (!fs.existsSync(configPath)) {
@@ -232,7 +231,7 @@ export async function executeStepZenRequest(options: {
           cancellable: false
         },
         async () => {
-          logger.info("Making HTTP request to StepZen API for persisted document");
+          services.logger.info("Making HTTP request to StepZen API for persisted document");
           // Use Node.js https module to make the request
           const result = await new Promise<StepZenResponse>((resolve, reject) => {
             const postData = JSON.stringify(requestBody);
@@ -282,11 +281,11 @@ export async function executeStepZenRequest(options: {
           
           // Process results
           const rawDiags = (result.extensions?.stepzen?.diagnostics ?? []) as StepZenDiagnostic[];
-          logger.info("Processing diagnostics for persisted operation...");
+          services.logger.info("Processing diagnostics for persisted operation...");
           const summaries = summariseDiagnostics(rawDiags);
           publishDiagnostics(summaries, runtimeDiag);
           
-          logger.info("Persisted document request completed successfully");
+          services.logger.info("Persisted document request completed successfully");
           await openResultsPanel(result);
         }
       );
@@ -322,11 +321,11 @@ export async function executeStepZenRequest(options: {
         ];
         
         // Add operation name if specified
+        // Log operation name
         if (operationName) {
-          parts.push(`--operation-name "${operationName}"`);
-          logger.info(`Using specified operation: "${operationName}"`);
+          services.logger.info(`Using specified operation: "${operationName}"`);
         } else {
-          logger.debug('No operation name specified, letting StepZen select the default operation');
+          services.logger.debug('No operation name specified, letting StepZen select the default operation');
         }
         
         // Add debug level header - properly escape quotes for shell
@@ -336,8 +335,8 @@ export async function executeStepZenRequest(options: {
         parts.push(...varArgs);
         
         const cmd = parts.filter(Boolean).join(" ");
-        logger.info(`Executing StepZen request in terminal${operationName ? ` for operation "${operationName}"` : ' (anonymous operation)'}`);
-        logger.debug(`Terminal command: ${cmd}`);
+        services.logger.info(`Executing StepZen request in terminal${operationName ? ` for operation "${operationName}"` : ' (anonymous operation)'}`);
+        services.logger.debug(`Terminal command: ${cmd}`);
         term.sendText(`cd "${projectRoot}" && ${cmd}`);
         
         // Cleanup temp file later
@@ -349,7 +348,7 @@ export async function executeStepZenRequest(options: {
     }
 
     // JSON result mode with progress notification
-    logger.info("Executing StepZen request with CLI service...");
+    services.logger.info("Executing StepZen request with CLI service...");
     await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
@@ -365,20 +364,20 @@ export async function executeStepZenRequest(options: {
               const [name, value] = varArgs[i + 1].split("=");
               if (name && value !== undefined) {
                 variables[name] = value;
-                logger.debug(`Setting variable ${name}=${value}`);
+                services.logger.debug(`Setting variable ${name}=${value}`);
               } else {
-                logger.warn(`Invalid variable format: ${varArgs[i + 1]}`);
+                services.logger.warn(`Invalid variable format: ${varArgs[i + 1]}`);
               }
             } else if (varArgs[i] === "--var-file" && i + 1 < varArgs.length) {
               try {
                 const varFilePath = varArgs[i + 1];
-                logger.debug(`Reading variables from file: ${varFilePath}`);
+                services.logger.debug(`Reading variables from file: ${varFilePath}`);
                 if (!fs.existsSync(varFilePath)) {
                   throw new ValidationError(`Variables file not found: ${varFilePath}`, "VAR_FILE_NOT_FOUND");
                 }
                 const fileContent = fs.readFileSync(varFilePath, "utf8");
                 const fileVars = JSON.parse(fileContent);
-                logger.debug(`Loaded ${Object.keys(fileVars).length} variables from file`);
+                services.logger.debug(`Loaded ${Object.keys(fileVars).length} variables from file`);
                 Object.assign(variables, fileVars);
               } catch (err) {
                 throw new ValidationError(
@@ -391,14 +390,15 @@ export async function executeStepZenRequest(options: {
           }
           
           // Use the CLI service to execute the request
-          logger.info(`Executing StepZen request${operationName ? ` for operation "${operationName}"` : ' (anonymous operation)'} with debug level ${debugLevel}`);
-          logger.debug(`Calling CLI service with request${operationName ? ` for operation "${operationName}"` : ' (no operation specified)'}`);
-          const stdout = await cliService.request(queryText, variables, operationName, debugLevel);
-          logger.debug("Received response from StepZen CLI service");
+          services.logger.info(`Executing StepZen request${operationName ? ` for operation "${operationName}"` : ' (anonymous operation)'} with debug level ${debugLevel}`);
+          services.logger.debug(`Calling CLI service with request${operationName ? ` for operation "${operationName}"` : ' (no operation specified)'}`);
+          const stdout = await services.cli.request(queryText, variables, operationName, debugLevel);
+          services.logger.debug("Received response from StepZen CLI service");
           
           let json: StepZenResponse;
           try {
-            logger.debug(`Parsing JSON response${operationName ? ` for operation "${operationName}"` : ''}`);
+            // Parse the response as JSON
+            services.logger.debug(`Parsing JSON response${operationName ? ` for operation "${operationName}"` : ''}`);
             json = JSON.parse(stdout) as StepZenResponse;
           } catch (parseErr) {
             throw new ValidationError(
@@ -410,12 +410,12 @@ export async function executeStepZenRequest(options: {
 
           // Process results
           const rawDiags = (json.extensions?.stepzen?.diagnostics ?? []) as StepZenDiagnostic[];
-          logger.info("Processing diagnostics for file-based request...");
+          services.logger.info("Processing diagnostics for file-based request...");
           const summaries = summariseDiagnostics(rawDiags);
           publishDiagnostics(summaries, runtimeDiag);
 
           await openResultsPanel(json);
-          logger.info(`StepZen request completed successfully${operationName ? ` for operation "${operationName}"` : ''}`);
+          services.logger.info(`StepZen request completed successfully${operationName ? ` for operation "${operationName}"` : ''}`);
         } catch (err) {
           handleError(err);
           // Clear any partial results

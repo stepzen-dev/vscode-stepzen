@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { openSchemaVisualizerPanel } from "../panels/schemaVisualizerPanel";
 import { EXTENSION_URI } from "../extension";
-import { logger } from "../services/logger";
+import { services } from "../services";
 
 /**
  * Opens the schema visualizer panel.
@@ -14,7 +14,7 @@ export async function openSchemaVisualizer(
   context: vscode.ExtensionContext,
   focusedType?: string,
 ) {
-  logger.info(
+  services.logger.info(
     `Opening Schema Visualizer command${focusedType ? ` focused on type: ${focusedType}` : ""}`,
   );
   

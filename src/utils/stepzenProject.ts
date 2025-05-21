@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
-import { logger } from "../services/logger";
+import { services } from "../services";
 import { createError, formatError } from "./errors";
 
 /**
@@ -21,7 +21,7 @@ export async function resolveStepZenProjectRoot(
   if (start) {
     // Validate that the URI has a valid filesystem path
     if (!start.fsPath || typeof start.fsPath !== "string") {
-      logger.warn("Invalid path in active editor URI");
+      services.logger.warn("Invalid path in active editor URI");
     } else {
       const byAscend = ascendForConfig(path.dirname(start.fsPath));
       if (byAscend) {
@@ -31,7 +31,7 @@ export async function resolveStepZenProjectRoot(
   }
 
   // ② otherwise scan the entire workspace ---------------------------------
-  logger.info(
+  services.logger.info(
     `StepZen project not found in current folder. Scanning...`,
   );
   const configs = await vscode.workspace.findFiles(
@@ -59,7 +59,7 @@ export async function resolveStepZenProjectRoot(
   }
 
   // ③ prompt when several projects exist ----------------------------------
-  logger.info(
+  services.logger.info(
     `Multiple StepZen projects found. Prompting for selection...`,
   );
 
@@ -103,7 +103,7 @@ export async function resolveStepZenProjectRoot(
   function ascendForConfig(dir: string): string | null {
     // Validate input
     if (!dir || typeof dir !== "string") {
-      logger.error(
+      services.logger.error(
         "Invalid directory path provided to ascendForConfig"
       );
       return null;
@@ -128,7 +128,7 @@ export async function resolveStepZenProjectRoot(
         err,
         "filesystem",
       );
-      logger.error(formatError(error, true), error);
+      services.logger.error(formatError(error, true), error);
       return null;
     }
 

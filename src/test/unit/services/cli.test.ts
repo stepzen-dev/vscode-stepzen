@@ -5,12 +5,15 @@ import { createMock } from '../../../test/helpers/test-utils';
 import { StepzenCliService } from '../../../services/cli';
 import { CliError } from '../../../errors';
 import * as vscode from 'vscode';
+import { services, setMockServices, overrideServices, resetServices } from '../../../services';
+import { Logger } from '../../../services/logger';
 
 // This is a simplified test file that would be expanded in a real implementation
 // Unit tests would mock child_process.spawn and assert the service behavior
 
 suite('StepzenCliService', () => {
   let service: StepzenCliService;
+  let originalServices: any;
 
   setup(() => {
     // In a real test, we would:
@@ -18,6 +21,25 @@ suite('StepzenCliService', () => {
     // 2. Mock the fs operations
     // 3. Mock resolveStepZenProjectRoot
     service = new StepzenCliService();
+    
+    // Create a mock logger to prevent actual logging during tests
+    const mockLogger = createMock<Logger>({
+      info: () => {},
+      debug: () => {},
+      warn: () => {},
+      error: () => {},
+      getOutputChannel: () => createMock<vscode.LogOutputChannel>(),
+      updateConfigFromSettings: () => {},
+      dispose: () => {}
+    });
+    
+    // Keep original services for restoration
+    originalServices = overrideServices({ logger: mockLogger });
+  });
+  
+  teardown(() => {
+    // Restore original services after each test
+    resetServices(originalServices);
   });
 
   suite('deploy', () => {

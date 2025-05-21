@@ -185,6 +185,9 @@ suite("Your Test Suite Name", () => {
 
 All tests will be automatically compiled to the `out/test` directory and run by the VS Code test runner.
 
+For more detailed information about testing, including how to mock services in tests, please refer to the [test directory README](src/test/README.md).
+
+
 ## Feedback
 
 Feel free to open issues or suggest improvements!

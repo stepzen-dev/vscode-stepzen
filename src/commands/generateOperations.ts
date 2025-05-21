@@ -10,7 +10,7 @@ import {
   getFullType,
 } from "../utils/stepzenProjectScanner";
 import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
-import { logger } from "../services/logger";
+import { services } from "../services";
 import { FILE_PATTERNS, GRAPHQL } from "../utils/constants";
 import { createError, formatError } from "../utils/errors";
 
@@ -34,7 +34,7 @@ export async function generateOperations() {
   try {
     // Resolve StepZen project root
     const projectRoot = await resolveStepZenProjectRoot();
-    logger.info(
+    services.logger.info(
       `Generating operations for project at: ${projectRoot}`,
     );
 
@@ -53,7 +53,7 @@ export async function generateOperations() {
     const operationsDir = path.join(projectRoot, "operations");
     if (!fs.existsSync(operationsDir)) {
       fs.mkdirSync(operationsDir, { recursive: true });
-      logger.info(
+      services.logger.info(
         `Created operations directory at: ${operationsDir}`,
       );
     }
@@ -66,10 +66,10 @@ export async function generateOperations() {
     const fieldIdx = getFieldIndex();
 
     // Debug logging
-    logger.debug(
+    services.logger.debug(
       `Root Operations count: ${Object.keys(rootOps).length}`,
     );
-    logger.debug(
+    services.logger.debug(
       `Field Index Types: ${Object.keys(fieldIdx).join(", ")}`,
     );
 
@@ -79,7 +79,7 @@ export async function generateOperations() {
     // If Query type doesn't exist in the field index, try to find Query fields
     // by inspecting root operations directly
     if (!queryType || queryType.length === 0) {
-      logger.warn(
+      services.logger.warn(
         "No Query type found in field index, trying root operations",
       );
       // We'll proceed with all root operations for now
@@ -107,7 +107,7 @@ export async function generateOperations() {
 
     // Process all root operation fields and generate operation files
     for (const [fieldName, fieldInfo] of Object.entries(rootOps)) {
-      logger.info(`Processing field: ${fieldName}`);
+      services.logger.info(`Processing field: ${fieldName}`);
       try {
         const queryContent = generateQueryOperation(
           fieldName,
@@ -123,17 +123,17 @@ export async function generateOperations() {
           const versionedFilePath = path.join(operationsDir, versionedFileName);
           fs.writeFileSync(versionedFilePath, queryContent);
           generatedFiles.push(versionedFilePath);
-          logger.info(
+          services.logger.info(
             `Generated versioned operation file: ${versionedFilePath}`,
           );
         } else {
           // Create new file
           fs.writeFileSync(filePath, queryContent);
           generatedFiles.push(filePath);
-          logger.info(`Generated operation file: ${filePath}`);
+          services.logger.info(`Generated operation file: ${filePath}`);
         }
       } catch (err) {
-        logger.error(
+        services.logger.error(
           `Error generating operation for ${fieldName}: ${err}`,
           err
         );
@@ -156,7 +156,7 @@ export async function generateOperations() {
       err,
       "unknown",
     );
-    logger.error(formatError(error, true), error);
+    services.logger.error(formatError(error, true), error);
     vscode.window.showErrorMessage(
       `Error generating operations: ${formatError(error)}`,
     );
@@ -176,8 +176,8 @@ function generateQueryOperation(
   fieldInfo: any,
   fieldIdx: Record<string, any>,
 ) {
-  logger.debug(`Generating query operation for: ${fieldName}`);
-  logger.debug(`Field info: ${JSON.stringify(fieldInfo, null, 2)}`);
+  services.logger.debug(`Generating query operation for: ${fieldName}`);
+  services.logger.debug(`Field info: ${JSON.stringify(fieldInfo, null, 2)}`);
 
   // Start with query declaration
   let query = `query ${fieldName}`;
@@ -393,17 +393,17 @@ function updateSdlDirective(
 
         // Write back to the file
         fs.writeFileSync(indexPath, content);
-        logger.info(
+        services.logger.info(
           `Updated SDL directive in ${indexPath} with ${newExecutables.length} new operation files`,
         );
       } else {
-        logger.info(
+        services.logger.info(
           "All generated files already in SDL directive, nothing to update.",
         );
       }
     } else if (sdlWithoutExecutablesMatch) {
       // SDL directive exists but doesn't have executables
-      logger.info(
+      services.logger.info(
         "Found SDL directive without executables in index.graphql. Adding executables array.",
       );
 
@@ -444,18 +444,18 @@ function updateSdlDirective(
 
         // Write back to the file
         fs.writeFileSync(indexPath, content);
-        logger.info(
+        services.logger.info(
           `Added executables to SDL directive in ${indexPath} with ${relativeFiles.length} operation files`,
         );
       } catch (err) {
-        logger.error(`Error formatting SDL directive: ${err}`, err);
+        services.logger.error(`Error formatting SDL directive: ${err}`, err);
         vscode.window.showWarningMessage(
           "Error updating SDL directive. Please add executables manually or check file format.",
         );
       }
     } else {
       // No SDL directive found at all
-      logger.warn(
+      services.logger.warn(
         "Could not find SDL directive in index.graphql.",
       );
       vscode.window.showWarningMessage(
@@ -469,7 +469,7 @@ function updateSdlDirective(
       err,
       "filesystem",
     );
-    logger.error(formatError(error, true), error);
+    services.logger.error(formatError(error, true), error);
     vscode.window.showErrorMessage(
       `Error updating SDL directive: ${formatError(error)}`,
     );

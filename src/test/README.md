@@ -46,3 +46,59 @@ We aim for 100% statement, branch, and function coverage for all utility functio
 2. Use descriptive assertion messages to make test failures clear.
 3. Use the test helpers where appropriate to reduce boilerplate code.
 4. Consider edge cases and error conditions, not just the happy path.
+
+## Mocking Services in Tests
+
+The extension uses a dependency injection container for services (CLI, logger, etc.) that makes them easily mockable in tests:
+
+```typescript
+import { services, setMockServices, overrideServices } from "../../services";
+import { createMock } from "../helpers/test-utils";
+
+suite("Your Test Suite with Mocked Services", () => {
+  // Mock the entire service registry
+  test("Using complete service mocks", () => {
+    // Create mock services
+    const mockServices = {
+      cli: createMock({
+        deploy: async () => { /* mock implementation */ },
+        request: async () => "mock response"
+      }),
+      logger: createMock({
+        info: () => { /* mock implementation */ },
+        error: () => { /* mock implementation */ }
+      })
+    };
+    
+    // Replace all services with mocks
+    const origServices = setMockServices(mockServices);
+    
+    try {
+      // Your test code using services.cli and services.logger
+      // The mocked implementations will be used
+    } finally {
+      // Restore original services after the test
+      setMockServices(origServices);
+    }
+  });
+  
+  // Override specific services only
+  test("Using partial service overrides", () => {
+    // Create a partial override
+    const mockCli = createMock({
+      deploy: async () => { /* mock implementation */ }
+    });
+    
+    // Replace only the CLI service
+    const prevServices = overrideServices({ cli: mockCli });
+    
+    try {
+      // Your test code that uses services.cli
+      // services.logger is still the original implementation
+    } finally {
+      // Restore original services
+      resetServices(prevServices);
+    }
+  });
+});
+```
