@@ -1,8 +1,8 @@
 import * as vscode from "vscode";
 import { cliService } from "../extension";
-import { formatError } from '../utils/errors';
 import { logger } from "../services/logger";
 import { UI } from "../utils/constants";
+import { handleError } from "../errors";
 
 /**
  * Deploys the current StepZen project to StepZen service
@@ -44,19 +44,7 @@ export async function deployStepZen() {
       
       logger.info("Deployment completed successfully");
     } catch (err) {
-      const message = formatError(err);
-      vscode.window.showErrorMessage(
-        `StepZen deployment failed: ${message}`,
-        { modal: false, detail: "Check the logs for more details." },
-        "View Logs"
-      ).then(selection => {
-        if (selection === "View Logs") {
-          // Show the StepZen output channel
-          logger.showOutput();
-        }
-      });
-      
-      logger.error(`Deploy failed: ${formatError(err, true)}`, err);
+      handleError(err);
     }
   });
 }

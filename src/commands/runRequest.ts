@@ -17,6 +17,7 @@ import { UI, TIMEOUTS } from "../utils/constants";
 import { StepZenConfig, StepZenResponse, StepZenDiagnostic } from "../types";
 // Import executeStepZenRequest from separate file
 import { executeStepZenRequest } from "./executeStepZenRequest";
+import { handleError, ValidationError } from "../errors";
 
 /* -------------------------------------------------------------
  * Helpers
@@ -45,11 +46,9 @@ function extractOperationNames(query: string): string[] {
 function createTempGraphQLFile(query: string): string {
   // Add validation
   if (!query || typeof query !== 'string') {
-    throw createError(
+    throw new ValidationError(
       "Invalid query: expected a non-empty string",
-      "Create Temporary GraphQL File", 
-      undefined,
-      "user"
+      "INVALID_QUERY"
     );
   }
 
@@ -148,7 +147,7 @@ async function collectVariableArgs(query: string, chosenOp?: string): Promise<st
 
     return undefined; // user cancelled or complex vars with no file chosen
   } catch (err) {
-    logger.error(`Error parsing variables: ${formatError(err)}`, err);
+    handleError(err);
     return []; // parse error → ignore variables
   }
 }
@@ -237,28 +236,20 @@ export async function runOperation(operation: OperationEntry) {
 
   // Validate operation parameter
   if (!operation || !operation.fileUri) {
-    const error = createError(
+    handleError(new ValidationError(
       "Invalid operation provided",
-      "Run GraphQL Operation",
-      undefined,
-      "user"
-    );
-    vscode.window.showErrorMessage(formatError(error));
-    logger.error(formatError(error), error);
+      "INVALID_OPERATION"
+    ));
     return;
   }
   
   try {
     const document = await vscode.workspace.openTextDocument(operation.fileUri);
     if (!document) {
-      const error = createError(
+      handleError(new ValidationError(
         `Could not open document: ${operation.fileUri.toString()}`,
-        "Run GraphQL Operation",
-        undefined,
-        "filesystem"
-      );
-      vscode.window.showErrorMessage(formatError(error));
-      logger.error(formatError(error), error);
+        "DOCUMENT_NOT_FOUND"
+      ));
       return;
     }
     const content = document.getText();
@@ -285,9 +276,7 @@ export async function runOperation(operation: OperationEntry) {
     varArgs
   });
   } catch (error: unknown) {
-    const errorMsg = formatError(error);
-    vscode.window.showErrorMessage(`Error running operation: ${errorMsg}`);
-    logger.error("Error running operation", error); // Include details in output channel
+    handleError(error);
   }
 }
 
@@ -379,9 +368,7 @@ export async function runPersisted(documentId: string, operationName: string) {
       varArgs
     });
   } catch (error: unknown) {
-    const errorMsg = formatError(error);
-    vscode.window.showErrorMessage(`Error running persisted operation: ${errorMsg}`);
-    logger.error("Error running persisted operation", error); // Include details in output channel
+    handleError(error);
   }
 }
 
@@ -427,22 +414,19 @@ export function clearResults(): void {
 function execAsync(command: string, options: cp.ExecOptions = {}): Promise<{ stdout: string }> {
   // Validate inputs
   if (!command || typeof command !== 'string') {
-    return Promise.reject(createError(
+    return Promise.reject(new ValidationError(
       "Invalid command: expected a non-empty string",
-      "Execute Command",
-      undefined,
-      "user"
+      "INVALID_COMMAND"
     ));
   }
   
   return new Promise<{ stdout: string }>((resolve, reject) => {
     cp.exec(command, { ...options, maxBuffer: 10_000_000 }, (err, stdout, stderr) => {
       if (err) {
-        reject(createError(
+        reject(new ValidationError(
           `Command failed: ${command}`,
-          "Execute Command",
-          err,
-          "cli"
+          "COMMAND_FAILED",
+          err
         ));
       } else if (!stdout) {
         resolve({ stdout: "" });
@@ -483,13 +467,11 @@ function cleanupLater(file: string, delayMs: number = TIMEOUTS.FILE_CLEANUP_DELA
         logger.debug(`Temporary file cleaned up: ${file}`);
       }
     } catch (err) {
-      const error = createError(
+      handleError(new ValidationError(
         `Failed to clean up temporary file: ${file}`,
-        "File Cleanup",
-        err,
-        "filesystem"
-      );
-      logger.error(formatError(error), error);
+        "FILE_CLEANUP_FAILED",
+        err
+      ));
     }
   }, delayMs);
 }

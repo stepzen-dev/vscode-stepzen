@@ -2,7 +2,8 @@ import * as assert from 'assert';
 import * as path from 'path';
 import * as os from 'os';
 import { createMock } from '../../../test/helpers/test-utils';
-import { StepzenCliService, CliError } from '../../../services/cli';
+import { StepzenCliService } from '../../../services/cli';
+import { CliError } from '../../../errors';
 import * as vscode from 'vscode';
 
 // This is a simplified test file that would be expanded in a real implementation
