@@ -22,7 +22,7 @@ import {
 } from "graphql";
 import * as vscode from 'vscode';
 import { Uri } from 'vscode';
-import { createError, formatError } from "./errors";
+import { StepZenError, handleError } from "../errors";
 
 /** Location of a symbol inside a file (0‑based). */
 interface Location {
@@ -41,7 +41,7 @@ export interface ArgInfo {
   type: string;
 }
 
-export interface RootOperationInfo {
+interface RootOperationInfo {
   returnType: string;
   isList: boolean;
   args: ArgInfo[];
@@ -73,7 +73,7 @@ export interface OperationEntry {
   persisted: boolean;
 }
 
-export interface PersistedDocEntry {
+interface PersistedDocEntry {
   documentId: string;
   fileUri: Uri;
   operations: OperationEntry[];
@@ -104,7 +104,7 @@ export interface TypeRelationship {
  * Clears the definition index and resets all data structures.
  * Used when rescanning a project to avoid stale data.
  */
-export function clearDefinitionIndex() {
+function clearDefinitionIndex() {
   definitionIndex = new Map();
   visited.clear();
   schemaFiles.length = 0;
@@ -130,17 +130,18 @@ export function findDefinition(name: string): SymbolLocation[] | undefined {
   return definitionIndex.get(name);
 }
 
-/**
- * Dumps the entire definition index for debugging purposes.
- * @returns JSON string representation of the definition index
- */
-export function dumpDefinitionIndex(): string {
-  const obj: Record<string, SymbolLocation[]> = {};
-  for (const [k, v] of definitionIndex.entries()) {
-    obj[k] = v;
-  }
-  return JSON.stringify(obj, null, 2);
-}
+// TODO: CLEANUP
+// /**
+//  * Dumps the entire definition index for debugging purposes.
+//  * @returns JSON string representation of the definition index
+//  */
+// function dumpDefinitionIndex(): string {
+//   const obj: Record<string, SymbolLocation[]> = {};
+//   for (const [k, v] of definitionIndex.entries()) {
+//     obj[k] = v;
+//   }
+//   return JSON.stringify(obj, null, 2);
+// }
 
 /* ───────────────────────── helpers ───────────────────────── */
 const ROOT_TYPES = new Set(GRAPHQL.ROOT_OPERATION_TYPES);
@@ -326,13 +327,12 @@ function scanSDLExecutables(schemaSDL: string, workspaceRoot: string) {
   try {
     ast = parse(schemaSDL);
   } catch (err) {
-    const error = createError(
+    const error = new StepZenError(
       "Error parsing schema SDL",
-      "Scan SDL Executables",
-      err,
-      "parse"
+      "SCHEMA_PARSE_ERROR",
+      err
     );
-    logger.error(formatError(error), error);
+    handleError(error);
     return;
   }
   
@@ -396,13 +396,12 @@ function scanSDLExecutables(schemaSDL: string, workspaceRoot: string) {
           ? documentPath
           : path.join(workspaceRoot, documentPath);
       } catch (err) {
-        const error = createError(
+        const error = new StepZenError(
           `Error resolving path for ${documentPath}`,
-          "Scan SDL Executables",
-          err,
-          "filesystem"
+          "PATH_RESOLUTION_ERROR",
+          err
         );
-        logger.error(formatError(error), error);
+        handleError(error);
         return;
       }
       
@@ -420,13 +419,12 @@ function scanSDLExecutables(schemaSDL: string, workspaceRoot: string) {
           return;
         }
       } catch (err) {
-        const error = createError(
+        const error = new StepZenError(
           `Error reading file ${abs}`,
-          "Scan SDL Executables",
-          err,
-          "filesystem"
+          "FILE_READ_ERROR",
+          err
         );
-        logger.error(formatError(error), error);
+        handleError(error);
         return;
       }
       
@@ -434,13 +432,12 @@ function scanSDLExecutables(schemaSDL: string, workspaceRoot: string) {
       try {
         docAST = parse(contents);
       } catch (err) {
-        const error = createError(
+        const error = new StepZenError(
           `Error parsing GraphQL in ${abs}`,
-          "Scan SDL Executables",
-          err,
-          "parse"
+          "GRAPHQL_PARSE_ERROR",
+          err
         );
-        logger.error(formatError(error), error);
+        handleError(error);
         return;
       }
       const ops: OperationEntry[] = [];
@@ -633,7 +630,7 @@ export function getTypeRelationships() {
  * @param type The GraphQL type node to unwrap
  * @returns The name of the inner named type
  */
-export function unwrapType(type: TypeNode): string {
+function unwrapType(type: TypeNode): string {
   // Add validation
   if (!type) {
     logger.warn('Null type provided to unwrapType');

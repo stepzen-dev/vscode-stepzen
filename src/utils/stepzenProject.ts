@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
 import { services } from "../services";
-import { createError, formatError } from "./errors";
+import { StepZenError, handleError } from "../errors";
 
 /**
  * Resolves the root directory of a StepZen project
@@ -39,20 +39,16 @@ export async function resolveStepZenProjectRoot(
     "**/node_modules/**",
   );
   if (!configs || configs.length === 0) {
-    throw createError(
+    throw new StepZenError(
       "No StepZen project (stepzen.config.json) found in workspace.",
-      "Resolve StepZen Project Root",
-      undefined,
-      "config",
+      "CONFIG_NOT_FOUND"
     );
   }
   if (configs.length === 1) {
     if (!configs[0].fsPath) {
-      throw createError(
+      throw new StepZenError(
         "Invalid file path for StepZen configuration.",
-        "Resolve StepZen Project Root",
-        undefined,
-        "filesystem",
+        "INVALID_FILE_PATH"
       );
     }
     return path.dirname(configs[0].fsPath);
@@ -68,11 +64,9 @@ export async function resolveStepZenProjectRoot(
     (c) => c.fsPath && typeof c.fsPath === "string",
   );
   if (validConfigs.length === 0) {
-    throw createError(
+    throw new StepZenError(
       "No valid StepZen project paths found.",
-      "Resolve StepZen Project Root",
-      undefined,
-      "filesystem",
+      "INVALID_PROJECT_PATHS"
     );
   }
 
@@ -85,11 +79,9 @@ export async function resolveStepZenProjectRoot(
   );
 
   if (!pick || !pick.target) {
-    throw createError(
+    throw new StepZenError(
       "Operation cancelled by user.",
-      "Resolve StepZen Project Root",
-      undefined,
-      "user",
+      "USER_CANCELLED"
     );
   }
   return pick.target;
@@ -122,13 +114,12 @@ export async function resolveStepZenProjectRoot(
         dir = parent;
       }
     } catch (err) {
-      const error = createError(
+      const error = new StepZenError(
         "Failed to search for StepZen configuration in directory tree",
-        "Resolve StepZen Project Root",
-        err,
-        "filesystem",
+        "FILESYSTEM_ERROR",
+        err
       );
-      services.logger.error(formatError(error, true), error);
+      handleError(error);
       return null;
     }
 

@@ -1,15 +1,15 @@
-import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
+import * as vscode from "vscode";
+import * as fs from "fs";
+import * as path from "path";
 
 /**
  * Log levels supported by the StepZen logger
  */
 export enum LogLevel {
-  ERROR = 'error',
-  WARN = 'warn',
-  INFO = 'info',
-  DEBUG = 'debug'
+  ERROR = "error",
+  WARN = "warn",
+  INFO = "info",
+  DEBUG = "debug",
 }
 
 /**
@@ -19,7 +19,7 @@ const LOG_LEVEL_VALUES: Record<LogLevel, number> = {
   [LogLevel.ERROR]: 0,
   [LogLevel.WARN]: 1,
   [LogLevel.INFO]: 2,
-  [LogLevel.DEBUG]: 3
+  [LogLevel.DEBUG]: 3,
 };
 
 /**
@@ -42,12 +42,12 @@ export class Logger {
   private logFilePath?: string;
   private fileLogger?: fs.WriteStream;
   private readonly MAX_LOG_SIZE_BYTES = 1024 * 1024; // 1MB
-  
+
   private constructor(outputChannel: vscode.OutputChannel) {
     this.outputChannel = outputChannel;
     this.config = {
       logLevel: LogLevel.INFO,
-      logToFile: false
+      logToFile: false,
     };
     this.updateConfigFromSettings();
   }
@@ -59,7 +59,9 @@ export class Logger {
   public static getInstance(): Logger {
     if (!Logger.instance) {
       // Create output channel once for the extension
-      const outputChannel = vscode.window.createOutputChannel("StepZen", { log: true });
+      const outputChannel = vscode.window.createOutputChannel("StepZen", {
+        log: true,
+      });
       Logger.instance = new Logger(outputChannel);
     }
     return Logger.instance;
@@ -69,10 +71,10 @@ export class Logger {
    * Update the logger configuration based on VS Code settings
    */
   public updateConfigFromSettings(): void {
-    const config = vscode.workspace.getConfiguration('stepzen');
-    const logLevel = config.get<string>('logLevel', 'info') as LogLevel;
-    const logToFile = config.get<boolean>('logToFile', false);
-    
+    const config = vscode.workspace.getConfiguration("stepzen");
+    const logLevel = config.get<string>("logLevel", "info") as LogLevel;
+    const logToFile = config.get<boolean>("logToFile", false);
+
     this.setLogLevel(logLevel);
     this.setLogToFile(logToFile);
   }
@@ -92,7 +94,7 @@ export class Logger {
    */
   public setLogToFile(enabled: boolean): void {
     this.config.logToFile = enabled;
-    
+
     if (enabled) {
       this.initializeFileLogger();
     } else if (this.fileLogger) {
@@ -166,7 +168,7 @@ export class Logger {
 
     const timestamp = new Date().toISOString();
     const formattedMessage = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
-    
+
     // Log to output channel
     this.outputChannel.appendLine(formattedMessage);
 
@@ -174,7 +176,7 @@ export class Logger {
     if (error) {
       const errorDetails = this.formatError(error);
       this.outputChannel.appendLine(`  └─ ${errorDetails}`);
-      
+
       // Also log error to file if enabled
       if (this.fileLogger) {
         this.fileLogger.write(`${formattedMessage}\n  └─ ${errorDetails}\n`);
@@ -183,14 +185,14 @@ export class Logger {
       // Log to file if enabled (without error)
       this.fileLogger.write(`${formattedMessage}\n`);
     }
-    
+
     // For test environments, we'll use a custom test logger that doesn't rely on console
     // This avoids having console.log calls in the compiled code
-    if (process.env.NODE_ENV === 'test') {
+    if (process.env.NODE_ENV === "test") {
       // In test environment, we write to a custom test logger
       // that will be captured by test frameworks instead of using console
       const testOnly = {
-        captureLog: (msg: string) => {
+        captureLog: (_msg: string) => {
           // This function will be mocked in tests
           // The empty implementation ensures no console calls in production
         }
@@ -209,7 +211,7 @@ export class Logger {
    */
   private formatError(error: unknown): string {
     if (error instanceof Error) {
-      return `${error.name}: ${error.message}${error.stack ? `\n${error.stack}` : ''}`;
+      return `${error.name}: ${error.message}${error.stack ? `\n${error.stack}` : ""}`;
     }
     return String(error);
   }
@@ -231,21 +233,21 @@ export class Logger {
   private initializeFileLogger(): void {
     // Only log to file if the workspace is trusted
     if (!vscode.workspace.isTrusted) {
-      this.warn('Cannot log to file in untrusted workspace');
+      this.warn("Cannot log to file in untrusted workspace");
       return;
     }
 
     try {
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
       if (!workspaceFolder) {
-        this.warn('Cannot log to file: no workspace folder available');
+        this.warn("Cannot log to file: no workspace folder available");
         return;
       }
 
       // Use extension's storage path if available, otherwise use workspace root
       const storagePath = this.getStoragePath();
       if (!storagePath) {
-        this.warn('Cannot log to file: storage path not available');
+        this.warn("Cannot log to file: storage path not available");
         return;
       }
 
@@ -254,16 +256,18 @@ export class Logger {
         fs.mkdirSync(storagePath, { recursive: true });
       }
 
-      this.logFilePath = path.join(storagePath, 'stepzen.log');
-      
+      this.logFilePath = path.join(storagePath, "stepzen.log");
+
       // Check if log rotation is needed
       this.rotateLogFileIfNeeded();
-      
+
       // Create or open the log file for append
-      this.fileLogger = fs.createWriteStream(this.logFilePath, { flags: 'a' });
+      this.fileLogger = fs.createWriteStream(this.logFilePath, { flags: "a" });
       this.info(`Logging to file: ${this.logFilePath}`);
     } catch (err) {
-      this.warn(`Failed to initialize file logging: ${err instanceof Error ? err.message : String(err)}`);
+      this.warn(
+        `Failed to initialize file logging: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 
@@ -279,7 +283,7 @@ export class Logger {
     }
 
     // For now, just use a .stepzen directory in the workspace
-    return path.join(workspaceFolder.uri.fsPath, '.stepzen');
+    return path.join(workspaceFolder.uri.fsPath, ".stepzen");
   }
 
   /**
@@ -294,7 +298,7 @@ export class Logger {
       // Check if file exists and get its size
       if (fs.existsSync(this.logFilePath)) {
         const stats = fs.statSync(this.logFilePath);
-        
+
         // Rotate if file is larger than maximum size
         if (stats.size > this.MAX_LOG_SIZE_BYTES) {
           const backupPath = `${this.logFilePath}.old`;
@@ -306,7 +310,9 @@ export class Logger {
         }
       }
     } catch (err) {
-      this.warn(`Failed to rotate log file: ${err instanceof Error ? err.message : String(err)}`);
+      this.warn(
+        `Failed to rotate log file: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 
@@ -324,7 +330,3 @@ export class Logger {
 
 // Export a default logger instance for convenience
 export const logger = Logger.getInstance();
-
-// Export the output channel for backward compatibility
-// Kept for internal use - not exported anymore
-const stepzenOutput = logger.getOutputChannel();

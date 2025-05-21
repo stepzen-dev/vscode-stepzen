@@ -1,6 +1,5 @@
 import * as assert from 'assert';
 import { createMockLogger } from './mock-logger';
-import { LogLevel } from '../../services/logger';
 
 suite('Mock Logger Helper Test Suite', () => {
   test('createMockLogger returns a usable mock', () => {

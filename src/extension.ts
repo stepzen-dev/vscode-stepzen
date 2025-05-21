@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
-import { formatError, createError } from "./utils/errors";
+import { StepZenError, handleError } from "./errors";
 import { UI, FILE_PATTERNS } from "./utils/constants";
 import { safeRegisterCommand } from "./utils/safeRegisterCommand";
 import { scanStepZenProject } from "./utils/stepzenProjectScanner";
@@ -10,7 +10,7 @@ import { StepZenCodeLensProvider } from "./utils/codelensProvider";
 import { services } from "./services";
 
 
-export let stepzenTerminal: vscode.Terminal | undefined;
+let stepzenTerminal: vscode.Terminal | undefined;
 export let EXTENSION_URI: vscode.Uri;
 export let runtimeDiag: vscode.DiagnosticCollection;
 
@@ -64,11 +64,10 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
   try {
     projectRoot = await resolveStepZenProjectRoot(folder.uri);
   } catch (err) {
-    const errorMsg = formatError(err);
     vscode.window.showWarningMessage(
       `StepZen Tools: could not locate a StepZen project under ${folder.name}`,
     );
-    services.logger.error(`Could not locate a StepZen project under ${folder.name}: ${formatError(err)}`, err);
+    services.logger.error(`Could not locate a StepZen project under ${folder.name}`, err);
     return;
   }
 
@@ -86,13 +85,12 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
     services.logger.info(`Initial scan of project at ${indexPath}`);
     await scanStepZenProject(indexPath);
   } catch (err) {
-    const error = createError(
+    const error = new StepZenError(
       "Initial project scan failed",
-      "Extension Initialization",
-      err,
-      "filesystem"
+      "INITIALIZATION_ERROR",
+      err
     );
-    services.logger.error(`Extension initialization error: ${formatError(error)}`, error);
+    handleError(error);
   }
 
   // watch only inside the actual project root
@@ -112,13 +110,12 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
       services.logger.info(`Rescanning project after change in ${uri.fsPath}`);
       await scanStepZenProject(indexPath);
     } catch (err) {
-      const error = createError(
+      const error = new StepZenError(
         `Error rescanning project after change in ${uri.fsPath}`,
-        "Project Watcher",
-        err,
-        "filesystem"
+        "PROJECT_WATCHER_ERROR",
+        err
       );
-      services.logger.error(`Project watcher error: ${formatError(error)}`, error);
+      handleError(error);
     }
   };
 
@@ -132,6 +129,7 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
  * Sets up commands, event listeners, and initializes for the current workspace
  * @param context The extension context provided by VS Code
  */
+// ts-prune-ignore-next
 export async function activate(context: vscode.ExtensionContext) {
   // Store extension URI for global access
   EXTENSION_URI = context.extensionUri;
@@ -248,6 +246,7 @@ export async function activate(context: vscode.ExtensionContext) {
  * Deactivates the StepZen Tools extension
  * Cleans up resources like file watchers and terminals
  */
+// ts-prune-ignore-next
 export function deactivate() {
   watcher?.dispose();
   stepzenTerminal?.dispose();

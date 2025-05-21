@@ -1,5 +1,4 @@
 import * as assert from 'assert';
-import * as vscode from 'vscode';
 import { logger as stepzenLogger, LogLevel } from '../../services/logger';
 
 // This test suite focuses on integration aspects of the logger

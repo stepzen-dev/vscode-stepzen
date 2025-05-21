@@ -144,7 +144,7 @@ export interface StepZenDiagnostic {
  * GraphQL error structure
  * Standard GraphQL error format
  */
-export interface GraphQLError {
+interface GraphQLError {
   /** Error message */
   message: string;
   

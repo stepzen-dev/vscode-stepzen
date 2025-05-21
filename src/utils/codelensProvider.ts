@@ -21,7 +21,6 @@ export class StepZenCodeLensProvider implements vscode.CodeLensProvider {
    */
   public provideCodeLenses(
     document: vscode.TextDocument,
-    token: vscode.CancellationToken,
   ): vscode.CodeLens[] {
     const lenses: vscode.CodeLens[] = [];
     const opMap = getOperationMap();
