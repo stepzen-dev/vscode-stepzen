@@ -699,7 +699,7 @@ function isListType(type: TypeNode): boolean {
  * @param input The string to hash
  * @returns Hex string of the SHA256 hash
  */
-function computeHash(input: string): string {
+export function computeHash(input: string): string {
   // Add validation
   if (!input || typeof input !== 'string') {
     logger.warn('Invalid input provided to computeHash');
