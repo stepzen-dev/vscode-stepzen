@@ -3,19 +3,9 @@ import * as cp from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import { formatError, createError, StepZenError } from '../utils/errors';
 import { logger } from './logger';
 import { resolveStepZenProjectRoot } from '../utils/stepzenProject';
-
-/**
- * Error class specifically for CLI operations
- */
-export class CliError extends StepZenError {
-  constructor(message: string, operation: string, cause?: unknown) {
-    super(message, operation, { cause, category: 'cli' });
-    this.name = 'CliError';
-  }
-}
+import { CliError } from '../errors';
 
 /**
  * Service for interacting with the StepZen CLI
@@ -58,10 +48,9 @@ export class StepzenCliService {
       
       const error = new CliError(
         errorMessage,
-        'StepZen Deploy',
+        'DEPLOY_FAILED',
         err
       );
-      logger.error(`Failed to deploy StepZen schema: ${formatError(error)}`, error);
       throw error;
     }
   }
@@ -160,10 +149,9 @@ export class StepzenCliService {
     } catch (err) {
       const error = new CliError(
         'Failed to execute StepZen request',
-        'StepZen Request',
+        'REQUEST_FAILED',
         err
       );
-      logger.error(`Failed to execute StepZen request: ${formatError(error)}`, error);
       throw error;
     }
   }
@@ -202,7 +190,7 @@ export class StepzenCliService {
       proc.on('error', (err) => {
         reject(new CliError(
           `Failed to spawn StepZen CLI: ${err.message}`,
-          `StepZen ${command}`,
+          'SPAWN_FAILED',
           err
         ));
       });
@@ -216,7 +204,7 @@ export class StepzenCliService {
             
           reject(new CliError(
             errorMsg,
-            `StepZen ${command}`,
+            'COMMAND_FAILED',
             stderr ? new Error(stderr) : undefined
           ));
         } else {
@@ -277,10 +265,9 @@ export class StepzenCliService {
       }
       
       proc.on('error', (err) => {
-        logger.error(`Failed to spawn StepZen CLI: ${err.message}`);
         reject(new CliError(
           `Failed to spawn StepZen CLI: ${err.message}`,
-          'StepZen CLI',
+          'SPAWN_FAILED',
           err
         ));
       });
@@ -292,10 +279,9 @@ export class StepzenCliService {
             ? `StepZen CLI exited with code ${code}: ${stderr.trim()}`
             : `StepZen CLI exited with code ${code}`;
             
-          logger.error(errorMsg);
           reject(new CliError(
             errorMsg,
-            'StepZen CLI',
+            'COMMAND_FAILED',
             stderr ? new Error(stderr) : undefined
           ));
         } else {

@@ -6,7 +6,7 @@ import * as cp from "child_process";
 import * as https from "https";
 import { parse, NamedTypeNode, OperationDefinitionNode } from "graphql";
 import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
-import { formatError, createError } from "../utils/errors";
+import { formatError } from "../utils/errors";
 import { clearResultsPanel, openResultsPanel } from "../panels/resultsPanel";
 import { logger } from "../services/logger";
 import { summariseDiagnostics, publishDiagnostics } from "../utils/runtimeDiagnostics";
@@ -14,6 +14,7 @@ import { runtimeDiag, cliService } from "../extension";
 import { getOperationMap, getPersistedDocMap, OperationEntry } from "../utils/stepzenProjectScanner";
 import { UI, TIMEOUTS } from "../utils/constants";
 import { StepZenConfig, StepZenResponse, StepZenDiagnostic } from "../types";
+import { ValidationError, NetworkError, handleError } from "../errors";
 
 // Export utility functions for use in other files
 export {
@@ -28,11 +29,9 @@ export {
  */
 function createTempGraphQLFile(content: string): string {
   if (!content || typeof content !== 'string') {
-    throw createError(
+    throw new ValidationError(
       "Invalid query content: expected a non-empty string",
-      "Create Temporary GraphQL File", 
-      undefined,
-      "user"
+      "INVALID_QUERY_CONTENT"
     );
   }
   
@@ -47,11 +46,10 @@ function createTempGraphQLFile(content: string): string {
     logger.debug(`Created temporary query file: ${filePath}`);
     return filePath;
   } catch (err) {
-    throw createError(
+    throw new ValidationError(
       `Failed to create temporary file: ${err instanceof Error ? err.message : String(err)}`,
-      "Create Temporary GraphQL File",
-      err,
-      "filesystem"
+      "FILE_CREATE_FAILED",
+      err
     );
   }
 }
@@ -74,7 +72,11 @@ function cleanupLater(filePath: string): void {
         logger.debug(`Cleaned up temporary file: ${filePath}`);
       }
     } catch (e) {
-      logger.warn(`Failed to clean up temporary file: ${e}`);
+      handleError(new ValidationError(
+        `Failed to clean up temporary file: ${filePath}`,
+        "FILE_CLEANUP_FAILED",
+        e
+      ));
     }
   }, TIMEOUTS.FILE_CLEANUP_DELAY_MS);
 }
@@ -100,7 +102,7 @@ export async function executeStepZenRequest(options: {
 }): Promise<void> {
   // Validate options object
   if (!options || typeof options !== 'object') {
-    vscode.window.showErrorMessage("Invalid request options provided");
+    handleError(new ValidationError("Invalid request options provided", "INVALID_OPTIONS"));
     return;
   }
 
@@ -108,19 +110,19 @@ export async function executeStepZenRequest(options: {
 
   // Validate at least one of queryText or documentId is provided and valid
   if (documentId === undefined && (!queryText || typeof queryText !== 'string')) {
-    vscode.window.showErrorMessage("Invalid request: either documentId or queryText must be provided");
+    handleError(new ValidationError("Invalid request: either documentId or queryText must be provided", "MISSING_QUERY"));
     return;
   }
 
   // Validate operationName if provided
   if (operationName !== undefined && typeof operationName !== 'string') {
-    vscode.window.showErrorMessage("Invalid operation name provided");
+    handleError(new ValidationError("Invalid operation name provided", "INVALID_OPERATION_NAME"));
     return;
   }
 
   // Validate varArgs is an array
   if (!Array.isArray(varArgs)) {
-    vscode.window.showErrorMessage("Invalid variable arguments: expected an array");
+    handleError(new ValidationError("Invalid variable arguments: expected an array", "INVALID_VAR_ARGS"));
     return;
   }
 
@@ -129,9 +131,7 @@ export async function executeStepZenRequest(options: {
   try {
     projectRoot = await resolveStepZenProjectRoot();
   } catch (err) {
-    const errorMsg = formatError(err);
-    vscode.window.showErrorMessage(errorMsg);
-    logger.error(`Failed to resolve project root`, err);
+    handleError(err);
     return;
   }
 
@@ -147,14 +147,10 @@ export async function executeStepZenRequest(options: {
         
       // Verify config file exists
       if (!fs.existsSync(configPath)) {
-        const error = createError(
+        handleError(new ValidationError(
           `StepZen configuration file not found at: ${configPath}`,
-          "Execute StepZen Request",
-          undefined,
-          "config"
-        );
-        vscode.window.showErrorMessage(formatError(error));
-        logger.error(`Configuration error: ${formatError(error)}`, error);
+          "CONFIG_NOT_FOUND"
+        ));
         return;
       }
       
@@ -165,42 +161,35 @@ export async function executeStepZenRequest(options: {
         const configContent = fs.readFileSync(configPath, "utf8");
         
         if (!configContent) {
-          vscode.window.showErrorMessage("StepZen configuration file is empty");
+          handleError(new ValidationError("StepZen configuration file is empty", "EMPTY_CONFIG"));
           return;
         }
         
         const config = JSON.parse(configContent);
         
         if (!config || !config.endpoint) {
-          vscode.window.showErrorMessage("Invalid StepZen configuration: missing endpoint");
+          handleError(new ValidationError("Invalid StepZen configuration: missing endpoint", "MISSING_ENDPOINT"));
           return;
         }
         
         endpoint = config.endpoint;
         apiKey = config.apiKey || "";
       } catch (err) {
-        const error = createError(
+        handleError(new ValidationError(
           "Failed to parse StepZen configuration file",
-          "Execute StepZen Request",
-          err,
-          "parse"
-        );
-        vscode.window.showErrorMessage(formatError(error));
-        logger.error(`Configuration error: ${formatError(error)}`, error);
+          "CONFIG_PARSE_ERROR",
+          err
+        ));
         return;
       }
 
       // Parse endpoint to extract account and domain
       const endpointParts = endpoint.split("/");
       if (endpointParts.length < 2) {
-        const error = createError(
+        handleError(new ValidationError(
           `Invalid StepZen endpoint format: ${endpoint}`,
-          "Execute StepZen Request",
-          undefined,
-          "config"
-        );
-        vscode.window.showErrorMessage(formatError(error));
-        logger.error(formatError(error), error);
+          "INVALID_ENDPOINT_FORMAT"
+        ));
         return;
       }
 
@@ -218,14 +207,11 @@ export async function executeStepZenRequest(options: {
             const fileContent = fs.readFileSync(varArgs[i + 1], "utf8");
             variables = JSON.parse(fileContent);
           } catch (err) {
-            const error = createError(
+            handleError(new ValidationError(
               "Failed to read variables file",
-              "Execute StepZen Request",
-              err,
-              "filesystem"
-            );
-            vscode.window.showErrorMessage(formatError(error));
-            logger.error(formatError(error), error);
+              "VAR_FILE_READ_ERROR",
+              err
+            ));
             return;
           }
         }
@@ -273,22 +259,20 @@ export async function executeStepZenRequest(options: {
                   const json = JSON.parse(responseData);
                   resolve(json);
                 } catch (err) {
-                  reject(createError(
+                  reject(new ValidationError(
                     "Failed to parse StepZen response",
-                    "Execute StepZen Request",
-                    err,
-                    "parse"
+                    "RESPONSE_PARSE_ERROR",
+                    err
                   ));
                 }
               });
             });
             
             req.on('error', (err) => {
-              reject(createError(
+              reject(new NetworkError(
                 "Failed to connect to StepZen API",
-                "Execute StepZen Request",
-                err,
-                "network"
+                "API_CONNECTION_ERROR",
+                err
               ));
             });
             
@@ -309,16 +293,14 @@ export async function executeStepZenRequest(options: {
       
       return;
     } catch (err: unknown) {
-      const errorMsg = formatError(err);
-      vscode.window.showErrorMessage(`StepZen request failed: ${errorMsg}`);
-      logger.error(`StepZen request failed: ${errorMsg}`, err);
+      handleError(err);
       return;
     }
   }
 
   // For regular file-based requests, use the CLI service
   if (!queryText) {
-    vscode.window.showErrorMessage("No query provided for file-based request.");
+    handleError(new ValidationError("No query provided for file-based request.", "MISSING_QUERY_TEXT"));
     return;
   }
 
@@ -361,9 +343,7 @@ export async function executeStepZenRequest(options: {
         // Cleanup temp file later
         cleanupLater(tmpFile);
       } catch (err) {
-        const errorMsg = formatError(err);
-        vscode.window.showErrorMessage(`Failed to execute terminal request: ${errorMsg}`);
-        logger.error(`Terminal request failed: ${formatError(err, true)}`, err);
+        handleError(err);
       }
       return;
     }
@@ -394,18 +374,17 @@ export async function executeStepZenRequest(options: {
                 const varFilePath = varArgs[i + 1];
                 logger.debug(`Reading variables from file: ${varFilePath}`);
                 if (!fs.existsSync(varFilePath)) {
-                  throw new Error(`Variables file not found: ${varFilePath}`);
+                  throw new ValidationError(`Variables file not found: ${varFilePath}`, "VAR_FILE_NOT_FOUND");
                 }
                 const fileContent = fs.readFileSync(varFilePath, "utf8");
                 const fileVars = JSON.parse(fileContent);
                 logger.debug(`Loaded ${Object.keys(fileVars).length} variables from file`);
                 Object.assign(variables, fileVars);
               } catch (err) {
-                throw createError(
+                throw new ValidationError(
                   "Failed to read variables file",
-                  "Execute StepZen Request",
-                  err,
-                  "filesystem"
+                  "VAR_FILE_READ_ERROR",
+                  err
                 );
               }
             }
@@ -422,11 +401,10 @@ export async function executeStepZenRequest(options: {
             logger.debug(`Parsing JSON response${operationName ? ` for operation "${operationName}"` : ''}`);
             json = JSON.parse(stdout) as StepZenResponse;
           } catch (parseErr) {
-            throw createError(
+            throw new ValidationError(
               "Failed to parse StepZen CLI response",
-              "Execute StepZen Request",
-              parseErr,
-              "parse"
+              "CLI_RESPONSE_PARSE_ERROR",
+              parseErr
             );
           }
 
@@ -439,17 +417,13 @@ export async function executeStepZenRequest(options: {
           await openResultsPanel(json);
           logger.info(`StepZen request completed successfully${operationName ? ` for operation "${operationName}"` : ''}`);
         } catch (err) {
-          const errorMsg = formatError(err);
-          vscode.window.showErrorMessage(`Failed to execute request: ${errorMsg}`);
-          logger.error(`Failed to execute request: ${formatError(err, true)}`, err);
+          handleError(err);
           // Clear any partial results
           clearResultsPanel();
         }
       }
     );
   } catch (err: unknown) {
-    const errorMsg = formatError(err);
-    vscode.window.showErrorMessage(`StepZen request failed: ${errorMsg}`);
-    logger.error(`StepZen request failed: ${errorMsg}`, err);
+    handleError(err);
   }
 }
