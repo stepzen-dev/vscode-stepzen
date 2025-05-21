@@ -1,12 +1,12 @@
 import * as vscode from "vscode";
 import { findDefinition } from "../utils/stepzenProjectScanner";
-import { stepzenOutput } from "../extension";
+import { logger } from "../services/logger";
 
 /**
  * Implements Go to Definition functionality for GraphQL symbols
  * Finds the definition of the symbol under the cursor and navigates to it
  * If multiple definitions exist, shows a quick-pick to let the user choose
- * 
+ *
  * @returns Promise that resolves when navigation is complete or cancelled
  */
 export async function goToDefinition() {
@@ -28,13 +28,14 @@ export async function goToDefinition() {
   const locations = findDefinition(token);
   if (!locations || locations.length === 0) {
     vscode.window.showWarningMessage(`No definition found for "${token}".`);
-    stepzenOutput.appendLine(`No definition found for "${token}".`);
+    logger.warn(`No definition found for "${token}".`);
     return;
   }
 
   // Single location found - jump directly to it
   if (locations.length === 1) {
     const loc = locations[0];
+    logger.info(`Found "${token}" in ${loc.filePath}.`);
     const uri = vscode.Uri.file(loc.filePath);
     const pos = new vscode.Position(loc.line, loc.character);
     const doc = await vscode.workspace.openTextDocument(uri);
@@ -45,8 +46,10 @@ export async function goToDefinition() {
   }
 
   // Multiple locations found - offer a quick-pick list for user selection
-  // Log message to the output channel for debugging
-  stepzenOutput.appendLine(`Multiple definitions for "${token}" found. Prompting user to select one.`);
+  // Log message for debugging
+  logger.info(
+    `Multiple definitions for "${token}" found. Prompting user to select one.`,
+  );
   const pick = await vscode.window.showQuickPick(
     locations.map((loc) => {
       const rel = vscode.workspace.asRelativePath(loc.filePath);
@@ -59,7 +62,7 @@ export async function goToDefinition() {
     }),
     {
       placeHolder: `Multiple definitions for "${token}" found…`,
-    }
+    },
   );
 
   if (pick) {
