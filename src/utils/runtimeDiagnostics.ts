@@ -7,7 +7,7 @@
  * ---------------------------------------------------------*/
 import * as vscode from "vscode";
 import { findDefinition } from "../utils/stepzenProjectScanner";
-import { stepzenOutput } from "../extension";
+import { logger } from "../services/logger";
 import { StepZenDiagnostic } from "../types";
 
 /*────────────────────────────── types ─────────────────────────────*/
@@ -64,9 +64,9 @@ export function summariseDiagnostics(raw: StepZenDiagnostic[]): Record<string, R
         }
       }
     }
-    stepzenOutput.appendLine(`[*] Collected ${spanById.size} spans, of which ${fetchSpans.length} are fetch spans`);
+    logger.debug(`[*] Collected ${spanById.size} spans, of which ${fetchSpans.length} are fetch spans`);
   } else {
-    stepzenOutput.appendLine(`[*] No OTel entry found in diagnostics`);
+    logger.debug(`[*] No OTel entry found in diagnostics`);
   }
 
   // ancestor-check helper
@@ -116,7 +116,7 @@ export function summariseDiagnostics(raw: StepZenDiagnostic[]): Record<string, R
     if (d.spanID) {
       const matches = fetchSpans.filter(span => isAncestor(span, d.spanID || ''));
       if (matches.length) {
-        // stepzenOutput.appendLine(`[*] matched ${matches.length} fetch span(s) for spanID=${d.spanID} at path=${key}`);
+        // logger.debug(`[*] matched ${matches.length} fetch span(s) for spanID=${d.spanID} at path=${key}`);
       }
       for (const span of matches) {
         applyHttpSpan(span, bucket);
@@ -139,14 +139,14 @@ function applyHttpSpan(span: RawSpan, bucket: RequestSummary) {
   if (!isNaN(start) && !isNaN(end) && end > start) {
     const httpMs = (end - start) / 1e6;
     bucket.maxMs = Math.max(bucket.maxMs ?? 0, httpMs);
-    // stepzenOutput.appendLine(`    [${span.name}] duration=${httpMs.toFixed(1)}ms`);
+    // logger.debug(`    [${span.name}] duration=${httpMs.toFixed(1)}ms`);
   }
   const attr = span.attributes?.find(a => a.key === 'http.status_code');
   const raw = attr?.value?.intValue ?? attr?.value?.stringValue;
   const st = typeof raw === 'string' ? Number(raw) : raw;
   if (typeof st === 'number' && !isNaN(st)) {
     bucket.maxStatus = Math.max(bucket.maxStatus ?? 0, st);
-    // stepzenOutput.appendLine(`    [status] ${st}`);
+    // logger.debug(`    [status] ${st}`);
   }
 }
 
@@ -234,5 +234,5 @@ export function publishDiagnostics(
   for (const [file, diags] of perFile) {
     collection.set(vscode.Uri.parse(file), diags);
   }
-  stepzenOutput.appendLine(`StepZen runtime diagnostics → ${perFile.size} file(s)`);
+  logger.info(`StepZen runtime diagnostics → ${perFile.size} file(s)`);
 }

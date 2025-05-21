@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { logger } from "../services/logger";
 
 /**
  * Safely registers a VSCode command, capturing and reporting any errors
@@ -24,7 +25,7 @@ export function safeRegisterCommand(
   try {
     return vscode.commands.registerCommand(commandId, callback);
   } catch (err) {
-    console.error(`Failed to register command: ${commandId}`, err);
+    logger.error(`Failed to register command: ${commandId}`, err);
     vscode.window.showErrorMessage(
       `StepZen Tools: Failed to register command "${commandId}"`
     );

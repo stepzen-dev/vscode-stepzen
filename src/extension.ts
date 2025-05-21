@@ -3,14 +3,14 @@ import * as path from "path";
 import * as fs from "fs";
 import { formatError, createError } from "./utils/errors";
 import { UI, FILE_PATTERNS } from "./utils/constants";
-import { logger, stepzenOutput } from "./services/logger";
+import { logger } from "./services/logger";
 import { safeRegisterCommand } from "./utils/safeRegisterCommand";
 import { scanStepZenProject } from "./utils/stepzenProjectScanner";
 import { resolveStepZenProjectRoot } from "./utils/stepzenProject";
 import { StepZenCodeLensProvider } from "./utils/codelensProvider";
 import { StepzenCliService } from "./services/cli";
 
-export { stepzenOutput };
+
 export let stepzenTerminal: vscode.Terminal | undefined;
 export let EXTENSION_URI: vscode.Uri;
 export let runtimeDiag: vscode.DiagnosticCollection;

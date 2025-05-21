@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from "fs";
 import * as path from "path";
-import { logger, stepzenOutput } from '../services/logger';
+import { logger } from '../services/logger';
 import { GRAPHQL } from './constants';
 import {
   parse,

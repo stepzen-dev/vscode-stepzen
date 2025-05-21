@@ -9,7 +9,7 @@ import { parse, NamedTypeNode, OperationDefinitionNode } from "graphql";
 import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
 import { formatError, createError } from "../utils/errors";
 import { clearResultsPanel, openResultsPanel } from "../panels/resultsPanel";
-import { stepzenOutput, logger } from "../services/logger";
+import { logger } from "../services/logger";
 import { summariseDiagnostics, publishDiagnostics } from "../utils/runtimeDiagnostics";
 import { runtimeDiag, cliService } from "../extension";
 import { getOperationMap, getPersistedDocMap, OperationEntry } from "../utils/stepzenProjectScanner";
