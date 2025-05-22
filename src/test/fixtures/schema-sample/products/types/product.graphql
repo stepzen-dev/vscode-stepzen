@@ -1,0 +1,47 @@
+interface Node {
+  id: UUID!
+}
+
+type Product implements Node {
+  id: UUID!
+  name: String!
+  description: String
+  price: Money!
+  category: Category!
+  tags: [String!]
+  inStock: Boolean!
+  variants: [ProductVariant!]
+}
+
+type ProductVariant {
+  id: UUID!
+  name: String!
+  sku: String!
+  price: Money!
+  color: String
+  size: String
+}
+
+type Money {
+  amount: Float!
+  currency: Currency!
+}
+
+type Category {
+  id: UUID!
+  name: String!
+  slug: String!
+  parent: Category
+}
+
+union SearchResult = User | Product | Category
+
+"""
+Supported currencies
+"""
+enum Currency {
+  USD
+  EUR
+  GBP
+  CAD
+}

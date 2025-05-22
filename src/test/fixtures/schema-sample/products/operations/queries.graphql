@@ -1,0 +1,13 @@
+extend type Query {
+  product(id: UUID!): Product
+    @graphql(endpoint: "https://products.example.com/graphql")
+
+  products(categoryId: UUID, limit: Int = 20): [Product]
+    @graphql(endpoint: "https://products.example.com/graphql")
+
+  productsByIds(ids: [UUID!]!): [Product]
+    @graphql(endpoint: "https://products.example.com/graphql")
+
+  searchProducts(query: String!, limit: Int = 10): [SearchResult]
+    @graphql(endpoint: "https://products.example.com/graphql")
+}

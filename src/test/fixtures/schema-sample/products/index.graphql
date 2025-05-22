@@ -1,0 +1,2 @@
+extend schema
+  @sdl(files: ["types/product.graphql", "operations/queries.graphql"])

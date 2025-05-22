@@ -1,0 +1,67 @@
+type User {
+  id: UUID!
+  email: EmailAddress!
+  username: String!
+  role: UserRole!
+  profile: UserProfile
+  favoriteProductIds: [UUID!]!
+  isActive: Boolean!
+  createdAt: String
+}
+
+type UserProfile {
+  firstName: String
+  lastName: String
+  avatar: String
+  bio: String
+  preferences: UserPreferences
+}
+
+type UserPreferences {
+  newsletter: Boolean!
+  notifications: NotificationSettings!
+  theme: String
+}
+
+type NotificationSettings {
+  email: Boolean!
+  push: Boolean!
+  sms: Boolean!
+}
+
+"""
+User role levels
+"""
+enum UserRole {
+  """
+  Administrator with full access
+  """
+  ADMIN
+  """
+  Regular user
+  """
+  USER
+  """
+  Content moderator
+  """
+  MODERATOR
+  GUEST
+}
+
+input CreateUserInput {
+  email: EmailAddress!
+  username: String!
+  profile: UserProfileInput
+}
+
+input UserProfileInput {
+  firstName: String
+  lastName: String
+  bio: String
+}
+
+input UpdateUserInput {
+  email: EmailAddress
+  username: String
+  profile: UserProfileInput
+}

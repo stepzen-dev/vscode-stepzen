@@ -1,0 +1,45 @@
+query GetUserProfile($userId: ID!) {
+  user(id: $userId) {
+    id
+    username
+    email
+    profile {
+      firstName
+      lastName
+      avatar
+    }
+    recentOrders {
+      id
+      total {
+        amount
+        currency
+      }
+      status
+    }
+  }
+}
+
+query SearchProducts($query: String!, $limit: Int = 10) {
+  searchProducts(query: $query, limit: $limit) {
+    ... on Product {
+      id
+      name
+      price {
+        amount
+        currency
+      }
+      averageRating
+    }
+  }
+}
+
+mutation UpdateUserProfile($input: UpdateUserInput!) {
+  updateUser(input: $input) {
+    id
+    username
+    profile {
+      firstName
+      lastName
+    }
+  }
+}

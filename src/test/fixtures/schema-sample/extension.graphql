@@ -1,0 +1,69 @@
+extend type User {
+  """
+  User's recent orders via materializer
+  """
+  recentOrders: [Order]
+    @materializer(
+      query: "ordersByUserId"
+      arguments: [{ name: "userId", field: "id" }]
+    )
+
+  """
+  User's favorite products
+  """
+  favoriteProducts: [Product]
+    @materializer(
+      query: "productsByIds"
+      arguments: [{ name: "ids", field: "favoriteProductIds" }]
+    )
+}
+
+extend type Product {
+  """
+  Average rating from reviews
+  """
+  averageRating: Float
+    @materializer(
+      query: "getProductRating { averageRating }"
+      arguments: [{ name: "productId", field: "id" }]
+    )
+}
+
+extend type Order {
+  """
+  Shipping tracking info
+  """
+  tracking: ShippingInfo
+    @materializer(
+      query: "getShippingInfo"
+      arguments: [{ name: "orderId", field: "id" }]
+    )
+}
+
+type ShippingInfo {
+  trackingNumber: String
+  carrier: ShippingCarrier
+  status: ShippingStatus
+  estimatedDelivery: String
+}
+
+"""
+Shipping carriers we support
+"""
+enum ShippingCarrier {
+  UPS
+  FEDEX
+  USPS
+  DHL
+}
+
+enum ShippingStatus {
+  PENDING
+  SHIPPED
+  IN_TRANSIT
+  DELIVERED
+  """
+  Shipping exception
+  """
+  EXCEPTION
+}
