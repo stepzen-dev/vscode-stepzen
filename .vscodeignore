@@ -4,6 +4,10 @@ out/**
 coverage/**
 node_modules/**
 src/**
+src/test/**
+src/test/fixtures/**
+**/test/**
+**/fixtures/**
 .gitignore
 .yarnrc
 esbuild.js
