@@ -1,7 +1,13 @@
+/**
+ * Copyright IBM Corp. 2025
+ * Assisted by CursorAI
+ */
+
 import * as vscode from "vscode";
 import { openSchemaVisualizerPanel } from "../panels/schemaVisualizerPanel";
 import { EXTENSION_URI } from "../extension";
 import { services } from "../services";
+import { handleError } from "../errors";
 
 /**
  * Opens the schema visualizer panel.
@@ -14,10 +20,16 @@ export async function openSchemaVisualizer(
   context: vscode.ExtensionContext,
   focusedType?: string,
 ) {
-  services.logger.info(
-    `Opening Schema Visualizer command${focusedType ? ` focused on type: ${focusedType}` : ""}`,
-  );
-  
-  const extensionUri = EXTENSION_URI || context.extensionUri;
-  await openSchemaVisualizerPanel(extensionUri, focusedType);
+  try {
+    services.logger.info(
+      `Opening Schema Visualizer command${focusedType ? ` focused on type: ${focusedType}` : ""}`,
+    );
+    
+    const extensionUri = EXTENSION_URI || context.extensionUri;
+    await openSchemaVisualizerPanel(extensionUri, focusedType);
+    
+    services.logger.info("Schema Visualizer opened successfully");
+  } catch (err) {
+    handleError(err);
+  }
 }

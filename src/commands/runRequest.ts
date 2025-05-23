@@ -1,3 +1,8 @@
+/**
+ * Copyright IBM Corp. 2025
+ * Assisted by CursorAI
+ */
+
 // src/commands/runRequest.ts
 import * as vscode from "vscode";
 import { parse, NamedTypeNode, OperationDefinitionNode } from "graphql";
@@ -157,57 +162,73 @@ async function collectVariableArgs(query: string, chosenOp?: string): Promise<st
  * If multiple operations are found, prompts the user to select one
  */
 export async function runGraphQLRequest() {
-  // Check workspace trust first
-  if (!vscode.workspace.isTrusted) {
-    const message = "Running GraphQL requests is not available in untrusted workspaces. Open this folder in a trusted workspace to enable this feature.";
-    vscode.window.showWarningMessage(message);
-    return;
-  }
-  
-  const editor = vscode.window.activeTextEditor;
-  if (!editor) {
-    vscode.window.showErrorMessage("No active editor with GraphQL request.");
-    return;
-  }
-
-  // Verify document exists
-  if (!editor.document) {
-    vscode.window.showErrorMessage("No document available in active editor.");
-    return;
-  }
-
-  const query = editor.document.getText(
-    editor.selection.isEmpty ? undefined : editor.selection
-  );
-  if (!query || !query.trim()) {
-    vscode.window.showWarningMessage("No GraphQL query selected or found.");
-    return;
-  }
-
-  // Handle multiple operations
-  let operationName: string | undefined;
-  const ops = extractOperationNames(query);
-  if (ops.length > 1) {
-    operationName = await vscode.window.showQuickPick(ops, {
-      placeHolder: "Multiple operations found. Select one to execute.",
-    });
-    if (!operationName) {
-      return; // cancelled
+  try {
+    services.logger.info("Starting Run GraphQL Request command");
+    
+    // Check workspace trust first
+    if (!vscode.workspace.isTrusted) {
+      const message = "Running GraphQL requests is not available in untrusted workspaces. Open this folder in a trusted workspace to enable this feature.";
+      vscode.window.showWarningMessage(message);
+      services.logger.warn("Run GraphQL Request failed: Workspace not trusted");
+      return;
     }
-  }
+    
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      vscode.window.showErrorMessage("No active editor with GraphQL request.");
+      services.logger.warn("Run GraphQL Request failed: No active editor");
+      return;
+    }
 
-  // Collect variable args
-  const varArgs = await collectVariableArgs(query, operationName);
-  if (varArgs === undefined) {
-    return; // user cancelled
-  }
+    // Verify document exists
+    if (!editor.document) {
+      vscode.window.showErrorMessage("No document available in active editor.");
+      services.logger.warn("Run GraphQL Request failed: No document available");
+      return;
+    }
 
-  // Execute using file-based approach
-  await executeStepZenRequest({
-    queryText: query,
-    operationName,
-    varArgs
-  });
+    const query = editor.document.getText(
+      editor.selection.isEmpty ? undefined : editor.selection
+    );
+    if (!query || !query.trim()) {
+      vscode.window.showWarningMessage("No GraphQL query selected or found.");
+      services.logger.warn("Run GraphQL Request failed: No query found");
+      return;
+    }
+
+    services.logger.info("Processing GraphQL query for execution");
+
+    // Handle multiple operations
+    let operationName: string | undefined;
+    const ops = extractOperationNames(query);
+    if (ops.length > 1) {
+      operationName = await vscode.window.showQuickPick(ops, {
+        placeHolder: "Multiple operations found. Select one to execute.",
+      });
+      if (!operationName) {
+        services.logger.info("Run GraphQL Request cancelled by user");
+        return; // cancelled
+      }
+    }
+
+    // Collect variable args
+    const varArgs = await collectVariableArgs(query, operationName);
+    if (varArgs === undefined) {
+      services.logger.info("Run GraphQL Request cancelled by user during variable collection");
+      return; // user cancelled
+    }
+
+    // Execute using file-based approach
+    await executeStepZenRequest({
+      queryText: query,
+      operationName,
+      varArgs
+    });
+    
+    services.logger.info("Run GraphQL Request completed successfully");
+  } catch (err) {
+    handleError(err);
+  }
 }
 
 /**
