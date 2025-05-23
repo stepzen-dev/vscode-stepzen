@@ -3,7 +3,6 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import { logger } from './logger';
-import { resolveStepZenProjectRoot } from '../utils/stepzenProject';
 import { CliError } from '../errors';
 
 /**
@@ -21,7 +20,10 @@ export class StepzenCliService {
   async deploy(): Promise<void> {
     try {
       logger.info('Starting StepZen deployment...');
-      const projectRoot = await resolveStepZenProjectRoot();
+      
+      // Import services here to avoid circular dependency
+      const { services } = await import('./index.js');
+      const projectRoot = await services.projectResolver.resolveStepZenProjectRoot();
       
       // Instead of using inherit, we'll capture the output for better error handling
       const result = await this.spawnProcessWithOutput(['deploy'], {
@@ -70,7 +72,10 @@ export class StepzenCliService {
     
     try {
       logger.info('Executing StepZen GraphQL request...');
-      const projectRoot = await resolveStepZenProjectRoot();
+      
+      // Import services here to avoid circular dependency
+      const { services } = await import('./index.js');
+      const projectRoot = await services.projectResolver.resolveStepZenProjectRoot();
       
       // Create a temporary file with the query in system temp directory
       const timestamp = new Date().getTime();

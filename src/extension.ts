@@ -5,7 +5,6 @@ import { StepZenError, handleError } from "./errors";
 import { UI, FILE_PATTERNS } from "./utils/constants";
 import { safeRegisterCommand } from "./utils/safeRegisterCommand";
 import { scanStepZenProject, computeHash } from "./utils/stepzenProjectScanner";
-import { resolveStepZenProjectRoot } from "./utils/stepzenProject";
 import { StepZenCodeLensProvider } from "./utils/codelensProvider";
 import { services } from "./services";
 
@@ -61,10 +60,13 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
   watcher?.dispose();
   activeFolder = folder;
 
+  // Clear project resolver cache when switching workspace folders
+  services.projectResolver.clearCache();
+
   // figure out where the actual StepZen project lives (may be nested)
   let projectRoot: string;
   try {
-    projectRoot = await resolveStepZenProjectRoot(folder.uri);
+    projectRoot = await services.projectResolver.resolveStepZenProjectRoot(folder.uri);
   } catch (err) {
     vscode.window.showWarningMessage(
       `StepZen Tools: could not locate a StepZen project under ${folder.name}`,
@@ -271,6 +273,17 @@ export async function activate(context: vscode.ExtensionContext) {
       const folder = editor && getActiveWorkspaceFolder(editor.document.uri);
       if (folder && folder !== activeFolder) {
         await initialiseFor(folder);
+      }
+    }),
+  );
+
+  // 3 Clear project resolver cache when workspace folders change
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeWorkspaceFolders((event) => {
+      // Clear cache when workspace folders are added or removed
+      if (event.added.length > 0 || event.removed.length > 0) {
+        services.logger.debug("Workspace folders changed, clearing project resolver cache");
+        services.projectResolver.clearCache();
       }
     }),
   );
