@@ -1,0 +1,27 @@
+"""
+Root StepZen schema
+"""
+scalar UUID
+scalar EmailAddress
+
+type Query {
+  hello: String
+  user(id: ID!): User
+}
+
+type Mutation {
+  updateUser(input: UpdateUserInput!): User
+}
+
+schema
+  @sdl(
+    files: [
+      "extension.graphql"
+      "users/schema.graphql"
+      "products/index.graphql"
+      "orders/atom.graphql"
+    ]
+    executables: [{ document: "executables/exec1.graphql", persist: false }]
+  ) {
+  query: Query
+}

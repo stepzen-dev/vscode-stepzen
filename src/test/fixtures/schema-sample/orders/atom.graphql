@@ -1,0 +1,75 @@
+type Order {
+  id: String!
+  userId: String!
+  items: [OrderItem!]!
+  total: Money!
+  status: OrderStatus!
+  createdAt: String!
+}
+
+type OrderItem {
+  id: UUID!
+  productId: UUID!
+  quantity: Int!
+  price: Money!
+}
+
+type AverageRating {
+  averageRating: Float!
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+extend type Query {
+  order(id: String!): Order
+    @dbquery(
+      type: "postgresql"
+      query: """
+      SELECT id, user_id as userId, total_amount, total_currency, status, created_at
+      FROM orders
+      WHERE id = $1
+      """
+      configuration: "postgresql_config"
+    )
+
+  ordersByUserId(userId: UUID!): [Order]
+    @dbquery(
+      type: "postgresql"
+      query: """
+      SELECT id, user_id as userId, total_amount, total_currency, status, created_at
+      FROM orders
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+      """
+      configuration: "postgresql_config"
+    )
+
+  getProductRating(productId: UUID!): AverageRating
+    @dbquery(
+      type: "postgresql"
+      query: """
+      SELECT AVG(rating) as average_rating
+      FROM product_reviews
+      WHERE product_id = $1
+      """
+      configuration: "postgresql_config"
+    )
+
+  getShippingInfo(orderId: String!): ShippingInfo
+    @dbquery(
+      type: "postgresql"
+      query: """
+      SELECT tracking_number, carrier, status, estimated_delivery
+      FROM shipping_info
+      WHERE order_id = $1
+      """
+      configuration: "postgresql_config"
+    )
+}

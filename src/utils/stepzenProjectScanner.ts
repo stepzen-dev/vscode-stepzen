@@ -116,6 +116,23 @@ function clearDefinitionIndex() {
 }
 
 /**
+ * Clears all scanner state including root operations, operation map, and persisted documents.
+ * Used for testing to ensure clean state between test runs.
+ */
+export function clearScannerState() {
+  clearDefinitionIndex();
+  
+  // Clear root operations
+  Object.keys(rootOperations).forEach(key => delete rootOperations[key]);
+  
+  // Clear operation map
+  Object.keys(operationMap).forEach(key => delete operationMap[key]);
+  
+  // Clear persisted document map
+  Object.keys(persistedDocMap).forEach(key => delete persistedDocMap[key]);
+}
+
+/**
  * Finds all definitions of a symbol in the project.
  * @param name The symbol name to find
  * @returns Array of locations or undefined if not found

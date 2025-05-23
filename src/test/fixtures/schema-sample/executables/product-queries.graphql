@@ -1,0 +1,30 @@
+query GetProduct($id: UUID!) {
+  product(id: $id) {
+    id
+    name
+    description
+    price {
+      amount
+      currency
+    }
+    category {
+      id
+      name
+    }
+    inStock
+  }
+}
+
+query GetProducts($categoryId: UUID, $limit: Int = 20) {
+  products(categoryId: $categoryId, limit: $limit) {
+    id
+    name
+    price {
+      amount
+      currency
+    }
+    inStock
+  }
+}
+
+

@@ -1,0 +1,14 @@
+extend schema @sdl(files: ["schema.graphql"])
+
+extend type Query {
+  user(id: UUID!): User
+    @rest(endpoint: "https://api.example.com/users/$id", method: GET)
+
+  users(limit: Int = 10, offset: Int = 0): [User]
+    @rest(endpoint: "https://api.example.com/users", method: GET)
+}
+
+extend type Mutation {
+  createUser(input: CreateUserInput!): User
+    @rest(endpoint: "https://api.example.com/users", method: POST)
+}

@@ -1,0 +1,7 @@
+extend schema
+  @sdl(
+    files: ["types/product.graphql", "operations/queries.graphql"]
+    executables: [
+      { document: "executables/product-queries.graphql", persist: true }
+    ]
+  )
