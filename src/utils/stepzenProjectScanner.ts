@@ -1,7 +1,12 @@
+/**
+ * Copyright IBM Corp. 2025
+ * Assisted by CursorAI
+ */
+
 import { readFileSync, existsSync } from "fs";
 import * as path from "path";
 import { logger } from '../services/logger';
-import { GRAPHQL } from './constants';
+import { GRAPHQL, GraphQLOperationType, GraphQLScalarType } from './constants';
 import {
   parse,
   visit,
@@ -181,7 +186,7 @@ function isRootObject(def: DefinitionNode): def is ObjectTypeDefinitionNode | Ob
   }
   
   const typeName = (def as ObjectTypeDefinitionNode | ObjectTypeExtensionNode).name.value;
-  const isRoot = ROOT_TYPES.has(typeName);
+  const isRoot = ROOT_TYPES.has(typeName as GraphQLOperationType);
   
   if (isRoot) {
     logger.info(`Found root type: ${typeName}`);
@@ -733,5 +738,5 @@ export function computeHash(input: string): string {
  * @returns True if the type is a scalar type
  */
 function isScalarType(typeName: string): boolean {
-  return GRAPHQL.SCALAR_TYPES.includes(typeName);
+  return GRAPHQL.SCALAR_TYPES.includes(typeName as GraphQLScalarType);
 }

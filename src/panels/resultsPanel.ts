@@ -1,8 +1,14 @@
+/**
+ * Copyright IBM Corp. 2025
+ * Assisted by CursorAI
+ */
+
 // src/panels/resultsPanel.ts
 import * as vscode from "vscode";
 import { Uri } from "vscode";
 import { EXTENSION_URI } from "../extension";
 import { StepZenResponse } from "../types";
+import { UI } from "../utils/constants";
 
 /** The singleton results panel instance */
 let panel: vscode.WebviewPanel | undefined;
@@ -16,8 +22,8 @@ export async function openResultsPanel(payload: StepZenResponse) {
   const extensionUri = EXTENSION_URI;
   if (!panel) {
     panel = vscode.window.createWebviewPanel(
-      "stepzen.results",
-      "StepZen Request Results",
+      UI.RESULTS_PANEL_VIEW_TYPE,
+      UI.RESULTS_PANEL_TITLE,
       vscode.ViewColumn.Beside,
       {
         enableScripts: true,
@@ -72,7 +78,7 @@ function getHtml(
   <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource}; style-src ${webview.cspSource}; script-src 'nonce-${nonce}' ${webview.cspSource};">
-    <title>StepZen Request Results</title>
+    <title>${UI.RESULTS_PANEL_TITLE}</title>
     
     <!-- Link to CSS file instead of inline styles -->
     <link rel="stylesheet" href="${getUri(['css', 'results-panel.css'])}">

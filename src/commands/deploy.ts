@@ -1,6 +1,12 @@
+/**
+ * Copyright IBM Corp. 2025
+ * Assisted by CursorAI
+ */
+
 import * as vscode from "vscode";
 import { services } from "../services";
 import { handleError } from "../errors";
+import { MESSAGES, PROGRESS_MESSAGES } from "../utils/constants";
 
 /**
  * Deploys the current StepZen project to StepZen service
@@ -11,9 +17,8 @@ import { handleError } from "../errors";
 export async function deployStepZen() {
   // Check workspace trust first
   if (!vscode.workspace.isTrusted) {
-    const message = "StepZen deployment is not available in untrusted workspaces. Open this folder in a trusted workspace to enable deployment.";
-    vscode.window.showWarningMessage(message);
-    services.logger.warn(`Deploy failed: ${message}`);
+    vscode.window.showWarningMessage(MESSAGES.FEATURE_NOT_AVAILABLE_UNTRUSTED);
+    services.logger.warn(`Deploy failed: ${MESSAGES.FEATURE_NOT_AVAILABLE_UNTRUSTED}`);
     return;
   }
 
@@ -29,7 +34,7 @@ export async function deployStepZen() {
     
     try {
       // Use the CLI service to perform the deployment
-      progress.report({ increment: 50, message: "Uploading schema to StepZen..." });
+      progress.report({ increment: 50, message: PROGRESS_MESSAGES.UPLOADING_SCHEMA });
       await services.cli.deploy();
       
       // Show success message to the user

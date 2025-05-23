@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import { logger } from './logger';
 import { CliError } from '../errors';
+import { TEMP_FILE_PATTERNS, TIMEOUTS } from "../utils/constants";
 
 /**
  * Service for interacting with the StepZen CLI
@@ -79,7 +80,7 @@ export class StepzenCliService {
       
       // Create a temporary file with the query in system temp directory
       const timestamp = new Date().getTime();
-      tmpFile = path.join(os.tmpdir(), `stepzen-query-${timestamp}.graphql`);
+      tmpFile = path.join(os.tmpdir(), `${TEMP_FILE_PATTERNS.QUERY_PREFIX}${timestamp}${TEMP_FILE_PATTERNS.GRAPHQL_EXTENSION}`);
       fs.writeFileSync(tmpFile, query, 'utf8');
       logger.debug(`Created temporary query file: ${tmpFile}`);
       
@@ -102,7 +103,7 @@ export class StepzenCliService {
           } catch (e) {
             logger.warn(`Failed to clean up temporary variables file: ${e}`);
           }
-        }, 5000);
+        }, TIMEOUTS.FILE_CLEANUP_DELAY_MS);
       }
       
       // Build args array for the request command
@@ -147,7 +148,7 @@ export class StepzenCliService {
         } catch (e) {
           logger.warn(`Failed to clean up temporary query file: ${e}`);
         }
-      }, 5000);
+      }, TIMEOUTS.FILE_CLEANUP_DELAY_MS);
       
       return stdout;
     } catch (err) {

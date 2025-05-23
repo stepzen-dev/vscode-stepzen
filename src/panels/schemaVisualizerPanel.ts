@@ -1,3 +1,8 @@
+/**
+ * Copyright IBM Corp. 2025
+ * Assisted by CursorAI
+ */
+
 // src/panels/schemaVisualizerPanel.ts
 import * as vscode from "vscode";
 import { Uri } from "vscode";
@@ -14,6 +19,7 @@ import { services } from "../services";
 import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
 import * as path from "path";
 import * as fs from "fs";
+import { MESSAGES, FILE_PATTERNS, UI } from "../utils/constants";
 
 /**
  * Model representing the GraphQL schema for visualization
@@ -46,8 +52,8 @@ export async function openSchemaVisualizerPanel(
   // Create panel if it doesn't exist
   if (!panel) {
     panel = vscode.window.createWebviewPanel(
-      "stepzenSchemaVisualizer",
-      "StepZen Schema Visualizer",
+      UI.SCHEMA_VISUALIZER_VIEW_TYPE,
+      UI.SCHEMA_VISUALIZER_TITLE,
       vscode.ViewColumn.Beside,
       {
         enableScripts: true,
@@ -232,7 +238,7 @@ async function ensureSchemaDataLoaded(): Promise<boolean> {
 
     // Use the existing utility to find the project root
     projectRoot = await resolveStepZenProjectRoot(hintUri);
-    const indexPath = path.join(projectRoot, "index.graphql");
+    const indexPath = path.join(projectRoot, FILE_PATTERNS.MAIN_SCHEMA_FILE);
 
     // Verify that the index file exists
     if (!fs.existsSync(indexPath)) {
@@ -323,11 +329,7 @@ function getNoProjectHtml(): string {
       <div class="error-container">
         <h2>No StepZen Project Found</h2>
         <p>
-          The Schema Visualizer couldn't find a valid StepZen project in your workspace.
-          Please open a folder containing a StepZen project and try again.
-        </p>
-        <p>
-          A StepZen project should contain a <code>stepzen.config.json</code> file and an <code>index.graphql</code> file.
+          ${MESSAGES.STEPZEN_PROJECT_DESCRIPTION}
         </p>
       </div>
     </body>

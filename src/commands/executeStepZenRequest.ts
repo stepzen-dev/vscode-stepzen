@@ -7,7 +7,7 @@ import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
 import { clearResultsPanel, openResultsPanel } from "../panels/resultsPanel";
 import { summariseDiagnostics, publishDiagnostics } from "../utils/runtimeDiagnostics";
 import { runtimeDiag } from "../extension";
-import { UI, TIMEOUTS } from "../utils/constants";
+import { UI, TIMEOUTS, TEMP_FILE_PATTERNS, FILE_PATTERNS } from "../utils/constants";
 import { services } from "../services";
 import { StepZenResponse, StepZenDiagnostic } from "../types";
 import { ValidationError, NetworkError, handleError } from "../errors";
@@ -36,7 +36,7 @@ function createTempGraphQLFile(content: string): string {
   const tempDir = os.tmpdir();
   const timestamp = new Date().getTime();
   const randomPart = Math.random().toString(36).substring(2, 10);
-  const filename = `stepzen-query-${timestamp}-${randomPart}.graphql`;
+  const filename = `${TEMP_FILE_PATTERNS.QUERY_PREFIX}${timestamp}-${randomPart}${TEMP_FILE_PATTERNS.GRAPHQL_EXTENSION}`;
   const filePath = path.join(tempDir, filename);
   
   try {
@@ -139,7 +139,7 @@ export async function executeStepZenRequest(options: {
   if (documentId) {
     try {
       // Get StepZen config to build the endpoint URL
-      const configPath = path.join(projectRoot, "stepzen.config.json");
+      const configPath = path.join(projectRoot, FILE_PATTERNS.CONFIG_FILE);
       services.logger.debug(`Looking for config file at: ${configPath}`);
         
       // Verify config file exists
