@@ -1,0 +1,363 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# VSCode StepZen Extension Development Rules
+
+This project is a Visual Studio Code extension for working with StepZen GraphQL projects. Follow these conventions and patterns when contributing to or modifying this codebase.
+
+**Note**: This project is undergoing active refactoring. Some patterns may change as issues #32-#49 are implemented.
+
+## Project Structure & Architecture
+
+### Directory Organization
+- `src/commands/` - VSCode command implementations (being standardized via #35)
+- `src/services/` - Business logic services (CLI, Logger, etc.)
+- `src/utils/` - Utility functions and helpers (being reorganized via #49, #45)
+- `src/panels/` - WebView panel implementations (base helper coming via #46)
+- `src/types/` - TypeScript type definitions
+- `src/errors/` - Error handling classes and utilities
+- `src/test/` - Test files organized by type (unit, integration, fixtures, helpers)
+
+### File Naming Conventions
+- Use camelCase for file names: `stepzenProjectScanner.ts`
+- Test files: `*.test.ts` suffix
+- Type definition files: descriptive names in `src/types/`
+- Constants: being centralized via #30 - check current patterns
+
+## Code Style & Standards
+
+### TypeScript Configuration
+- Target: ES2022, Module: Node16
+- Strict mode enabled with additional checks:
+  - `noImplicitReturns: true`
+  - `noFallthroughCasesInSwitch: true`
+  - `noUnusedParameters: true`
+  - `noUnusedLocals: true`
+
+### ESLint Rules (Enhanced via #32)
+- **No console statements**: Use `services.logger` instead of `console.log`
+- **Naming convention**: camelCase for imports, PascalCase for types
+- **Semicolons required**
+- **Strict equality**: Use `===` and `!==`
+- **Curly braces**: Always use braces for control statements
+- Additional rules coming via #32 (ESLint + ts-prune + depcheck)
+
+### Import Patterns
+```typescript
+// VSCode API
+import * as vscode from "vscode";
+
+// Node.js built-ins
+import * as fs from "fs";
+import * as path from "path";
+
+// GraphQL
+import { parse, OperationDefinitionNode } from "graphql";
+
+// Internal services
+import { services } from "../services";
+
+// Internal utilities
+import { handleError, ValidationError } from "../errors";
+// Note: Constants organization changing via #30
+```
+
+## Service Architecture
+
+### Dependency Injection
+Use the service registry pattern for testability:
+
+```typescript
+// Use services instead of direct imports
+import { services } from "../services";
+
+// In functions
+services.logger.info("Message");
+services.cli.deploy();
+```
+
+### Error Handling
+- Use custom error classes from `src/errors/`
+- Always use `handleError()` for consistent error processing
+- Validate inputs early with descriptive error messages
+
+```typescript
+import { handleError, ValidationError, NetworkError } from "../errors";
+
+// Input validation
+if (!query || typeof query !== 'string') {
+  throw new ValidationError("Invalid query: expected a non-empty string", "INVALID_QUERY");
+}
+
+// Error handling
+try {
+  // risky operation
+} catch (err) {
+  handleError(err);
+}
+```
+
+## Command Implementation (Being Standardized via #35)
+
+### Command Structure
+Commands are being standardized via #35. Current pattern:
+
+```typescript
+export async function commandName() {
+  // 1. Check workspace trust if needed
+  if (!vscode.workspace.isTrusted) {
+    vscode.window.showWarningMessage("Feature not available in untrusted workspaces");
+    return;
+  }
+
+  // 2. Validate preconditions
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
+    vscode.window.showErrorMessage("No active editor");
+    return;
+  }
+
+  // 3. Main logic with error handling
+  try {
+    // Implementation
+  } catch (err) {
+    handleError(err);
+  }
+}
+```
+
+**Note**: Command patterns may change as #35 (CMD-INFRA), #38 (CMD-REQ-SPLIT), and #40-#43 are implemented.
+
+### Progress Reporting
+For long-running operations, use `vscode.window.withProgress`:
+
+```typescript
+await vscode.window.withProgress({
+  location: vscode.ProgressLocation.Notification,
+  title: "Processing...",
+  cancellable: true
+}, async (progress, token) => {
+  // Implementation with progress.report()
+});
+```
+
+## Testing Standards (Expanding via #33)
+
+### Test Organization
+- Unit tests: `src/test/unit/` - mirror source structure
+- Integration tests: `src/test/integration/`
+- Fixtures: `src/test/fixtures/` - reusable test data
+- Helpers: `src/test/helpers/` - shared test utilities
+
+### Test Patterns
+```typescript
+import * as assert from "assert";
+import { services, setMockServices } from "../../services";
+import { createMock } from "../helpers/test-utils";
+
+suite("Test Suite Name", () => {
+  setup(() => {
+    // Setup before each test
+  });
+
+  teardown(() => {
+    // Cleanup after each test
+  });
+
+  test("should do something specific", () => {
+    // Arrange
+    const mockServices = {
+      logger: createMock({ info: () => {}, error: () => {} })
+    };
+    const original = setMockServices(mockServices);
+
+    try {
+      // Act & Assert
+      assert.strictEqual(actual, expected, "Descriptive message");
+    } finally {
+      // Cleanup
+      setMockServices(original);
+    }
+  });
+});
+```
+
+### Coverage Requirements
+- Aim for 100% coverage on utility functions
+- Test both happy path and error conditions
+- Use descriptive test names and assertion messages
+- **Note**: Test expansion planned via #33
+
+## Constants & Configuration (Being Centralized via #30)
+
+### Use Centralized Constants
+**Note**: Constants are being reorganized via #30. Check current location before using:
+
+```typescript
+// Pattern may change - verify current structure
+import { UI, FILE_PATTERNS, TIMEOUTS, GRAPHQL } from "../utils/constants";
+
+// Good
+const outputChannel = vscode.window.createOutputChannel(UI.OUTPUT_CHANNEL_NAME);
+const configPath = path.join(projectRoot, FILE_PATTERNS.CONFIG_FILE);
+
+// Avoid hardcoded strings
+```
+
+### Configuration Access
+```typescript
+const cfg = vscode.workspace.getConfiguration("stepzen");
+const logLevel = cfg.get<string>("logLevel", "info");
+const logToFile = cfg.get<boolean>("logToFile", false);
+```
+
+## WebView Panels (Base Helper Coming via #46)
+
+### Panel Lifecycle
+- Implement proper disposal and cleanup
+- Handle message passing between webview and extension
+- Use CSP (Content Security Policy) for security
+- **Note**: BaseWebviewPanel helper coming via #46
+
+### Resource Management
+```typescript
+// Proper cleanup
+panel.onDidDispose(() => {
+  // Cleanup resources
+});
+
+// Message handling
+panel.webview.onDidReceiveMessage(message => {
+  switch (message.command) {
+    case 'action':
+      // Handle action
+      break;
+  }
+});
+```
+
+## GraphQL Specific Patterns (Major Changes Coming)
+
+### Schema Scanning (Being Split via #49)
+**Note**: `stepzenProjectScanner.ts` is being split into parts via #49. Current patterns:
+- Use scanner functions for schema analysis
+- Clear scanner state between operations: `clearScannerState()`
+- Handle nested SDL files and executables properly
+
+**Warning**: Scanner API may change significantly with #49 refactoring.
+
+### AST Parsing (Changing via #36)
+**Note**: GraphQL AST parsing is being enhanced via #36. Current pattern:
+
+```typescript
+// Extract operation names
+const ops = extractOperationNames(query);
+
+// Handle multiple operations
+if (ops.length > 1) {
+  const operationName = await vscode.window.showQuickPick(ops, {
+    placeHolder: "Select operation to execute"
+  });
+}
+```
+
+### CodeLens (Being Refined via #44)
+CodeLens functionality is being refined via #44 to inject services & AST parsing.
+
+## Build & Development
+
+### Scripts
+- `npm run compile` - Build extension
+- `npm run watch` - Watch mode for development
+- `npm run test` - Run all tests
+- `npm run lint` - ESLint checking (enhanced via #32)
+- `npm run package` - Create VSIX package
+
+### esbuild Configuration
+- Bundle: true, Format: CJS, Platform: Node
+- External: ["vscode"]
+- Minify in production, sourcemaps in development
+- **Note**: Webview bundling changes coming via #31
+
+## Documentation
+
+### Code Comments
+- Use JSDoc for public functions
+- Include parameter types and return types
+- Document complex business logic
+
+```typescript
+/**
+ * Extracts operation names from a GraphQL query string
+ * @param query The GraphQL query string to parse
+ * @returns Array of operation names found in the query
+ */
+function extractOperationNames(query: string): string[] {
+  // Implementation
+}
+```
+
+### README Updates
+- Keep feature list current
+- Update installation instructions
+- Document new commands and configuration options
+
+## Security & Trust
+
+### Workspace Trust
+Always check workspace trust for operations that:
+- Execute external commands
+- Read/write files
+- Make network requests
+
+```typescript
+if (!vscode.workspace.isTrusted) {
+  vscode.window.showWarningMessage("Feature not available in untrusted workspaces");
+  return;
+}
+```
+
+### File Operations
+- Use proper error handling for file I/O
+- Clean up temporary files with timeouts
+- Validate file paths and contents
+
+## Performance
+
+### Async Operations
+- Use proper async/await patterns
+- Handle cancellation tokens where appropriate
+- Avoid blocking the main thread
+
+### Memory Management
+- Dispose of resources properly
+- Clear caches when appropriate
+- Use weak references for event listeners where needed
+
+## String Externalization (Coming via #39)
+
+**Note**: User-visible strings are being externalized via #39 for internationalization support.
+
+---
+
+## Refactoring Notes
+
+**Active Refactoring Areas** (avoid prescriptive patterns):
+- **Scanner (#49)**: Major split of `stepzenProjectScanner.ts` - API will change
+- **Commands (#35, #38, #40-#43)**: Standardization and service extraction
+- **Constants (#30)**: Centralization of constants and enums
+- **AST Parsing (#36)**: Enhanced GraphQL AST usage
+- **Testing (#33)**: Expansion to panels & utils
+- **Linting (#32)**: Enhanced ESLint, ts-prune, depcheck
+- **WebView (#31, #46)**: Bundling and base helper patterns
+
+When working on this extension, prioritize:
+1. **User Experience** - Clear error messages, progress indication
+2. **Reliability** - Proper error handling, input validation
+3. **Testability** - Use dependency injection, write comprehensive tests
+4. **Maintainability** - Follow established patterns, document complex logic
+5. **Security** - Respect workspace trust, validate inputs
+
+**Before implementing new features**: Check if the area is under active refactoring in issues #30-#49.
