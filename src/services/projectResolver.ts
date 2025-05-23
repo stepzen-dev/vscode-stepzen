@@ -8,6 +8,7 @@ import * as path from "path";
 import * as fs from "fs";
 import { StepZenError } from "../errors";
 import { Logger } from "./logger";
+import { FILE_PATTERNS, MESSAGES } from "../utils/constants";
 
 /**
  * Cache entry for a resolved project root
@@ -76,7 +77,7 @@ export class ProjectResolver {
     const configs = await this.findStepZenConfigs();
     if (!configs || configs.length === 0) {
       throw new StepZenError(
-        "No StepZen project (stepzen.config.json) found in workspace.",
+        MESSAGES.NO_STEPZEN_PROJECT_FOUND,
         "CONFIG_NOT_FOUND"
       );
     }
@@ -146,7 +147,7 @@ export class ProjectResolver {
     }
 
     // Verify the cached project root still exists and has a config file
-    const configPath = path.join(this.cache.projectRoot, "stepzen.config.json");
+    const configPath = path.join(this.cache.projectRoot, FILE_PATTERNS.CONFIG_FILE);
     if (!fs.existsSync(configPath)) {
       this.logger.debug("Cached project root no longer contains stepzen.config.json");
       return false;
@@ -183,7 +184,7 @@ export class ProjectResolver {
       for (const folder of vscode.workspace.workspaceFolders) {
         try {
           const folderConfigs = await vscode.workspace.findFiles(
-            new vscode.RelativePattern(folder, "**/stepzen.config.json"),
+            new vscode.RelativePattern(folder, FILE_PATTERNS.CONFIG_FILE_PATTERN),
             new vscode.RelativePattern(folder, "**/node_modules/**"),
           );
           configs.push(...folderConfigs);
@@ -194,7 +195,7 @@ export class ProjectResolver {
     } else {
       // Fallback for single workspace
       const allConfigs = await vscode.workspace.findFiles(
-        "**/stepzen.config.json",
+        FILE_PATTERNS.CONFIG_FILE_PATTERN,
         "**/node_modules/**",
       );
       configs.push(...allConfigs);
@@ -214,7 +215,7 @@ export class ProjectResolver {
     
     if (validConfigs.length === 0) {
       throw new StepZenError(
-        "No valid StepZen project paths found.",
+        MESSAGES.NO_VALID_STEPZEN_PROJECT_PATHS,
         "INVALID_PROJECT_PATHS"
       );
     }
@@ -248,7 +249,7 @@ export class ProjectResolver {
 
     if (!pick || !pick.target) {
       throw new StepZenError(
-        "Operation cancelled by user.",
+        MESSAGES.OPERATION_CANCELLED_BY_USER,
         "USER_CANCELLED"
       );
     }
@@ -270,7 +271,7 @@ export class ProjectResolver {
 
     try {
       while (true) {
-        const configPath = path.join(dir, "stepzen.config.json");
+        const configPath = path.join(dir, FILE_PATTERNS.CONFIG_FILE);
         if (fs.existsSync(configPath)) {
           return dir;
         }

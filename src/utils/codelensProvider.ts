@@ -1,9 +1,15 @@
+/**
+ * Copyright IBM Corp. 2025
+ * Assisted by CursorAI
+ */
+
 import * as vscode from "vscode";
 import {
   getOperationMap,
   getPersistedDocMap,
   OperationEntry,
 } from "./stepzenProjectScanner";
+import { COMMANDS } from "./constants";
 
 /**
  * Provides CodeLens items for GraphQL operations in StepZen files
@@ -36,7 +42,7 @@ export class StepZenCodeLensProvider implements vscode.CodeLensProvider {
       lenses.push(
         new vscode.CodeLens(range, {
           title: "▶ Run",
-          command: "stepzen.runOperation",
+          command: COMMANDS.RUN_OPERATION,
           arguments: [op],
         }),
       );
@@ -53,7 +59,7 @@ export class StepZenCodeLensProvider implements vscode.CodeLensProvider {
           lenses.push(
             new vscode.CodeLens(range, {
               title: "▶ Run (persisted)",
-              command: "stepzen.runPersisted",
+              command: COMMANDS.RUN_PERSISTED,
               arguments: [entry.documentId, op.name],
             }),
           );
@@ -64,7 +70,7 @@ export class StepZenCodeLensProvider implements vscode.CodeLensProvider {
       lenses.push(
         new vscode.CodeLens(range, {
           title: "× Clear",
-          command: "stepzen.clearResults",
+          command: COMMANDS.CLEAR_RESULTS,
           arguments: [],
         }),
       );
@@ -82,7 +88,7 @@ export class StepZenCodeLensProvider implements vscode.CodeLensProvider {
       lenses.push(
         new vscode.CodeLens(range, {
           title: "🔍 View in Explorer",
-          command: "stepzen.openSchemaVisualizer",
+          command: COMMANDS.OPEN_SCHEMA_VISUALIZER,
           arguments: [typeName],
         }),
       );

@@ -1,3 +1,8 @@
+/**
+ * Copyright IBM Corp. 2025
+ * Assisted by CursorAI
+ */
+
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
@@ -9,7 +14,7 @@ import {
 } from "../utils/stepzenProjectScanner";
 import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
 import { services } from "../services";
-import { FILE_PATTERNS, GRAPHQL } from "../utils/constants";
+import { FILE_PATTERNS, GRAPHQL, MESSAGES, TEMP_FILE_PATTERNS } from "../utils/constants";
 import { handleError, StepZenError } from "../errors";
 
 // Maximum depth for field traversal
@@ -46,7 +51,7 @@ export async function generateOperations() {
     }
 
     // Ensure operations directory exists
-    const operationsDir = path.join(projectRoot, "operations");
+    const operationsDir = path.join(projectRoot, FILE_PATTERNS.OPERATIONS_DIR);
     if (!fs.existsSync(operationsDir)) {
       fs.mkdirSync(operationsDir, { recursive: true });
       services.logger.info(`Created operations directory at: ${operationsDir}`);
@@ -106,12 +111,12 @@ export async function generateOperations() {
           fieldInfo,
           fieldIdx,
         );
-        const fileName = `query_${fieldName}.graphql`;
+        const fileName = `query_${fieldName}${TEMP_FILE_PATTERNS.GRAPHQL_EXTENSION}`;
         const filePath = path.join(operationsDir, fileName);
 
         // If file already exists, create a versioned one
         if (fs.existsSync(filePath)) {
-          const versionedFileName = `query_${fieldName}_${timestamp}.graphql`;
+          const versionedFileName = `query_${fieldName}_${timestamp}${TEMP_FILE_PATTERNS.GRAPHQL_EXTENSION}`;
           const versionedFilePath = path.join(operationsDir, versionedFileName);
           fs.writeFileSync(versionedFilePath, queryContent);
           generatedFiles.push(versionedFilePath);
@@ -379,7 +384,7 @@ function updateSdlDirective(
     } else if (sdlWithoutExecutablesMatch) {
       // SDL directive exists but doesn't have executables
       services.logger.info(
-        "Found SDL directive without executables in index.graphql. Adding executables array.",
+        MESSAGES.FOUND_SDL_WITHOUT_EXECUTABLES,
       );
 
       try {
@@ -430,9 +435,9 @@ function updateSdlDirective(
       }
     } else {
       // No SDL directive found at all
-      services.logger.warn("Could not find SDL directive in index.graphql.");
+      services.logger.warn(MESSAGES.COULD_NOT_FIND_SDL_DIRECTIVE);
       vscode.window.showWarningMessage(
-        "Could not find @sdl directive in index.graphql. Please add the generated operations manually.",
+        MESSAGES.COULD_NOT_FIND_SDL_DIRECTIVE,
       );
     }
   } catch (err) {

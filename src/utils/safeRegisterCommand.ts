@@ -1,5 +1,11 @@
+/**
+ * Copyright IBM Corp. 2025
+ * Assisted by CursorAI
+ */
+
 import * as vscode from "vscode";
 import { services } from "../services";
+import { UI, MESSAGES } from "./constants";
 
 /**
  * Safely registers a VSCode command, capturing and reporting any errors
@@ -25,9 +31,9 @@ export function safeRegisterCommand(
   try {
     return vscode.commands.registerCommand(commandId, callback);
   } catch (err) {
-    services.logger.error(`Failed to register command: ${commandId}`, err);
+    services.logger.error(`${MESSAGES.FAILED_TO_REGISTER_COMMAND}: ${commandId}`, err);
     vscode.window.showErrorMessage(
-      `StepZen Tools: Failed to register command "${commandId}"`
+      `${UI.EXTENSION_NAME}: ${MESSAGES.FAILED_TO_REGISTER_COMMAND} "${commandId}"`
     );
     return { dispose: () => {} }; // <-- return a dummy disposable
   }

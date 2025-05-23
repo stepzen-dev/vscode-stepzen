@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
+import { UI, CONFIG_KEYS, FILE_PATTERNS } from "../utils/constants";
 
 /**
  * Log levels supported by the StepZen logger
@@ -59,7 +60,7 @@ export class Logger {
   public static getInstance(): Logger {
     if (!Logger.instance) {
       // Create output channel once for the extension
-      const outputChannel = vscode.window.createOutputChannel("StepZen", {
+      const outputChannel = vscode.window.createOutputChannel(UI.OUTPUT_CHANNEL_NAME, {
         log: true,
       });
       Logger.instance = new Logger(outputChannel);
@@ -72,8 +73,8 @@ export class Logger {
    */
   public updateConfigFromSettings(): void {
     const config = vscode.workspace.getConfiguration("stepzen");
-    const logLevel = config.get<string>("logLevel", "info") as LogLevel;
-    const logToFile = config.get<boolean>("logToFile", false);
+    const logLevel = config.get<string>(CONFIG_KEYS.LOG_LEVEL.replace("stepzen.", ""), "info") as LogLevel;
+    const logToFile = config.get<boolean>(CONFIG_KEYS.LOG_TO_FILE.replace("stepzen.", ""), false);
 
     this.setLogLevel(logLevel);
     this.setLogToFile(logToFile);
@@ -256,7 +257,7 @@ export class Logger {
         fs.mkdirSync(storagePath, { recursive: true });
       }
 
-      this.logFilePath = path.join(storagePath, "stepzen.log");
+      this.logFilePath = path.join(storagePath, FILE_PATTERNS.LOG_FILE);
 
       // Check if log rotation is needed
       this.rotateLogFileIfNeeded();

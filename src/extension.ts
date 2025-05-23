@@ -1,8 +1,13 @@
+/**
+ * Copyright IBM Corp. 2025
+ * Assisted by CursorAI
+ */
+
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
 import { StepZenError, handleError } from "./errors";
-import { UI, FILE_PATTERNS } from "./utils/constants";
+import { UI, FILE_PATTERNS, COMMANDS, CONFIG_KEYS, MESSAGES, LANGUAGE_IDS } from "./utils/constants";
 import { safeRegisterCommand } from "./utils/safeRegisterCommand";
 import { scanStepZenProject, computeHash } from "./utils/stepzenProjectScanner";
 import { StepZenCodeLensProvider } from "./utils/codelensProvider";
@@ -69,7 +74,7 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
     projectRoot = await services.projectResolver.resolveStepZenProjectRoot(folder.uri);
   } catch (err) {
     vscode.window.showWarningMessage(
-      `StepZen Tools: could not locate a StepZen project under ${folder.name}`,
+      `${MESSAGES.COULD_NOT_LOCATE_PROJECT} ${folder.name}`,
     );
     services.logger.error(`Could not locate a StepZen project under ${folder.name}`, err);
     return;
@@ -78,7 +83,7 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
   const indexPath = path.join(projectRoot, FILE_PATTERNS.MAIN_SCHEMA_FILE);
 
   if (!fs.existsSync(indexPath)) {
-    const message = `StepZen Tools: ${folder.name} does not appear to contain an ${FILE_PATTERNS.MAIN_SCHEMA_FILE}. Commands will be disabled until a valid project is opened.`;
+    const message = `${UI.EXTENSION_NAME}: ${folder.name} ${MESSAGES.PROJECT_DOES_NOT_CONTAIN_INDEX}`;
     vscode.window.showWarningMessage(message);
     services.logger.warn(message);
     return;
@@ -195,50 +200,50 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // command registration --------------------------------------------------
   context.subscriptions.push(
-    safeRegisterCommand("stepzen.initializeProject", async () => {
+    safeRegisterCommand(COMMANDS.INITIALIZE_PROJECT, async () => {
       const { initializeProject } = await import("./commands/initializeProject.js");
       return initializeProject();
     }),
-    safeRegisterCommand("stepzen.deploy", async () => {
+    safeRegisterCommand(COMMANDS.DEPLOY, async () => {
       const { deployStepZen } = await import("./commands/deploy.js");
       return deployStepZen();
     }),
-    safeRegisterCommand("stepzen.runRequest", async () => {
+    safeRegisterCommand(COMMANDS.RUN_REQUEST, async () => {
       const { runGraphQLRequest } = await import("./commands/runRequest.js");
       return runGraphQLRequest();
     }),
-    safeRegisterCommand("stepzen.openExplorer", async () => {
+    safeRegisterCommand(COMMANDS.OPEN_EXPLORER, async () => {
       const { openQueryExplorer } = await import("./commands/openExplorer.js");
       return openQueryExplorer(context);
     }),
-    safeRegisterCommand("stepzen.goToDefinition", async () => {
+    safeRegisterCommand(COMMANDS.GO_TO_DEFINITION, async () => {
       const { goToDefinition } = await import("./commands/goToDefinition.js");
       return goToDefinition();
     }),
-    safeRegisterCommand("stepzen.addMaterializer", async () => {
+    safeRegisterCommand(COMMANDS.ADD_MATERIALIZER, async () => {
       const { addMaterializer } = await import("./commands/addMaterializer.js");
       return addMaterializer();
     }),
-    safeRegisterCommand("stepzen.runOperation", async (...args: unknown[]) => {
+    safeRegisterCommand(COMMANDS.RUN_OPERATION, async (...args: unknown[]) => {
       const { runOperation } = await import("./commands/runRequest.js");
       return runOperation(args[0] as any);
     }),
-    safeRegisterCommand("stepzen.runPersisted", async (...args: unknown[]) => {
+    safeRegisterCommand(COMMANDS.RUN_PERSISTED, async (...args: unknown[]) => {
       const { runPersisted } = await import("./commands/runRequest.js");
       return runPersisted(args[0] as string, args[1] as string);
     }),
-    safeRegisterCommand("stepzen.clearResults", async () => {
+    safeRegisterCommand(COMMANDS.CLEAR_RESULTS, async () => {
       const { clearResults } = await import("./commands/runRequest.js");
       return clearResults();
     }),
     safeRegisterCommand(
-      "stepzen.openSchemaVisualizer",
+      COMMANDS.OPEN_SCHEMA_VISUALIZER,
       async (...args: unknown[]) => {
         const { openSchemaVisualizer } = await import("./commands/openSchemaVisualizer.js");
         return openSchemaVisualizer(context, args[0] as string | undefined);
       },
     ),
-    safeRegisterCommand("stepzen.generateOperations", async () => {
+    safeRegisterCommand(COMMANDS.GENERATE_OPERATIONS, async () => {
       const { generateOperations } = await import("./commands/generateOperations.js");
       return generateOperations();
     }),
@@ -247,7 +252,7 @@ export async function activate(context: vscode.ExtensionContext) {
   // Register the codelens provider
   context.subscriptions.push(
     vscode.languages.registerCodeLensProvider(
-      { language: "graphql" },
+      { language: LANGUAGE_IDS.GRAPHQL },
       new StepZenCodeLensProvider(),
     ),
   );
@@ -299,14 +304,14 @@ export async function activate(context: vscode.ExtensionContext) {
   // Listen for configuration changes to update logger settings
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration(e => {
-      if (e.affectsConfiguration('stepzen.logLevel') || 
-          e.affectsConfiguration('stepzen.logToFile')) {
+      if (e.affectsConfiguration(CONFIG_KEYS.LOG_LEVEL) || 
+          e.affectsConfiguration(CONFIG_KEYS.LOG_TO_FILE)) {
         services.logger.updateConfigFromSettings();
       }
     })
   );
   
-  services.logger.info("StepZen Tools activated");
+  services.logger.info(MESSAGES.STEPZEN_TOOLS_ACTIVATED);
 }
 
 /**

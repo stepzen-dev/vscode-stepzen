@@ -1,9 +1,14 @@
+/**
+ * Copyright IBM Corp. 2025
+ * Assisted by CursorAI
+ */
+
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
 import { execSync } from "child_process";
 import { StepZenError, handleError } from "../errors";
-import { FILE_PATTERNS } from "../utils/constants";
+import { FILE_PATTERNS, URLS, MESSAGES } from "../utils/constants";
 import { services } from "../services";
 
 /**
@@ -27,7 +32,7 @@ async function checkStepZenCLI(): Promise<boolean> {
 
       if (installOption === "Install Instructions") {
         vscode.env.openExternal(
-          vscode.Uri.parse("https://stepzen.com/docs/stepzen-cli/install"),
+          vscode.Uri.parse(URLS.STEPZEN_CLI_INSTALL),
         );
       }
 
@@ -233,18 +238,18 @@ async function createProject(
     }
 
     // Create operations directory
-    const operationsDir = path.join(projectDir, "operations");
+    const operationsDir = path.join(projectDir, FILE_PATTERNS.OPERATIONS_DIR);
     if (!fs.existsSync(operationsDir)) {
       await vscode.workspace.fs.createDirectory(vscode.Uri.file(operationsDir));
     }
 
     // Create stepzen.config.json
-    const configPath = path.join(projectDir, "stepzen.config.json");
+    const configPath = path.join(projectDir, FILE_PATTERNS.CONFIG_FILE);
     const configContent = JSON.stringify({ endpoint }, null, 2);
     fs.writeFileSync(configPath, configContent);
 
     // Create index.graphql
-    const indexPath = path.join(projectDir, "index.graphql");
+    const indexPath = path.join(projectDir, FILE_PATTERNS.MAIN_SCHEMA_FILE);
     const indexContent = `schema
   @sdl(
     files: [
@@ -266,8 +271,8 @@ extend type Query {
     // Create operations/example.graphql
     const sampleOperationPath = path.join(
       projectDir,
-      "operations",
-      "example.graphql",
+      FILE_PATTERNS.OPERATIONS_DIR,
+      FILE_PATTERNS.EXAMPLE_GRAPHQL_FILE,
     );
     const sampleOperationContent = `# Example GraphQL operations for your StepZen API
 # This query works with the default schema
@@ -431,12 +436,12 @@ export async function initializeProject() {
     // Step 5: Open project in editor
     const openOption = await vscode.window.showInformationMessage(
       `StepZen project created successfully at ${targetLocation}`,
-      "Open index.graphql",
+      MESSAGES.OPEN_INDEX_GRAPHQL,
       "Open Project Folder",
     );
 
-    if (openOption === "Open index.graphql") {
-      const indexPath = path.join(targetLocation, "index.graphql");
+    if (openOption === MESSAGES.OPEN_INDEX_GRAPHQL) {
+      const indexPath = path.join(targetLocation, FILE_PATTERNS.MAIN_SCHEMA_FILE);
       if (fs.existsSync(indexPath)) {
         const document = await vscode.workspace.openTextDocument(indexPath);
         await vscode.window.showTextDocument(document);

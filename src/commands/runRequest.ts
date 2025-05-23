@@ -13,6 +13,7 @@ import { services } from "../services";
 // Import executeStepZenRequest from separate file
 import { executeStepZenRequest } from "./executeStepZenRequest";
 import { handleError, ValidationError } from "../errors";
+import { GRAPHQL, MESSAGES } from "../utils/constants";
 
 /* -------------------------------------------------------------
  * Helpers
@@ -28,8 +29,7 @@ function extractOperationNames(query: string): string[] {
     return [];
   }
   
-  const regex = /(query|mutation|subscription)\s+(\w+)/g;
-  return [...query.matchAll(regex)].map(([, , name]) => name);
+  return [...query.matchAll(GRAPHQL.OPERATION_TYPE_PATTERN)].map(([, , name]) => name);
 }
 
 /**
@@ -58,7 +58,7 @@ function extractOperationNames(query: string): string[] {
 //   return tmp;
 // }
 
-const SCALARS = new Set(["String", "ID", "Int", "Float", "Boolean"]);
+const SCALARS = new Set<string>(GRAPHQL.SCALAR_TYPES);
 
 /* -------------------------------------------------------------
  * Helper – ask user for variable values / file
@@ -167,15 +167,14 @@ export async function runGraphQLRequest() {
     
     // Check workspace trust first
     if (!vscode.workspace.isTrusted) {
-      const message = "Running GraphQL requests is not available in untrusted workspaces. Open this folder in a trusted workspace to enable this feature.";
-      vscode.window.showWarningMessage(message);
+      vscode.window.showWarningMessage(MESSAGES.FEATURE_NOT_AVAILABLE_UNTRUSTED);
       services.logger.warn("Run GraphQL Request failed: Workspace not trusted");
       return;
     }
     
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
-      vscode.window.showErrorMessage("No active editor with GraphQL request.");
+      vscode.window.showErrorMessage(MESSAGES.NO_ACTIVE_EDITOR);
       services.logger.warn("Run GraphQL Request failed: No active editor");
       return;
     }
@@ -203,7 +202,7 @@ export async function runGraphQLRequest() {
     const ops = extractOperationNames(query);
     if (ops.length > 1) {
       operationName = await vscode.window.showQuickPick(ops, {
-        placeHolder: "Multiple operations found. Select one to execute.",
+        placeHolder: MESSAGES.SELECT_OPERATION_TO_EXECUTE,
       });
       if (!operationName) {
         services.logger.info("Run GraphQL Request cancelled by user");

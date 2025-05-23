@@ -10,6 +10,7 @@ import { execSync } from "child_process";
 import { StepZenError, handleError } from "../errors";
 import { StepZenConfig } from "../types";
 import { services } from "../services";
+import { FILE_PATTERNS, MESSAGES, UI } from "../utils/constants";
 
 /**
  * Helper function to get StepZen configuration information
@@ -29,7 +30,7 @@ function getStepZenInfo(workspaceFolderPath: string): {
     const domain = execSync("stepzen whoami --domain").toString().trim();
     const apiKey = execSync("stepzen whoami --apikey").toString().trim();
     
-    const configPath = path.join(workspaceFolderPath, "stepzen.config.json");
+    const configPath = path.join(workspaceFolderPath, FILE_PATTERNS.CONFIG_FILE);
     if (!fs.existsSync(configPath)) {
       throw new StepZenError(
         `StepZen configuration file not found at: ${configPath}`, 
@@ -73,8 +74,8 @@ export function openQueryExplorer(context: vscode.ExtensionContext) {
     services.logger.info("Starting Open Query Explorer command");
     
     const panel = vscode.window.createWebviewPanel(
-      "stepzenExplorer",
-      "StepZen Query Explorer",
+      UI.EXPLORER_VIEW_TYPE,
+      UI.EXPLORER_TITLE,
       vscode.ViewColumn.Beside,
       {
         enableScripts: true,
@@ -84,10 +85,10 @@ export function openQueryExplorer(context: vscode.ExtensionContext) {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders) {
       const error = new StepZenError(
-        "No workspace open", 
+        MESSAGES.NO_WORKSPACE_OPEN, 
         "WORKSPACE_ERROR"
       );
-      vscode.window.showErrorMessage("No workspace open");
+      vscode.window.showErrorMessage(MESSAGES.NO_WORKSPACE_OPEN);
       services.logger.warn("Open Query Explorer failed: No workspace open");
       handleError(error);
       return;
