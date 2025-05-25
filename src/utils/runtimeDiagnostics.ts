@@ -6,7 +6,7 @@
  * Implements ancestor-walk to accurately match nested fetch spans.
  * ---------------------------------------------------------*/
 import * as vscode from "vscode";
-import { findDefinition } from "../utils/stepzenProjectScanner";
+// Removed import - now using services.schemaIndex directly
 import { services } from "../services";
 import { StepZenDiagnostic } from "../types";
 
@@ -176,14 +176,14 @@ function locateField(pathKey: string): { uri: vscode.Uri; range: vscode.Range } 
   }
   const parts = pathKey.split('.');
   if (parts.length === 2) {
-    const locs = findDefinition(parts[1]) || [];
+    const locs = services.schemaIndex.findDefinition(parts[1]) || [];
     const match = locs.find((l) => l.container === parts[0]);
     if (match) {
       return toVsLoc(match);
     }
     return undefined;
   } else if (parts.length === 1) {
-    const locs = findDefinition(parts[0]) || [];
+    const locs = services.schemaIndex.findDefinition(parts[0]) || [];
     const match = locs.find((l) => ['Query','Mutation','Subscription'].includes(l.container || ''));
     if (match) {
       return toVsLoc(match);

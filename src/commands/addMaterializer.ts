@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode';
-import { getRootOperationsMap } from '../utils/stepzenProjectScanner';
+// Removed import - now using services.schemaIndex directly
 import { services } from '../services';
 import { handleError } from '../errors';
 
@@ -50,7 +50,7 @@ export async function addMaterializer() {
     const baseType = declaredType.replace(/[[\]!]/g, ''); // Remove [] and ! characters
 
     // Find matching root operations (queries) that return the same type
-    const ops = Object.entries(getRootOperationsMap()).filter(([_opName, info]) => {
+    const ops = Object.entries(services.schemaIndex.getRootOperations()).filter(([_opName, info]) => {
       return info.returnType === baseType && info.isList === isList;
     });
 
@@ -79,7 +79,7 @@ export async function addMaterializer() {
     services.logger.info(`Selected operation: ${chosen}`);
 
     // Get argument names
-    const argNames = getRootOperationsMap()[chosen].args;
+    const argNames = services.schemaIndex.getRootOperations()[chosen].args;
 
     // Build directive snippet with proper indentation
     const indentUnit = editor.options.insertSpaces

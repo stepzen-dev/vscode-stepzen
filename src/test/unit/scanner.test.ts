@@ -1,14 +1,7 @@
 import * as assert from "assert";
 import * as path from "path";
 import * as vscode from "vscode";
-import {
-  scanStepZenProject,
-  getRootOperationsMap,
-  getFieldIndex,
-  getPersistedDocMap,
-  clearScannerState,
-  findDefinition,
-} from "../../utils/stepzenProjectScanner";
+import { services } from "../../services";
 import { createMock } from "../helpers/test-utils";
 
 suite("StepZen Project Scanner Test Suite", () => {
@@ -22,7 +15,7 @@ suite("StepZen Project Scanner Test Suite", () => {
 
   setup(() => {
     // Clear scanner state before each test
-    clearScannerState();
+    services.schemaIndex.clearState();
     
     // Create mock output channel
     mockOutputChannel = createMock<vscode.OutputChannel>({
@@ -84,10 +77,10 @@ suite("StepZen Project Scanner Test Suite", () => {
     const fixturePath = path.join(__dirname, "..", "..", "..", "src", "test", "fixtures", "schema-sample", "index.graphql");
     
     // Scan the project
-    await scanStepZenProject(fixturePath);
+    await services.schemaIndex.scan(fixturePath);
 
     // Test 1: Check that we have root operations
-    const rootOperationsMap = getRootOperationsMap();
+    const rootOperationsMap = services.schemaIndex.getRootOperations();
     assert.ok(
       Object.keys(rootOperationsMap).length >= 2,
       `Expected at least 2 root operations, got ${Object.keys(rootOperationsMap).length}. Operations: ${Object.keys(rootOperationsMap).join(", ")}`,
@@ -104,7 +97,7 @@ suite("StepZen Project Scanner Test Suite", () => {
     );
 
     // Test 3: Check that Query type has fields in field index
-    const fieldIndex = getFieldIndex();
+    const fieldIndex = services.schemaIndex.getFieldIndex();
     assert.ok(
       "Query" in fieldIndex,
       "Expected 'Query' type in field index",
@@ -115,7 +108,7 @@ suite("StepZen Project Scanner Test Suite", () => {
     );
 
     // Test 4: Check that we have at least one persisted document
-    const persistedDocMap = getPersistedDocMap();
+    const persistedDocMap = services.schemaIndex.getPersistedDocMap();
     assert.ok(
       Object.keys(persistedDocMap).length > 0,
       `Expected at least one persisted document, got ${Object.keys(persistedDocMap).length}`,
@@ -123,7 +116,7 @@ suite("StepZen Project Scanner Test Suite", () => {
 
     // Additional verification: Check that persisted documents contain operations
     const persistedDocs = Object.values(persistedDocMap);
-    const hasOperations = persistedDocs.some(doc => doc.operations && doc.operations.length > 0);
+    const hasOperations = persistedDocs.some(doc => doc && doc.operations && doc.operations.length > 0);
     assert.ok(
       hasOperations,
       "Expected at least one persisted document to contain operations",
@@ -135,15 +128,15 @@ suite("StepZen Project Scanner Test Suite", () => {
     const fixturePath = path.join(__dirname, "..", "..", "..", "src", "test", "fixtures", "schema-sample", "index.graphql");
     
     // Scan the project
-    await scanStepZenProject(fixturePath);
+    await services.schemaIndex.scan(fixturePath);
 
     // Check that we found the nested executable from products/index.graphql
-    const persistedDocMap = getPersistedDocMap();
+    const persistedDocMap = services.schemaIndex.getPersistedDocMap();
     const persistedDocs = Object.values(persistedDocMap);
     
     // Should have at least one persisted document from the nested SDL
     const hasPersistedFromNested = persistedDocs.some(doc => 
-      doc.fileUri.toString().includes("product-queries.graphql")
+      doc && doc.fileUri.toString().includes("product-queries.graphql")
     );
     
     assert.ok(
@@ -157,9 +150,9 @@ suite("StepZen Project Scanner Test Suite", () => {
     const fixturePath = path.join(__dirname, "..", "..", "..", "src", "test", "fixtures", "schema-sample", "index.graphql");
     
     // Scan the project
-    await scanStepZenProject(fixturePath);
+    await services.schemaIndex.scan(fixturePath);
 
-    const fieldIndex = getFieldIndex();
+    const fieldIndex = services.schemaIndex.getFieldIndex();
     
     // Should have various types from our fixture
     const expectedTypes = ["Query", "User", "Product", "Category"];
@@ -173,7 +166,7 @@ suite("StepZen Project Scanner Test Suite", () => {
 
     // Query should have the fields we defined
     const queryFields = fieldIndex["Query"];
-    const queryFieldNames = queryFields.map(field => field.name);
+    const queryFieldNames = queryFields.map((field: any) => field.name);
     
     assert.ok(
       queryFieldNames.includes("hello"),
@@ -192,12 +185,12 @@ suite("StepZen Project Scanner Test Suite", () => {
     setup(async () => {
       // Get the path to our test fixture and scan the project once for all go-to-definition tests
       fixturePath = path.join(__dirname, "..", "..", "..", "src", "test", "fixtures", "schema-sample", "index.graphql");
-      await scanStepZenProject(fixturePath);
+      await services.schemaIndex.scan(fixturePath);
     });
 
     test("should find type definitions for custom types", () => {
       // Test finding Product type definition (used in extension.graphql line 14: favoriteProducts: [Product])
-      const productDefs = findDefinition("Product");
+      const productDefs = services.schemaIndex.findDefinition("Product");
       assert.ok(productDefs && productDefs.length > 0, "Should find Product type definition");
       assert.ok(
         productDefs[0].filePath.includes("products/types/product.graphql"),
@@ -206,7 +199,7 @@ suite("StepZen Project Scanner Test Suite", () => {
       assert.strictEqual(productDefs[0].container, null, "Product should be a type-level definition");
 
       // Test finding Order type definition (used in extension.graphql line 5: recentOrders: [Order])
-      const orderDefs = findDefinition("Order");
+      const orderDefs = services.schemaIndex.findDefinition("Order");
       assert.ok(orderDefs && orderDefs.length > 0, "Should find Order type definition");
       assert.ok(
         orderDefs[0].filePath.includes("orders/atom.graphql"),
@@ -214,7 +207,7 @@ suite("StepZen Project Scanner Test Suite", () => {
       );
 
       // Test finding User type definition
-      const userDefs = findDefinition("User");
+      const userDefs = services.schemaIndex.findDefinition("User");
       assert.ok(userDefs && userDefs.length > 0, "Should find User type definition");
       assert.ok(
         userDefs[0].filePath.includes("users/schema.graphql"),
@@ -224,7 +217,7 @@ suite("StepZen Project Scanner Test Suite", () => {
 
     test("should find enum definitions", () => {
       // Test finding ShippingCarrier enum (defined in extension.graphql)
-      const carrierDefs = findDefinition("ShippingCarrier");
+      const carrierDefs = services.schemaIndex.findDefinition("ShippingCarrier");
       assert.ok(carrierDefs && carrierDefs.length > 0, "Should find ShippingCarrier enum definition");
       assert.ok(
         carrierDefs[0].filePath.includes("extension.graphql"),
@@ -232,7 +225,7 @@ suite("StepZen Project Scanner Test Suite", () => {
       );
 
       // Test finding Currency enum (defined in products/types/product.graphql)
-      const currencyDefs = findDefinition("Currency");
+      const currencyDefs = services.schemaIndex.findDefinition("Currency");
       assert.ok(currencyDefs && currencyDefs.length > 0, "Should find Currency enum definition");
       assert.ok(
         currencyDefs[0].filePath.includes("products/types/product.graphql"),
@@ -240,7 +233,7 @@ suite("StepZen Project Scanner Test Suite", () => {
       );
 
       // Test finding OrderStatus enum (defined in orders/atom.graphql)
-      const statusDefs = findDefinition("OrderStatus");
+      const statusDefs = services.schemaIndex.findDefinition("OrderStatus");
       assert.ok(statusDefs && statusDefs.length > 0, "Should find OrderStatus enum definition");
       assert.ok(
         statusDefs[0].filePath.includes("orders/atom.graphql"),
@@ -250,7 +243,7 @@ suite("StepZen Project Scanner Test Suite", () => {
 
     test("should find interface definitions", () => {
       // Test finding Node interface (defined in products/types/product.graphql)
-      const nodeDefs = findDefinition("Node");
+      const nodeDefs = services.schemaIndex.findDefinition("Node");
       assert.ok(nodeDefs && nodeDefs.length > 0, "Should find Node interface definition");
       assert.ok(
         nodeDefs[0].filePath.includes("products/types/product.graphql"),
@@ -261,7 +254,7 @@ suite("StepZen Project Scanner Test Suite", () => {
 
     test("should find union definitions", () => {
       // Test finding SearchResult union (defined in products/types/product.graphql)
-      const searchDefs = findDefinition("SearchResult");
+      const searchDefs = services.schemaIndex.findDefinition("SearchResult");
       assert.ok(searchDefs && searchDefs.length > 0, "Should find SearchResult union definition");
       assert.ok(
         searchDefs[0].filePath.includes("products/types/product.graphql"),
@@ -271,7 +264,7 @@ suite("StepZen Project Scanner Test Suite", () => {
 
     test("should find scalar definitions", () => {
       // Test finding custom scalar UUID (defined in index.graphql)
-      const uuidDefs = findDefinition("UUID");
+      const uuidDefs = services.schemaIndex.findDefinition("UUID");
       assert.ok(uuidDefs && uuidDefs.length > 0, "Should find UUID scalar definition");
       assert.ok(
         uuidDefs[0].filePath.includes("index.graphql"),
@@ -279,7 +272,7 @@ suite("StepZen Project Scanner Test Suite", () => {
       );
 
       // Test finding EmailAddress scalar (defined in index.graphql)
-      const emailDefs = findDefinition("EmailAddress");
+      const emailDefs = services.schemaIndex.findDefinition("EmailAddress");
       assert.ok(emailDefs && emailDefs.length > 0, "Should find EmailAddress scalar definition");
       assert.ok(
         emailDefs[0].filePath.includes("index.graphql"),
@@ -289,31 +282,31 @@ suite("StepZen Project Scanner Test Suite", () => {
 
     test("should find field definitions within types (current behavior: root fields only)", () => {
       // Test finding Query fields (root operations) - this works correctly
-      const helloDefs = findDefinition("hello");
+      const helloDefs = services.schemaIndex.findDefinition("hello");
       assert.ok(helloDefs && helloDefs.length > 0, "Should find hello field definition");
-      const helloInQuery = helloDefs.find(def => def.container === "Query");
+      const helloInQuery = helloDefs.find((def: any) => def.container === "Query");
       assert.ok(helloInQuery, "Should find hello field in Query type");
 
-      const userDefs = findDefinition("user");
+      const userDefs = services.schemaIndex.findDefinition("user");
       assert.ok(userDefs && userDefs.length > 0, "Should find user field definition");
-      const userInQuery = userDefs.find(def => def.container === "Query");
+      const userInQuery = userDefs.find((def: any) => def.container === "Query");
       assert.ok(userInQuery, "Should find user field in Query type");
 
       // Current behavior: findDefinition only works for root operation fields, not regular type fields
       // This is the current scanner behavior that we're capturing with golden-path tests
       // TODO: In the future, findDefinition could be enhanced to also find fields within regular types
-      const recentOrdersDefs = findDefinition("recentOrders");
+      const recentOrdersDefs = services.schemaIndex.findDefinition("recentOrders");
       assert.strictEqual(recentOrdersDefs, undefined, "Current scanner behavior: findDefinition doesn't find non-root fields");
 
-      const favoriteProductsDefs = findDefinition("favoriteProducts");
+      const favoriteProductsDefs = services.schemaIndex.findDefinition("favoriteProducts");
       assert.strictEqual(favoriteProductsDefs, undefined, "Current scanner behavior: findDefinition doesn't find non-root fields");
 
       // However, these fields should be available in the field index
-      const fieldIndex = getFieldIndex();
+      const fieldIndex = services.schemaIndex.getFieldIndex();
       assert.ok(fieldIndex["User"], "User type should be in field index");
       const userFields = fieldIndex["User"];
-      const recentOrdersField = userFields.find(f => f.name === "recentOrders");
-      const favoriteProductsField = userFields.find(f => f.name === "favoriteProducts");
+      const recentOrdersField = userFields.find((f: any) => f.name === "recentOrders");
+      const favoriteProductsField = userFields.find((f: any) => f.name === "favoriteProducts");
       
       assert.ok(recentOrdersField, "recentOrders field should be in User field index");
       assert.ok(favoriteProductsField, "favoriteProducts field should be in User field index");
@@ -325,33 +318,33 @@ suite("StepZen Project Scanner Test Suite", () => {
 
     test("should handle symbols that don't exist", () => {
       // Test searching for non-existent symbols
-      const nonExistentDefs = findDefinition("NonExistentType");
+      const nonExistentDefs = services.schemaIndex.findDefinition("NonExistentType");
       assert.strictEqual(nonExistentDefs, undefined, "Should return undefined for non-existent symbols");
 
-      const anotherNonExistentDefs = findDefinition("FakeField");
+      const anotherNonExistentDefs = services.schemaIndex.findDefinition("FakeField");
       assert.strictEqual(anotherNonExistentDefs, undefined, "Should return undefined for non-existent fields");
     });
 
     test("should handle invalid input gracefully", () => {
       // Test with empty string
-      const emptyDefs = findDefinition("");
+      const emptyDefs = services.schemaIndex.findDefinition("");
       assert.strictEqual(emptyDefs, undefined, "Should return undefined for empty string");
 
       // Test with null/undefined (TypeScript should prevent this, but test runtime behavior)
-      const nullDefs = findDefinition(null as any);
+      const nullDefs = services.schemaIndex.findDefinition(null as any);
       assert.strictEqual(nullDefs, undefined, "Should return undefined for null input");
 
-      const undefinedDefs = findDefinition(undefined as any);
+      const undefinedDefs = services.schemaIndex.findDefinition(undefined as any);
       assert.strictEqual(undefinedDefs, undefined, "Should return undefined for undefined input");
     });
 
     test("should find multiple definitions when symbols are extended", () => {
       // User type is defined in users/schema.graphql and extended in extension.graphql
-      const userTypeDefs = findDefinition("User");
+      const userTypeDefs = services.schemaIndex.findDefinition("User");
       assert.ok(userTypeDefs && userTypeDefs.length > 0, "Should find User type definitions");
       
       // Should find the main User type definition
-      const mainUserDef = userTypeDefs.find(def => def.container === null);
+      const mainUserDef = userTypeDefs.find((def: any) => def.container === null);
       assert.ok(mainUserDef, "Should find main User type definition");
       assert.ok(
         mainUserDef.filePath.includes("users/schema.graphql"),
@@ -359,11 +352,11 @@ suite("StepZen Project Scanner Test Suite", () => {
       );
 
       // Product type is defined in products/types/product.graphql and extended in extension.graphql
-      const productTypeDefs = findDefinition("Product");
+      const productTypeDefs = services.schemaIndex.findDefinition("Product");
       assert.ok(productTypeDefs && productTypeDefs.length > 0, "Should find Product type definitions");
       
       // Should find the main Product type definition
-      const mainProductDef = productTypeDefs.find(def => def.container === null);
+      const mainProductDef = productTypeDefs.find((def: any) => def.container === null);
       assert.ok(mainProductDef, "Should find main Product type definition");
       assert.ok(
         mainProductDef.filePath.includes("products/types/product.graphql"),

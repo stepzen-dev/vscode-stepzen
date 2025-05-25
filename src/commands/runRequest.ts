@@ -8,7 +8,7 @@ import * as vscode from "vscode";
 import { parse, NamedTypeNode, OperationDefinitionNode } from "graphql";
 import { clearResultsPanel } from "../panels/resultsPanel";
 import { runtimeDiag } from "../extension";
-import { getPersistedDocMap, OperationEntry } from "../utils/stepzenProjectScanner";
+import type { OperationEntry } from "../services/schema/indexer";
 import { services } from "../services";
 // Import executeStepZenRequest from separate file
 import { executeStepZenRequest } from "./executeStepZenRequest";
@@ -316,7 +316,7 @@ export async function runPersisted(documentId: string, operationName: string) {
     return;
   }
   
-  const persistedDocMap = getPersistedDocMap();
+  const persistedDocMap = services.schemaIndex.getPersistedDocMap();
   if (!persistedDocMap) {
     vscode.window.showErrorMessage("Persisted document map is not available");
     return;

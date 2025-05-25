@@ -9,7 +9,7 @@ import * as fs from "fs";
 import { StepZenError, handleError } from "./errors";
 import { UI, FILE_PATTERNS, COMMANDS, CONFIG_KEYS, MESSAGES, LANGUAGE_IDS } from "./utils/constants";
 import { safeRegisterCommand } from "./utils/safeRegisterCommand";
-import { scanStepZenProject, computeHash } from "./utils/stepzenProjectScanner";
+// Removed import - now using services.schemaIndex directly
 import { StepZenCodeLensProvider } from "./utils/codelensProvider";
 import { services } from "./services";
 
@@ -95,9 +95,9 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
     );
     
     const fullSDL = contents.join('\n');
-    lastSchemaHash = computeHash(fullSDL);
+    lastSchemaHash = services.schemaIndex.computeHash(fullSDL);
     
-    await scanStepZenProject(indexPath);
+    await services.schemaIndex.scan(indexPath);
   } catch (err) {
     const error = new StepZenError(
       "Initial project scan failed",
@@ -144,7 +144,7 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
         );
         
         const fullSDL = contents.join('\n');
-        const currentHash = computeHash(fullSDL);
+        const currentHash = services.schemaIndex.computeHash(fullSDL);
         
         // Skip parsing if schema hasn't changed
         if (lastSchemaHash && lastSchemaHash === currentHash) {
@@ -153,7 +153,7 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
         }
         
         services.logger.info(`Rescanning project after change in ${uri.fsPath}`);
-        await scanStepZenProject(indexPath);
+        await services.schemaIndex.scan(indexPath);
         
         // Update hash after successful scan
         lastSchemaHash = currentHash;
