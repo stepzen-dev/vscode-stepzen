@@ -1,0 +1,36 @@
+# Copyright IBM Corp. 2025
+# Assisted by CursorAI
+
+# Ignore these dependencies that are used but not detected by depcheck
+ignores:
+  # VSCode API is imported as 'vscode' but the package is '@types/vscode'
+  - "vscode"
+  # React dependencies used in webview libs (external bundles, not npm dependencies)
+  - "react"
+  - "@graphiql/react"
+  # Test runner used by vscode-test command but not directly imported
+  - "@vscode/test-electron"
+  # Depcheck itself is used via npx in scripts
+  - "depcheck"
+
+# Ignore these patterns - webview libs are bundled separately
+ignorePatterns:
+  - "webview/**"
+  - "dist/**"
+  - "out/**"
+  - "*.vsix"
+
+# Skip missing dependencies check for known false positives
+skipMissing: false
+
+# Custom parsers for different file types
+parsers:
+  "**/*.ts": "typescript"
+  "**/*.js": "es6"
+  "**/*.mjs": "es6"
+
+# Detectors to use
+detectors:
+  - "requireCallExpression"
+  - "importDeclaration"
+  - "exportDeclaration"

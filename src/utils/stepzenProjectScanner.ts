@@ -673,7 +673,7 @@ function unwrapType(type: TypeNode): string {
  * @param type The GraphQL type node to analyze
  * @returns The full type string with appropriate wrapping (e.g., "String!", "[Int]", "[User!]!")
  */
-export function getFullType(type: TypeNode): string {
+function getFullType(type: TypeNode): string {
   if (!type) {
     logger.warn('Null type provided to getFullType');
     return '';

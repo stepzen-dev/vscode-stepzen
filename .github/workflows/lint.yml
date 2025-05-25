@@ -1,0 +1,43 @@
+# Copyright IBM Corp. 2025
+# Assisted by CursorAI
+
+name: Lint
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Check for unused exports with ts-prune
+        run: npm run lint:prune
+
+      - name: Check for unused dependencies with depcheck
+        run: npm run lint:deps
+
+      - name: Run type checking
+        run: npm run check-types
