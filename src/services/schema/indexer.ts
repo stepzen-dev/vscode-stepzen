@@ -29,7 +29,7 @@ import { StepZenError, handleError } from "../../errors";
 import { unwrapType, getFullType, isListType, isScalarType } from './parser';
 
 /** Location of a symbol inside a file (0‑based). */
-export interface Location {
+interface Location {
   filePath: string;
   line: number;
   character: number;
