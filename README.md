@@ -219,6 +219,43 @@ All tests will be automatically compiled to the `out/test` directory and run by 
 
 For more detailed information about testing, including how to mock services in tests, please refer to the [test directory README](src/test/README.md).
 
+## Contributing
+
+We welcome contributions to the StepZen VS Code extension! Before getting started, please review our architecture documentation to understand the codebase structure and development patterns.
+
+### Quick Start
+
+1. **Read the Architecture Guide**: [docs/architecture.md](docs/architecture.md) - Essential reading for understanding the extension's structure, service patterns, and coding conventions.
+
+2. **Development Setup**:
+   ```bash
+   git clone https://github.com/stepzen-dev/vscode-stepzen.git
+   cd vscode-stepzen
+   npm install
+   npm run compile
+   ```
+
+3. **Code Quality**: Run linting and tests before submitting:
+   ```bash
+   npm run ci:lint    # All linting checks
+   npm run test       # Run all tests
+   ```
+
+### Key Resources
+
+- **[Architecture Documentation](docs/architecture.md)** - Complete guide to the extension's structure
+- **[Test Documentation](src/test/README.md)** - Testing patterns and service mocking
+- **[Enhancement Roadmap](enhancements.md)** - Planned features and improvements
+
+### Development Guidelines
+
+- Follow the service-oriented architecture patterns
+- Use the dependency injection system for testability
+- Include tests for new features and bug fixes
+- Update documentation for significant changes
+- All code must pass linting and type checking
+
+For questions or discussions, please use GitHub Issues or Discussions.
 
 ## Feedback
 
