@@ -15,7 +15,7 @@ import { FILE_PATTERNS } from "../utils/constants";
 /**
  * Request options for StepZen GraphQL requests
  */
-export interface RequestOptions {
+interface RequestOptions {
   /** GraphQL query text for file-based requests */
   queryText?: string;
   /** Document content for persisted document requests */
@@ -31,7 +31,7 @@ export interface RequestOptions {
 /**
  * Parsed variables from varArgs
  */
-export interface ParsedVariables {
+interface ParsedVariables {
   /** Variables as key-value pairs */
   variables: Record<string, any>;
 }
@@ -39,7 +39,7 @@ export interface ParsedVariables {
 /**
  * StepZen configuration with endpoint details
  */
-export interface EndpointConfig {
+interface EndpointConfig {
   /** GraphQL endpoint URL */
   graphqlUrl: string;
   /** API key for authentication */
