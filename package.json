@@ -128,7 +128,8 @@
     "lint:deps": "depcheck",
     "lint:all": "npm run lint && npm run lint:prune && npm run lint:deps",
     "ci:lint": "npm run lint && npm run lint:prune && npm run lint:deps && npm run check-types",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "release": "scripts/release.sh"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",

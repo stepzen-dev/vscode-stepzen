@@ -1,0 +1,62 @@
+# Copyright IBM Corp. 2025
+# Assisted by CursorAI
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate tag matches package.json version
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          echo "Package version: $PACKAGE_VERSION"
+          echo "Tag version: $TAG_VERSION"
+          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+            echo "❌ Error: Tag version ($TAG_VERSION) does not match package.json version ($PACKAGE_VERSION)"
+            exit 1
+          fi
+          echo "✅ Version validation passed"
+
+      - name: Compile extension
+        run: npm run compile
+
+      - name: Package VSIX
+        run: npx @vscode/vsce package --no-yarn
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-stepzen-${{ matrix.node-version }}-${{ github.ref_name }}
+          path: "*.vsix"
+          retention-days: 30
+
+      # Optional: Uncomment and add VSCE_PAT secret to enable marketplace publishing
+      # - name: Publish to Marketplace (optional)
+      #   if: ${{ secrets.VSCE_PAT }}
+      #   run: npx @vscode/vsce publish --no-yarn
+      #   env:
+      #     VSCE_PAT: ${{ secrets.VSCE_PAT }} 
