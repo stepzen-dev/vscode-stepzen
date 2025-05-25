@@ -2,23 +2,15 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import * as https from "https";
 import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
 import { clearResultsPanel, openResultsPanel } from "../panels/resultsPanel";
 import { summariseDiagnostics, publishDiagnostics } from "../utils/runtimeDiagnostics";
 import { runtimeDiag } from "../extension";
-import { UI, TIMEOUTS, TEMP_FILE_PATTERNS, FILE_PATTERNS } from "../utils/constants";
+import { UI, TIMEOUTS, TEMP_FILE_PATTERNS } from "../utils/constants";
 import { services } from "../services";
 import { StepZenResponse, StepZenDiagnostic } from "../types";
-import { ValidationError, NetworkError, handleError } from "../errors";
+import { ValidationError, handleError } from "../errors";
 
-/* CLEANUP - DELETE WHEN SAFE
-// Export utility functions for use in other files
-export {
-  createTempGraphQLFile,
-  cleanupLater
-};
-*/
 
 /**
  * Creates a temporary GraphQL file with the provided query content
@@ -93,33 +85,17 @@ function cleanupLater(filePath: string) {
  */
 export async function executeStepZenRequest(options: {
   queryText?: string;
-  documentId?: string;
+  documentContent?: string;
   operationName?: string;
   varArgs?: string[];
 }): Promise<void> {
-  // Validate options object
-  if (!options || typeof options !== 'object') {
-    handleError(new ValidationError("Invalid request options provided", "INVALID_OPTIONS"));
-    return;
-  }
+  const { queryText, documentContent, operationName, varArgs = [] } = options;
 
-  const { queryText, documentId, operationName, varArgs = [] } = options;
-
-  // Validate at least one of queryText or documentId is provided and valid
-  if (documentId === undefined && (!queryText || typeof queryText !== 'string')) {
-    handleError(new ValidationError("Invalid request: either documentId or queryText must be provided", "MISSING_QUERY"));
-    return;
-  }
-
-  // Validate operationName if provided
-  if (operationName !== undefined && typeof operationName !== 'string') {
-    handleError(new ValidationError("Invalid operation name provided", "INVALID_OPERATION_NAME"));
-    return;
-  }
-
-  // Validate varArgs is an array
-  if (!Array.isArray(varArgs)) {
-    handleError(new ValidationError("Invalid variable arguments: expected an array", "INVALID_VAR_ARGS"));
+  // Validate request options using the request service
+  try {
+    services.request.validateRequestOptions({ queryText, documentContent, operationName, varArgs });
+  } catch (err) {
+    handleError(err);
     return;
   }
 
@@ -136,90 +112,13 @@ export async function executeStepZenRequest(options: {
   const debugLevel = cfg.get<number>("request.debugLevel", 1);
 
   // For persisted documents, we need to make an HTTP request directly
-  if (documentId) {
+  if (documentContent) {
     try {
-      // Get StepZen config to build the endpoint URL
-      const configPath = path.join(projectRoot, FILE_PATTERNS.CONFIG_FILE);
-      services.logger.debug(`Looking for config file at: ${configPath}`);
-        
-      // Verify config file exists
-      if (!fs.existsSync(configPath)) {
-        handleError(new ValidationError(
-          `StepZen configuration file not found at: ${configPath}`,
-          "CONFIG_NOT_FOUND"
-        ));
-        return;
-      }
-      
-      let endpoint: string;
-      let apiKey: string;
+      // Load endpoint configuration using the request service
+      const endpointConfig = await services.request.loadEndpointConfig(projectRoot);
 
-      try {
-        const configContent = fs.readFileSync(configPath, "utf8");
-        
-        if (!configContent) {
-          handleError(new ValidationError("StepZen configuration file is empty", "EMPTY_CONFIG"));
-          return;
-        }
-        
-        const config = JSON.parse(configContent);
-        
-        if (!config || !config.endpoint) {
-          handleError(new ValidationError("Invalid StepZen configuration: missing endpoint", "MISSING_ENDPOINT"));
-          return;
-        }
-        
-        endpoint = config.endpoint;
-        apiKey = config.apiKey || "";
-      } catch (err) {
-        handleError(new ValidationError(
-          "Failed to parse StepZen configuration file",
-          "CONFIG_PARSE_ERROR",
-          err
-        ));
-        return;
-      }
-
-      // Parse endpoint to extract account and domain
-      const endpointParts = endpoint.split("/");
-      if (endpointParts.length < 2) {
-        handleError(new ValidationError(
-          `Invalid StepZen endpoint format: ${endpoint}`,
-          "INVALID_ENDPOINT_FORMAT"
-        ));
-        return;
-      }
-
-      // Construct the GraphQL endpoint URL
-      const graphqlUrl = `https://${endpoint}/graphql`;
-
-      // Prepare variables from varArgs
-      let variables: Record<string, string> = {};
-      for (let i = 0; i < varArgs.length; i += 2) {
-        if (varArgs[i] === "--var" && i + 1 < varArgs.length) {
-          const [name, value] = varArgs[i + 1].split("=");
-          variables[name] = value;
-        } else if (varArgs[i] === "--var-file" && i + 1 < varArgs.length) {
-          try {
-            const fileContent = fs.readFileSync(varArgs[i + 1], "utf8");
-            variables = JSON.parse(fileContent);
-          } catch (err) {
-            handleError(new ValidationError(
-              "Failed to read variables file",
-              "VAR_FILE_READ_ERROR",
-              err
-            ));
-            return;
-          }
-        }
-      }
-
-      // Prepare the request body
-      const requestBody = {
-        documentId,
-        operationName,
-        variables
-      };
+      // Parse variables using the request service
+      const { variables } = services.request.parseVariables(varArgs);
 
       // Show a progress notification
       await vscode.window.withProgress(
@@ -229,53 +128,13 @@ export async function executeStepZenRequest(options: {
           cancellable: false
         },
         async () => {
-          services.logger.info("Making HTTP request to StepZen API for persisted document");
-          // Use Node.js https module to make the request
-          const result = await new Promise<StepZenResponse>((resolve, reject) => {
-            const postData = JSON.stringify(requestBody);
-            
-            const options = {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(postData),
-                'Authorization': apiKey ? `Apikey ${apiKey}` : '',
-                'stepzen-debug-level': debugLevel.toString(),
-              }
-            };
-            
-            const req = https.request(graphqlUrl, options, (res) => {
-              let responseData = '';
-              
-              res.on('data', (chunk) => {
-                responseData += chunk;
-              });
-              
-              res.on('end', () => {
-                try {
-                  const json = JSON.parse(responseData);
-                  resolve(json);
-                } catch (err) {
-                  reject(new ValidationError(
-                    "Failed to parse StepZen response",
-                    "RESPONSE_PARSE_ERROR",
-                    err
-                  ));
-                }
-              });
-            });
-            
-            req.on('error', (err) => {
-              reject(new NetworkError(
-                "Failed to connect to StepZen API",
-                "API_CONNECTION_ERROR",
-                err
-              ));
-            });
-            
-            req.write(postData);
-            req.end();
-          });
+          // Execute the persisted document request using the request service
+          const result = await services.request.executePersistedDocumentRequest(
+            endpointConfig,
+            documentContent,
+            variables,
+            operationName
+            );
           
           // Process results
           const rawDiags = (result.extensions?.stepzen?.diagnostics ?? []) as StepZenDiagnostic[];
@@ -355,37 +214,8 @@ export async function executeStepZenRequest(options: {
       },
       async () => {
         try {
-          // Parse varArgs into variables object
-          const variables: Record<string, any> = {};
-          for (let i = 0; i < varArgs.length; i += 2) {
-            if (varArgs[i] === "--var" && i + 1 < varArgs.length) {
-              const [name, value] = varArgs[i + 1].split("=");
-              if (name && value !== undefined) {
-                variables[name] = value;
-                services.logger.debug(`Setting variable ${name}=${value}`);
-              } else {
-                services.logger.warn(`Invalid variable format: ${varArgs[i + 1]}`);
-              }
-            } else if (varArgs[i] === "--var-file" && i + 1 < varArgs.length) {
-              try {
-                const varFilePath = varArgs[i + 1];
-                services.logger.debug(`Reading variables from file: ${varFilePath}`);
-                if (!fs.existsSync(varFilePath)) {
-                  throw new ValidationError(`Variables file not found: ${varFilePath}`, "VAR_FILE_NOT_FOUND");
-                }
-                const fileContent = fs.readFileSync(varFilePath, "utf8");
-                const fileVars = JSON.parse(fileContent);
-                services.logger.debug(`Loaded ${Object.keys(fileVars).length} variables from file`);
-                Object.assign(variables, fileVars);
-              } catch (err) {
-                throw new ValidationError(
-                  "Failed to read variables file",
-                  "VAR_FILE_READ_ERROR",
-                  err
-                );
-              }
-            }
-          }
+          // Parse variables using the request service
+          const { variables } = services.request.parseVariables(varArgs);
           
           // Use the CLI service to execute the request
           services.logger.info(`Executing StepZen request${operationName ? ` for operation "${operationName}"` : ' (anonymous operation)'} with debug level ${debugLevel}`);

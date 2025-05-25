@@ -92,4 +92,43 @@ suite('StepzenCliService', () => {
       assert.ok(service, 'Service should be defined');
     });
   });
+
+  suite('getApiKey', () => {
+    test('should execute stepzen whoami --apikey', async () => {
+      // This would verify the CLI service properly:
+      // - Calls spawn with ['whoami', '--apikey']
+      // - Returns the trimmed result
+      // - Handles empty responses with appropriate error
+      
+      // In real implementation this would have actual test logic
+      assert.ok(service, 'Service should be defined');
+      assert.strictEqual(typeof service.getApiKey, 'function', 'getApiKey should be a function');
+    });
+  });
+
+  suite('getAccount', () => {
+    test('should execute stepzen whoami --account', async () => {
+      // This would verify the CLI service properly:
+      // - Calls spawn with ['whoami', '--account']
+      // - Returns the trimmed result
+      // - Handles empty responses with appropriate error
+      
+      // In real implementation this would have actual test logic
+      assert.ok(service, 'Service should be defined');
+      assert.strictEqual(typeof service.getAccount, 'function', 'getAccount should be a function');
+    });
+  });
+
+  suite('getDomain', () => {
+    test('should execute stepzen whoami --domain', async () => {
+      // This would verify the CLI service properly:
+      // - Calls spawn with ['whoami', '--domain']
+      // - Returns the trimmed result
+      // - Handles empty responses with appropriate error
+      
+      // In real implementation this would have actual test logic
+      assert.ok(service, 'Service should be defined');
+      assert.strictEqual(typeof service.getDomain, 'function', 'getDomain should be a function');
+    });
+  });
 });

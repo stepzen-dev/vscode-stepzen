@@ -160,6 +160,90 @@ export class StepzenCliService {
       throw error;
     }
   }
+
+  /**
+   * Get the API key from StepZen CLI
+   * 
+   * @returns Promise resolving to the API key
+   * @throws CliError if the operation fails
+   */
+  async getApiKey(): Promise<string> {
+    try {
+      logger.debug('Retrieving API key from StepZen CLI');
+      
+      const result = await this.spawnProcessWithOutput(['whoami', '--apikey']);
+      const apiKey = result.trim();
+      
+      if (!apiKey) {
+        throw new CliError("Empty API key returned from StepZen CLI", "EMPTY_API_KEY");
+      }
+      
+      logger.debug("Successfully retrieved API key from CLI");
+      return apiKey;
+    } catch (err) {
+      throw new CliError(
+        "Failed to retrieve API key from StepZen CLI",
+        "API_KEY_RETRIEVAL_FAILED",
+        err
+      );
+    }
+  }
+
+  /**
+   * Get the account name from StepZen CLI
+   * 
+   * @returns Promise resolving to the account name
+   * @throws CliError if the operation fails
+   */
+  async getAccount(): Promise<string> {
+    try {
+      logger.debug('Retrieving account from StepZen CLI');
+      
+      const result = await this.spawnProcessWithOutput(['whoami', '--account']);
+      const account = result.trim();
+      
+      if (!account) {
+        throw new CliError("Empty account returned from StepZen CLI", "EMPTY_ACCOUNT");
+      }
+      
+      logger.debug("Successfully retrieved account from CLI");
+      return account;
+    } catch (err) {
+      throw new CliError(
+        "Failed to retrieve account from StepZen CLI",
+        "ACCOUNT_RETRIEVAL_FAILED",
+        err
+      );
+    }
+  }
+
+  /**
+   * Get the domain from StepZen CLI
+   * 
+   * @returns Promise resolving to the domain
+   * @throws CliError if the operation fails
+   */
+  async getDomain(): Promise<string> {
+    try {
+      logger.debug('Retrieving domain from StepZen CLI');
+      
+      const result = await this.spawnProcessWithOutput(['whoami', '--domain']);
+      const domain = result.trim();
+      
+      if (!domain) {
+        throw new CliError("Empty domain returned from StepZen CLI", "EMPTY_DOMAIN");
+      }
+      
+      logger.debug("Successfully retrieved domain from CLI");
+      return domain;
+    } catch (err) {
+      throw new CliError(
+        "Failed to retrieve domain from StepZen CLI",
+        "DOMAIN_RETRIEVAL_FAILED",
+        err
+      );
+    }
+  }
   
   // TODO: CLEANUP
   //  /**
@@ -228,7 +312,7 @@ export class StepzenCliService {
    * @returns Promise resolving to the captured stdout
    * @throws CliError if the process fails
    */
-  private async spawnProcessWithOutput(
+  public async spawnProcessWithOutput(
     args: string[] = [],
     options: cp.SpawnOptions = {}
   ): Promise<string> {
