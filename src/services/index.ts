@@ -2,6 +2,7 @@ import { StepzenCliService } from './cli';
 import { Logger, logger } from './logger';
 import { ProjectResolver } from './projectResolver';
 import { SchemaIndexService } from './SchemaIndexService';
+import { RequestService } from './request';
 
 /**
  * Service registry for dependency injection of application services
@@ -12,6 +13,7 @@ export interface ServiceRegistry {
   logger: Logger;
   projectResolver: ProjectResolver;
   schemaIndex: SchemaIndexService;
+  request: RequestService;
 }
 
 /**
@@ -22,6 +24,7 @@ export const services: ServiceRegistry = {
   logger,
   projectResolver: new ProjectResolver(logger),
   schemaIndex: new SchemaIndexService(),
+  request: new RequestService(logger),
 };
 
 /**

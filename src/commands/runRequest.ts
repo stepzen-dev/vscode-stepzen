@@ -371,9 +371,9 @@ export async function runPersisted(documentId: string, operationName: string) {
       return; // user cancelled
     }
     
-    // Execute using document ID approach
+    // Execute using persisted document approach with the full document content
     await executeStepZenRequest({
-      documentId,
+      documentContent: content,
       operationName,
       varArgs
     });
