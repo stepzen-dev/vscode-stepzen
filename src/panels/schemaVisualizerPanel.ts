@@ -6,15 +6,11 @@
 // src/panels/schemaVisualizerPanel.ts
 import * as vscode from "vscode";
 import { Uri } from "vscode";
-import {
-  getFieldIndex,
-  getTypeDirectives,
-  getTypeRelationships,
-  scanStepZenProject,
+import type {
   FieldInfo,
   DirectiveInfo,
   TypeRelationship,
-} from "../utils/stepzenProjectScanner";
+} from "../services/schema/indexer";
 import { services } from "../services";
 import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
 import * as path from "path";
@@ -206,7 +202,7 @@ export async function openSchemaVisualizerPanel(
  * @returns true if schema data was successfully loaded, false otherwise
  */
 async function ensureSchemaDataLoaded(): Promise<boolean> {
-  const fieldIndex = getFieldIndex();
+  const fieldIndex = services.schemaIndex.getFieldIndex();
 
   // If we already have schema data, return true
   if (Object.keys(fieldIndex).length > 0) {
@@ -248,7 +244,7 @@ async function ensureSchemaDataLoaded(): Promise<boolean> {
 
     // Scan the project
     services.logger.info(`Scanning StepZen project at ${indexPath}`);
-    await scanStepZenProject(indexPath);
+    await services.schemaIndex.scan(indexPath);
     services.logger.debug("Schema scan completed successfully");
     return true;
   } catch (error) {
@@ -264,9 +260,9 @@ async function ensureSchemaDataLoaded(): Promise<boolean> {
  * @returns A complete schema model for visualization
  */
 function buildSchemaModel(): SchemaVisualizerModel {
-  const fieldIndex = getFieldIndex();
-  const typeDirectives = getTypeDirectives();
-  const relationships = getTypeRelationships();
+  const fieldIndex = services.schemaIndex.getFieldIndex();
+  const typeDirectives = services.schemaIndex.getTypeDirectives();
+  const relationships = services.schemaIndex.getTypeRelationships();
 
   const model: SchemaVisualizerModel = {
     types: {},

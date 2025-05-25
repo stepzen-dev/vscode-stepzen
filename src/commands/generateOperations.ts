@@ -6,12 +6,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
-import {
-  getRootOperationsMap,
-  getFieldIndex,
-  scanStepZenProject,
-  ArgInfo,
-} from "../utils/stepzenProjectScanner";
+import type { ArgInfo } from "../services/schema/indexer";
 import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
 import { services } from "../services";
 import { FILE_PATTERNS, GRAPHQL, MESSAGES, TEMP_FILE_PATTERNS } from "../utils/constants";
@@ -58,11 +53,11 @@ export async function generateOperations() {
     }
 
     // Scan the project to get the latest schema information
-    await scanStepZenProject(indexPath);
+    await services.schemaIndex.scan(indexPath);
 
     // Get the root operations and field index
-    const rootOps = getRootOperationsMap();
-    const fieldIdx = getFieldIndex();
+    const rootOps = services.schemaIndex.getRootOperations();
+    const fieldIdx = services.schemaIndex.getFieldIndex();
 
     // Debug logging
     services.logger.debug(

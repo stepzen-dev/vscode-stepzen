@@ -4,7 +4,7 @@
  */
 
 import * as vscode from "vscode";
-import { findDefinition } from "../utils/stepzenProjectScanner";
+// Removed import - now using services.schemaIndex directly
 import { services } from "../services";
 import { handleError } from "../errors";
 
@@ -38,7 +38,7 @@ export async function goToDefinition() {
     const token = document.getText(wordRange);
     services.logger.info(`Searching for definition of symbol: "${token}"`);
     
-    const locations = findDefinition(token);
+    const locations = services.schemaIndex.findDefinition(token);
     if (!locations || locations.length === 0) {
       vscode.window.showWarningMessage(`No definition found for "${token}".`);
       services.logger.warn(`No definition found for "${token}".`);

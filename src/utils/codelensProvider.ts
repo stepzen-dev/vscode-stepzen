@@ -4,11 +4,8 @@
  */
 
 import * as vscode from "vscode";
-import {
-  getOperationMap,
-  getPersistedDocMap,
-  OperationEntry,
-} from "./stepzenProjectScanner";
+import type { OperationEntry } from "../services/schema/indexer";
+import { services } from "../services";
 import { COMMANDS } from "./constants";
 
 /**
@@ -29,8 +26,8 @@ export class StepZenCodeLensProvider implements vscode.CodeLensProvider {
     document: vscode.TextDocument,
   ): vscode.CodeLens[] {
     const lenses: vscode.CodeLens[] = [];
-    const opMap = getOperationMap();
-    const persistedMap = getPersistedDocMap();
+    const opMap = services.schemaIndex.getOperationMap();
+    const persistedMap = services.schemaIndex.getPersistedDocMap();
     const uriKey = document.uri.toString();
     const ops = opMap[uriKey] || [];
 
@@ -52,7 +49,7 @@ export class StepZenCodeLensProvider implements vscode.CodeLensProvider {
         // find the matching persisted document entry
         const entry = Object.values(persistedMap).find(
           (e) =>
-            e.fileUri.toString() === uriKey &&
+            e && e.fileUri.toString() === uriKey &&
             e.operations.some((o) => o.name === op.name),
         );
         if (entry) {
