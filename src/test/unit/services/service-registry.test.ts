@@ -4,6 +4,7 @@ import { createMock } from '../../helpers/test-utils';
 import { StepzenCliService } from '../../../services/cli';
 import { Logger } from '../../../services/logger';
 import { ProjectResolver } from '../../../services/projectResolver';
+import { SchemaIndexService } from '../../../services/SchemaIndexService';
 
 suite('Service Registry', () => {
   let originalServices: ServiceRegistry;
@@ -23,10 +24,11 @@ suite('Service Registry', () => {
     setMockServices(originalServices);
   });
 
-  test('services should contain cli, logger, and projectResolver by default', () => {
+  test('services should contain cli, logger, projectResolver, and schemaIndex by default', () => {
     assert.ok(services.cli instanceof StepzenCliService, 'CLI service should be an instance of StepzenCliService');
     assert.ok(services.logger instanceof Logger, 'Logger should be an instance of Logger');
     assert.ok(services.projectResolver instanceof ProjectResolver, 'ProjectResolver should be an instance of ProjectResolver');
+    assert.ok(services.schemaIndex instanceof SchemaIndexService, 'SchemaIndex service should be an instance of SchemaIndexService');
   });
 
   test('overrideServices should replace individual services', () => {
@@ -76,6 +78,18 @@ suite('Service Registry', () => {
         resolveStepZenProjectRoot: async () => '/mock/project/root',
         clearCache: () => { /* mock implementation */ },
         getCachedProjectRoot: () => '/mock/cached/root'
+      }),
+      schemaIndex: createMock<SchemaIndexService>({
+        scan: async () => { /* mock implementation */ },
+        clearState: () => { /* mock implementation */ },
+        findDefinition: () => undefined,
+        getRootOperations: () => ({}),
+        getOperationMap: () => ({}),
+        getPersistedDocMap: () => ({}),
+        getFieldIndex: () => ({}),
+        getTypeDirectives: () => ({}),
+        getTypeRelationships: () => [],
+        computeHash: () => 'mock-hash'
       })
     };
 
@@ -86,11 +100,13 @@ suite('Service Registry', () => {
     assert.strictEqual(services.cli, mockServices.cli, 'CLI service should be replaced with mock');
     assert.strictEqual(services.logger, mockServices.logger, 'Logger service should be replaced with mock');
     assert.strictEqual(services.projectResolver, mockServices.projectResolver, 'ProjectResolver service should be replaced with mock');
+    assert.strictEqual(services.schemaIndex, mockServices.schemaIndex, 'SchemaIndex service should be replaced with mock');
     
     // Verify that previous contains all original services
     assert.strictEqual(previous.cli, originalServices.cli, 'previous should contain original CLI service');
     assert.strictEqual(previous.logger, originalServices.logger, 'previous should contain original logger service');
     assert.strictEqual(previous.projectResolver, originalServices.projectResolver, 'previous should contain original ProjectResolver service');
+    assert.strictEqual(previous.schemaIndex, originalServices.schemaIndex, 'previous should contain original SchemaIndex service');
     
     // Reset to original services
     setMockServices(previous);
@@ -99,6 +115,7 @@ suite('Service Registry', () => {
     assert.strictEqual(services.cli, originalServices.cli, 'CLI service should be restored');
     assert.strictEqual(services.logger, originalServices.logger, 'Logger service should be restored');
     assert.strictEqual(services.projectResolver, originalServices.projectResolver, 'ProjectResolver service should be restored');
+    assert.strictEqual(services.schemaIndex, originalServices.schemaIndex, 'SchemaIndex service should be restored');
   });
 
   test('mocked service should be usable in place of real service', async () => {
