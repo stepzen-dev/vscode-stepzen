@@ -98,46 +98,16 @@ export const GRAPHQL = {
   OPERATION_TYPE_PATTERN: /(query|mutation|subscription)\s+(\w+)/g,
 } as const;
 
-// Error codes
-export const ERROR_CODES = {
-  VALIDATION_ERROR: "VALIDATION_ERROR",
-  VALIDATION_FAILED: "VALIDATION_FAILED",
-  CLI_ERROR: "CLI_ERROR",
-  NETWORK_ERROR: "NETWORK_ERROR",
-  STRING_ERROR: "STRING_ERROR",
-  UNKNOWN_ERROR: "UNKNOWN_ERROR",
-  INVALID_QUERY: "INVALID_QUERY",
-} as const;
 
-// Log levels (enum values)
-export const LOG_LEVELS = {
-  ERROR: "error",
-  WARN: "warn", 
-  INFO: "info",
-  DEBUG: "debug",
-} as const;
 
 // URLs and external links
 export const URLS = {
   STEPZEN_CLI_INSTALL: "https://stepzen.com/docs/stepzen-cli/install",
 } as const;
 
-// Menu groups
-export const MENU_GROUPS = {
-  STEPZEN_EXPLORER: "0_stepzen@1",
-  STEPZEN_EDITOR_1: "0_stepzen@1",
-  STEPZEN_EDITOR_2: "0_stepzen@2", 
-  STEPZEN_EDITOR_3: "0_stepzen@3",
-} as const;
-
 // Language IDs
 export const LANGUAGE_IDS = {
   GRAPHQL: "graphql",
-} as const;
-
-// Context when conditions
-export const WHEN_CONDITIONS = {
-  GRAPHQL_EDITOR_FOCUS: "editorLangId == graphql && editorTextFocus",
 } as const;
 
 // Progress messages
@@ -165,10 +135,6 @@ export const MESSAGES = {
 } as const;
 
 // Type definitions for better type safety
-export type CommandId = typeof COMMANDS[keyof typeof COMMANDS];
-export type ConfigKey = typeof CONFIG_KEYS[keyof typeof CONFIG_KEYS];
-export type ErrorCode = typeof ERROR_CODES[keyof typeof ERROR_CODES];
-export type LogLevel = typeof LOG_LEVELS[keyof typeof LOG_LEVELS];
 export type GraphQLOperationType = typeof GRAPHQL.ROOT_OPERATION_TYPES[number];
 export type GraphQLScalarType = typeof GRAPHQL.SCALAR_TYPES[number];
 

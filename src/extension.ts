@@ -20,18 +20,6 @@ export let runtimeDiag: vscode.DiagnosticCollection;
 
 
 /**
- * Gets or creates a terminal for StepZen operations
- * @param name The name to give the terminal if creating a new one
- * @returns An existing or newly created terminal instance
- */
-export function getOrCreateStepZenTerminal(name: string = UI.TERMINAL_NAME): vscode.Terminal {
-  if (!stepzenTerminal) {
-    stepzenTerminal = vscode.window.createTerminal(name);
-  }
-  return stepzenTerminal;
-}
-
-/**
  * Resolve the workspace folder that owns the given URI (or the active editor if none supplied).
  */
 /**

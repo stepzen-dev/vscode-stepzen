@@ -135,6 +135,38 @@ npm run compile
 npm run watch
 ```
 
+### Code Quality & Linting
+
+This project uses multiple linting tools to ensure code quality:
+
+```bash
+# Run ESLint for code style and best practices
+npm run lint
+
+# Check for unused TypeScript exports
+npm run lint:prune
+
+# Check for unused dependencies
+npm run lint:deps
+
+# Run type checking
+npm run check-types
+
+# Run all linting tools (used in CI)
+npm run ci:lint
+```
+
+**CI Integration**: All linting tools run automatically in GitHub Actions on every push and pull request. The CI will fail if any of these tools report issues:
+
+- **ESLint** - Enforces code style, prevents console statements, ensures proper imports
+- **ts-prune** - Finds unused exports to keep the codebase clean
+- **depcheck** - Identifies unused dependencies and missing dependencies
+
+Configuration files:
+- ESLint: `eslint.config.mjs`
+- depcheck: `.depcheckrc`
+- TypeScript: `tsconfig.json`
+
 ### Testing
 
 The extension uses the standard VS Code testing framework with Mocha. The tests are located in the `src/test` directory. View the README.md file in that directory for more details.
