@@ -173,6 +173,16 @@
       let selectedSpan = null;
       let detailsPanelVisible = false;
       
+      // State for filtering and search
+      let searchTerm = '';
+      let activeFilters = {
+        spanTypes: new Set(), // Empty = show all
+        errorOnly: false,
+        minDuration: 0, // milliseconds
+        maxDuration: Infinity
+      };
+      let filteredSpans = rootSpans; // Will be updated by filtering logic
+      
       /**
        * Format a duration for display
        * @param {number} ms - Duration in milliseconds
@@ -230,6 +240,254 @@
         selectedSpan = null;
         detailsPanelVisible = false;
         rerenderTraceViewer();
+      };
+      
+      /**
+       * Apply filters and search to spans
+       * @param {Array} spans - Array of spans to filter
+       * @param {string} search - Search term
+       * @param {Object} filters - Filter criteria
+       * @return {Array} Filtered spans
+       */
+      const applyFiltersAndSearch = (spans, search, filters) => {
+        const searchLower = search.toLowerCase();
+        
+        const filterSpan = (span) => {
+          // Search filter - check span name and attributes
+          if (search && !span.name.toLowerCase().includes(searchLower)) {
+            // Also search in attributes
+            const attributeMatch = Object.entries(span.attributes).some(([key, value]) => {
+              const valueStr = Array.isArray(value) ? value.join(' ') : String(value);
+              return key.toLowerCase().includes(searchLower) || 
+                     valueStr.toLowerCase().includes(searchLower);
+            });
+            if (!attributeMatch) return false;
+          }
+          
+          // Error filter
+          if (filters.errorOnly && !span.isError) return false;
+          
+          // Duration filter
+          if (span.duration < filters.minDuration || span.duration > filters.maxDuration) {
+            return false;
+          }
+          
+          // Span type filter
+          if (filters.spanTypes.size > 0 && !filters.spanTypes.has(span.typeClass)) {
+            return false;
+          }
+          
+          return true;
+        };
+        
+        const filterRecursive = (spanList) => {
+          const filtered = [];
+          for (const span of spanList) {
+            const spanMatches = filterSpan(span);
+            const filteredChildren = filterRecursive(span.children);
+            
+            // Include span if it matches OR if any children match
+            if (spanMatches || filteredChildren.length > 0) {
+              const filteredSpan = { ...span, children: filteredChildren };
+              filtered.push(filteredSpan);
+            }
+          }
+          return filtered;
+        };
+        
+        return filterRecursive(spans);
+      };
+      
+      /**
+       * Update filters and re-render
+       * @param {Object} newFilters - Updated filter criteria
+       */
+      const updateFilters = (newFilters) => {
+        activeFilters = { ...activeFilters, ...newFilters };
+        filteredSpans = applyFiltersAndSearch(rootSpans, searchTerm, activeFilters);
+        rerenderTraceViewer();
+      };
+      
+      /**
+       * Update search term and re-render
+       * @param {string} newSearchTerm - New search term
+       */
+      const updateSearch = (newSearchTerm) => {
+        searchTerm = newSearchTerm;
+        filteredSpans = applyFiltersAndSearch(rootSpans, searchTerm, activeFilters);
+        rerenderTraceViewer();
+      };
+      
+      /**
+       * Get unique span types from all spans for filter options
+       * @param {Array} spans - Array of spans to analyze
+       * @return {Array} Array of unique span types
+       */
+      const getSpanTypes = (spans) => {
+        const types = new Set();
+        const collectTypes = (spanList) => {
+          for (const span of spanList) {
+            if (span.typeClass) types.add(span.typeClass);
+            collectTypes(span.children);
+          }
+        };
+        collectTypes(spans);
+        return Array.from(types).sort();
+      };
+      
+      /**
+       * Identify critical path (longest dependency chain)
+       * @param {Array} spans - Array of spans to analyze
+       * @return {Array} Array of span IDs in critical path
+       */
+      const findCriticalPath = (spans) => {
+        let longestPath = [];
+        let maxDuration = 0;
+        
+        const findLongestPath = (span, currentPath, currentDuration) => {
+          const newPath = [...currentPath, span.id];
+          const newDuration = currentDuration + span.duration;
+          
+          if (span.children.length === 0) {
+            // Leaf node - check if this is the longest path
+            if (newDuration > maxDuration) {
+              maxDuration = newDuration;
+              longestPath = newPath;
+            }
+          } else {
+            // Continue with children
+            for (const child of span.children) {
+              findLongestPath(child, newPath, newDuration);
+            }
+          }
+        };
+        
+        for (const span of spans) {
+          findLongestPath(span, [], 0);
+        }
+        
+        return longestPath;
+      };
+      
+      /**
+       * Analyze performance and identify bottlenecks
+       * @param {Array} spans - Array of spans to analyze
+       * @return {Object} Performance analysis results
+       */
+      const analyzePerformance = (spans) => {
+        const allSpans = [];
+        const collectSpans = (spanList) => {
+          for (const span of spanList) {
+            allSpans.push(span);
+            collectSpans(span.children);
+          }
+        };
+        collectSpans(spans);
+        
+        // Sort by duration to find slowest spans
+        const sortedByDuration = [...allSpans].sort((a, b) => b.duration - a.duration);
+        const slowestSpans = sortedByDuration.slice(0, 5);
+        
+        // Calculate total time and identify parallel vs sequential execution
+        const totalDuration = Math.max(...allSpans.map(span => span.startTime + span.duration));
+        const sumOfAllDurations = allSpans.reduce((sum, span) => sum + span.duration, 0);
+        const parallelizationRatio = totalDuration / sumOfAllDurations;
+        
+        // Group spans by type for analysis
+        const spansByType = {};
+        allSpans.forEach(span => {
+          const type = span.typeClass || 'unknown';
+          if (!spansByType[type]) {
+            spansByType[type] = [];
+          }
+          spansByType[type].push(span);
+        });
+        
+        // Calculate type statistics
+        const typeStats = Object.entries(spansByType).map(([type, typeSpans]) => ({
+          type,
+          count: typeSpans.length,
+          totalDuration: typeSpans.reduce((sum, span) => sum + span.duration, 0),
+          avgDuration: typeSpans.reduce((sum, span) => sum + span.duration, 0) / typeSpans.length,
+          maxDuration: Math.max(...typeSpans.map(span => span.duration))
+        })).sort((a, b) => b.totalDuration - a.totalDuration);
+        
+        // Identify errors
+        const errorSpans = allSpans.filter(span => span.isError);
+        
+        return {
+          totalSpans: allSpans.length,
+          totalDuration,
+          sumOfAllDurations,
+          parallelizationRatio,
+          slowestSpans,
+          typeStats,
+          errorSpans,
+          criticalPath: findCriticalPath(spans)
+        };
+      };
+      
+      /**
+       * Create performance insights panel
+       * @param {Object} analysis - Performance analysis results
+       * @return {React.Element} Performance insights element
+       */
+      const createPerformanceInsights = (analysis) => {
+        return createElement('div', { className: 'trace-performance-insights' },
+          createElement('h4', { className: 'trace-insights-title' }, '📊 Performance Insights'),
+          
+          // Overall metrics
+          createElement('div', { className: 'trace-insights-section' },
+            createElement('h5', null, 'Overview'),
+            createElement('div', { className: 'trace-insights-grid' },
+              createElement('div', null, 'Total Spans:'),
+              createElement('div', null, analysis.totalSpans),
+              createElement('div', null, 'Total Duration:'),
+              createElement('div', null, formatDuration(analysis.totalDuration)),
+              createElement('div', null, 'Parallelization:'),
+              createElement('div', null, `${(analysis.parallelizationRatio * 100).toFixed(1)}%`),
+              analysis.errorSpans.length > 0 ? [
+                createElement('div', { key: 'error-label' }, 'Errors:'),
+                createElement('div', { key: 'error-count', className: 'trace-error-count' }, analysis.errorSpans.length)
+              ] : null
+            )
+          ),
+          
+          // Slowest spans
+          analysis.slowestSpans.length > 0 ? createElement('div', { className: 'trace-insights-section' },
+            createElement('h5', null, 'Slowest Spans'),
+            createElement('div', { className: 'trace-slowest-spans' },
+              analysis.slowestSpans.map((span, index) =>
+                createElement('div', { 
+                  key: span.id, 
+                  className: 'trace-slow-span',
+                  onClick: () => selectSpan(span),
+                  title: 'Click to view details'
+                },
+                  createElement('span', { className: 'trace-slow-span-rank' }, `#${index + 1}`),
+                  createElement('span', { className: 'trace-slow-span-name' }, span.name),
+                  createElement('span', { className: 'trace-slow-span-duration' }, formatDuration(span.duration))
+                )
+              )
+            )
+          ) : null,
+          
+          // Type breakdown
+          analysis.typeStats.length > 0 ? createElement('div', { className: 'trace-insights-section' },
+            createElement('h5', null, 'By Type'),
+            createElement('div', { className: 'trace-type-stats' },
+              analysis.typeStats.map(stat =>
+                createElement('div', { key: stat.type, className: 'trace-type-stat' },
+                  createElement('span', { className: `trace-type-stat-label ${stat.type}` }, 
+                    stat.type.replace('span-', '').toUpperCase()
+                  ),
+                  createElement('span', { className: 'trace-type-stat-count' }, `${stat.count} spans`),
+                  createElement('span', { className: 'trace-type-stat-duration' }, formatDuration(stat.totalDuration))
+                )
+              )
+            )
+          ) : null
+        );
       };
       
       /**
@@ -452,37 +710,192 @@
         });
       }
       
-      // Create trace header element
-      const headerElement = createElement('div', { className: 'trace-header' },
-        createElement('div', { className: 'trace-labels' },
-          createElement('div', { className: 'trace-title' }, 'Span'),
-          createElement('div', { className: 'trace-duration-label' }, 'Duration')
-        ),
-        createElement('div', { className: 'trace-timeline-header' },
-          timeMarkers.map(marker => 
-            createElement('div', {
-              key: marker.time,
-              className: 'trace-time-marker',
-              style: { left: marker.percent }
-            }, marker.label)
-          )
-        )
-      );
+      // Get available span types for filtering
+      const availableSpanTypes = getSpanTypes(rootSpans);
       
-      // Create main content area
-      const mainContent = createElement('div', { className: 'trace-main-content' },
-        // Spans container
-        createElement('div', { 
-          className: 'trace-spans-container' + (detailsPanelVisible ? ' with-details-panel' : '')
-        },
-          createElement('div', { className: 'trace-spans' },
-            renderSpansHierarchy(rootSpans)
+      // Calculate critical path
+      const criticalPath = findCriticalPath(rootSpans);
+      
+      // Analyze performance
+      const performanceAnalysis = analyzePerformance(rootSpans);
+      
+      /**
+       * Create filter controls UI
+       * @return {React.Element} Filter controls element
+       */
+      const createFilterControls = () => {
+        return createElement('div', { className: 'trace-filter-controls' },
+          // Search input
+          createElement('div', { className: 'trace-filter-section' },
+            createElement('label', { className: 'trace-filter-label' }, 'Search'),
+            createElement('input', {
+              type: 'text',
+              className: 'trace-search-input',
+              placeholder: 'Search spans and attributes...',
+              value: searchTerm,
+              onChange: (e) => updateSearch(e.target.value)
+            })
+          ),
+          
+          // Span type filters
+          availableSpanTypes.length > 0 ? createElement('div', { className: 'trace-filter-section' },
+            createElement('label', { className: 'trace-filter-label' }, 'Span Types'),
+            createElement('div', { className: 'trace-filter-checkboxes' },
+              availableSpanTypes.map(spanType => 
+                createElement('label', { 
+                  key: spanType, 
+                  className: 'trace-filter-checkbox-label' 
+                },
+                  createElement('input', {
+                    type: 'checkbox',
+                    checked: activeFilters.spanTypes.has(spanType),
+                    onChange: (e) => {
+                      const newTypes = new Set(activeFilters.spanTypes);
+                      if (e.target.checked) {
+                        newTypes.add(spanType);
+                      } else {
+                        newTypes.delete(spanType);
+                      }
+                      updateFilters({ spanTypes: newTypes });
+                    }
+                  }),
+                  createElement('span', { className: `trace-filter-type-label ${spanType}` }, 
+                    spanType.replace('span-', '').toUpperCase()
+                  )
+                )
+              )
+            )
+          ) : null,
+          
+          // Error filter
+          createElement('div', { className: 'trace-filter-section' },
+            createElement('label', { className: 'trace-filter-checkbox-label' },
+              createElement('input', {
+                type: 'checkbox',
+                checked: activeFilters.errorOnly,
+                onChange: (e) => updateFilters({ errorOnly: e.target.checked })
+              }),
+              createElement('span', null, 'Errors Only')
+            )
+          ),
+          
+          // Duration filter
+          createElement('div', { className: 'trace-filter-section' },
+            createElement('label', { className: 'trace-filter-label' }, 'Min Duration (ms)'),
+            createElement('input', {
+              type: 'number',
+              className: 'trace-duration-input',
+              min: '0',
+              step: '0.1',
+              value: activeFilters.minDuration,
+              onChange: (e) => updateFilters({ minDuration: parseFloat(e.target.value) || 0 })
+            })
+          ),
+          
+          // Critical path toggle
+          createElement('div', { className: 'trace-filter-section' },
+            createElement('button', {
+              className: 'trace-action-button trace-action-secondary',
+              onClick: () => {
+                // Highlight critical path spans
+                const criticalSpanIds = new Set(criticalPath);
+                // This would need additional state management to highlight spans
+                if (typeof vscode !== 'undefined') {
+                  vscode.postMessage({
+                    command: 'debug-log',
+                    message: `Critical path: ${criticalPath.length} spans, total duration: ${formatDuration(duration)}`
+                  });
+                }
+              },
+              title: 'Highlight the critical path (longest dependency chain)'
+            }, '🎯 Show Critical Path')
+          ),
+          
+          // Clear filters
+          createElement('div', { className: 'trace-filter-section' },
+            createElement('button', {
+              className: 'trace-action-button trace-action-secondary',
+              onClick: () => {
+                searchTerm = '';
+                activeFilters = {
+                  spanTypes: new Set(),
+                  errorOnly: false,
+                  minDuration: 0,
+                  maxDuration: Infinity
+                };
+                filteredSpans = rootSpans;
+                rerenderTraceViewer();
+              },
+              title: 'Clear all filters and search'
+            }, '🗑️ Clear Filters')
           )
-        ),
+        );
+      };
+      
+      /**
+       * Create the complete trace viewer structure
+       * @return {React.Element} Complete trace viewer element
+       */
+      const createCompleteTraceViewer = () => {
+        // Create time scale markers
+        const currentTimeMarkers = [];
+        const steps = 6; // Number of time markers
+        for (let i = 0; i <= steps; i++) {
+          const time = (duration / steps) * i;
+          currentTimeMarkers.push({
+            time: time,
+            percent: timeToPercent(time),
+            label: formatDuration(time)
+          });
+        }
         
-        // Details panel (conditionally rendered)
-        detailsPanelVisible ? createDetailsPanel(selectedSpan) : null
-      );
+        return createElement('div', { 
+          className: 'trace-viewer',
+          ref: (el) => { containerElement = el; }
+        },
+          // Filter controls
+          createFilterControls(),
+          
+          // Main content area
+          createElement('div', { className: 'trace-main-content' },
+            // Left side: Spans with header and timeline
+            createElement('div', { 
+              className: 'trace-spans-container' + (detailsPanelVisible ? ' with-details-panel' : '')
+            },
+              // Span and timeline headers
+              createElement('div', { className: 'trace-header' },
+                createElement('div', { className: 'trace-labels' },
+                  createElement('div', { className: 'trace-title' }, 'Span'),
+                  createElement('div', { className: 'trace-duration-label' }, 'Duration')
+                ),
+                createElement('div', { className: 'trace-timeline-header' },
+                  currentTimeMarkers.map(marker => 
+                    createElement('div', {
+                      key: marker.time,
+                      className: 'trace-time-marker',
+                      style: { left: marker.percent }
+                    }, marker.label)
+                  )
+                )
+              ),
+              
+              // Spans list
+              createElement('div', { className: 'trace-spans' },
+                renderSpansHierarchy(filteredSpans)
+              )
+            ),
+            
+            // Right panel: Performance insights OR details panel
+            createElement('div', { className: 'trace-right-panel' },
+              detailsPanelVisible ? 
+                createDetailsPanel(selectedSpan) : 
+                createElement('div', { className: 'trace-insights-container' },
+                  createPerformanceInsights(analyzePerformance(filteredSpans))
+                )
+            )
+          )
+        );
+      };
       
       // Store reference for re-rendering
       let containerElement = null;
@@ -491,37 +904,17 @@
        * Re-render the trace viewer (for state updates)
        */
       const rerenderTraceViewer = () => {
-        if (containerElement) {
-          // Re-render the main content
-          const newMainContent = createElement('div', { className: 'trace-main-content' },
-            createElement('div', { 
-              className: 'trace-spans-container' + (detailsPanelVisible ? ' with-details-panel' : '')
-            },
-              createElement('div', { className: 'trace-spans' },
-                renderSpansHierarchy(rootSpans)
-              )
-            ),
-            detailsPanelVisible ? createDetailsPanel(selectedSpan) : null
-          );
+        if (containerElement && containerElement.parentNode) {
+          // Re-create the entire trace viewer with updated state
+          const newTraceViewer = createCompleteTraceViewer();
           
-          // Find and replace the main content
-          const oldMainContent = containerElement.querySelector('.trace-main-content');
-          if (oldMainContent) {
-            window.ReactDOM.render(newMainContent, oldMainContent.parentNode);
-          }
+          // Replace the entire trace viewer
+          window.ReactDOM.render(newTraceViewer, containerElement.parentNode);
         }
       };
       
-      // Create the main trace viewer element
-      const traceViewer = createElement('div', { 
-        className: 'trace-viewer',
-        ref: (el) => { containerElement = el; }
-      },
-        headerElement,
-        mainContent
-      );
-      
-      return traceViewer;
+      // Return the initial trace viewer
+      return createCompleteTraceViewer();
     }
     
     // Export functions to global scope

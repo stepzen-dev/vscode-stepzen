@@ -80,22 +80,47 @@ body {
     flex-direction: column;
   }
   
+  /* Main content area with improved layout */
+  .trace-main-content {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    gap: 12px;
+  }
+  
+  .trace-spans-container {
+    flex: 1;
+    overflow-y: auto;
+    max-height: calc(100vh - 120px);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 4px;
+    background: var(--vscode-editor-background);
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .trace-spans-container.with-details-panel {
+    flex: 0 0 60%;
+  }
+  
+  /* Header inside spans container */
   .trace-header {
-    margin-bottom: 16px;
     flex-shrink: 0;
+    background: var(--vscode-editor-background);
+    border-bottom: 1px solid var(--vscode-panel-border);
   }
   
   .trace-labels {
     display: flex;
     justify-content: space-between;
-    padding: 0 4px 4px 4px;
-    border-bottom: 1px solid var(--vscode-panel-border);
+    padding: 8px 4px 4px 4px;
     font-weight: 600;
   }
   
   .trace-title {
     font-weight: bold;
     color: var(--vscode-foreground);
+    width: 280px; /* Match span info width */
   }
   
   .trace-duration-label {
@@ -105,7 +130,7 @@ body {
   .trace-timeline-header {
     position: relative;
     height: 20px;
-    margin-top: 8px;
+    margin: 4px 8px 8px 288px; /* Align with span timeline area */
     border-bottom: 1px solid var(--vscode-widget-border);
   }
   
@@ -118,30 +143,18 @@ body {
     padding: 0 2px;
   }
   
-  /* Main content area with optional details panel */
-  .trace-main-content {
-    display: flex;
-    flex: 1;
-    min-height: 0;
-    gap: 10px;
-  }
-  
-  .trace-spans-container {
-    flex: 1;
-    overflow-y: auto;
-    max-height: calc(100vh - 120px);
-    border: 1px solid var(--vscode-widget-border);
-    border-radius: 4px;
-    background: var(--vscode-editor-background);
-  }
-  
-  .trace-spans-container.with-details-panel {
-    flex: 0 0 60%;
-  }
-  
   .trace-spans {
+    flex: 1;
     position: relative;
     padding: 8px;
+    overflow-y: auto;
+  }
+  
+  /* New right panel that switches between insights and details */
+  .trace-right-panel {
+    flex: 0 0 40%;
+    display: flex;
+    flex-direction: column;
   }
   
   /* Enhanced span styling with hierarchy support */
@@ -290,13 +303,12 @@ body {
   
   /* Details Panel Styles */
   .trace-details-panel {
-    flex: 0 0 40%;
+    flex: 1;
     background: var(--vscode-sideBar-background);
     border: 1px solid var(--vscode-widget-border);
     border-radius: 4px;
     display: flex;
     flex-direction: column;
-    max-height: calc(100vh - 120px);
     overflow: hidden;
   }
   
@@ -318,6 +330,8 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex: 1;
+    margin-right: 12px;
   }
   
   .trace-details-close {
@@ -329,6 +343,7 @@ body {
     padding: 4px 8px;
     border-radius: 3px;
     transition: background-color 0.15s ease;
+    flex-shrink: 0;
   }
   
   .trace-details-close:hover {
@@ -419,12 +434,20 @@ body {
       flex: 1;
     }
     
-    .trace-details-panel {
+    .trace-right-panel {
       flex: 0 0 300px;
     }
     
     .trace-span-info {
       width: 200px;
+    }
+    
+    .trace-title {
+      width: 200px; /* Match smaller span info width */
+    }
+    
+    .trace-timeline-header {
+      margin-left: 208px; /* Adjust for smaller span info width */
     }
   }
   
@@ -505,4 +528,304 @@ body {
   .trace-field-info strong {
     color: var(--vscode-foreground);
     font-weight: 600;
+  }
+  
+  /* Filter Controls Styles */
+  .trace-filter-controls {
+    background: var(--vscode-sideBar-background);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-end;
+  }
+  
+  .trace-filter-section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 120px;
+  }
+  
+  .trace-filter-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--vscode-descriptionForeground);
+    margin-bottom: 2px;
+  }
+  
+  .trace-search-input,
+  .trace-duration-input {
+    padding: 6px 8px;
+    border: 1px solid var(--vscode-input-border);
+    border-radius: 3px;
+    background: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    font-size: 12px;
+    font-family: var(--vscode-font-family);
+    min-width: 180px;
+  }
+  
+  .trace-search-input:focus,
+  .trace-duration-input:focus {
+    outline: none;
+    border-color: var(--vscode-focusBorder);
+    box-shadow: 0 0 0 1px var(--vscode-focusBorder);
+  }
+  
+  .trace-search-input::placeholder {
+    color: var(--vscode-input-placeholderForeground);
+  }
+  
+  .trace-duration-input {
+    min-width: 80px;
+  }
+  
+  .trace-filter-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .trace-filter-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--vscode-foreground);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 3px;
+    transition: background-color 0.15s ease;
+  }
+  
+  .trace-filter-checkbox-label:hover {
+    background: var(--vscode-list-hoverBackground);
+  }
+  
+  .trace-filter-checkbox-label input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+  }
+  
+  .trace-filter-type-label {
+    font-weight: 500;
+    padding: 2px 4px;
+    border-radius: 2px;
+    font-size: 10px;
+  }
+  
+  /* Span type label colors */
+  .trace-filter-type-label.span-http {
+    background: rgba(74, 144, 226, 0.2);
+    color: #4A90E2;
+  }
+  
+  .trace-filter-type-label.span-db {
+    background: rgba(126, 211, 33, 0.2);
+    color: #7ED321;
+  }
+  
+  .trace-filter-type-label.span-resolve {
+    background: rgba(144, 19, 254, 0.2);
+    color: #9013FE;
+  }
+  
+  .trace-filter-type-label.span-server {
+    background: rgba(245, 166, 35, 0.2);
+    color: #F5A623;
+  }
+  
+  .trace-filter-type-label.span-client {
+    background: rgba(255, 107, 53, 0.2);
+    color: #FF6B35;
+  }
+  
+  .trace-filter-type-label.span-factory {
+    background: rgba(208, 2, 27, 0.2);
+    color: #D0021B;
+  }
+  
+  .trace-filter-type-label.span-materialization {
+    background: rgba(80, 227, 194, 0.2);
+    color: #50E3C2;
+  }
+  
+  /* Secondary action buttons for filters */
+  .trace-action-secondary {
+    background: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
+    border-color: var(--vscode-button-border);
+    padding: 6px 10px;
+    font-size: 11px;
+    min-width: auto;
+  }
+  
+  .trace-action-secondary:hover {
+    background: var(--vscode-button-secondaryHoverBackground);
+  }
+  
+  /* Responsive filter controls */
+  @media (max-width: 1000px) {
+    .trace-filter-controls {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .trace-filter-section {
+      min-width: auto;
+    }
+    
+    .trace-search-input {
+      min-width: auto;
+    }
+  }
+  
+  /* Performance Insights Styles */
+  .trace-insights-container {
+    flex: 1;
+    background: var(--vscode-sideBar-background);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 4px;
+    overflow-y: auto;
+  }
+  
+  .trace-performance-insights {
+    padding: 12px;
+  }
+  
+  .trace-insights-title {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--vscode-foreground);
+    border-bottom: 1px solid var(--vscode-widget-border);
+    padding-bottom: 6px;
+  }
+  
+  .trace-insights-section {
+    margin-bottom: 16px;
+  }
+  
+  .trace-insights-section h5 {
+    margin: 0 0 6px 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--vscode-descriptionForeground);
+  }
+  
+  .trace-insights-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 8px;
+    font-size: 11px;
+  }
+  
+  .trace-insights-grid > div:nth-child(odd) {
+    color: var(--vscode-descriptionForeground);
+    font-weight: 500;
+  }
+  
+  .trace-insights-grid > div:nth-child(even) {
+    color: var(--vscode-foreground);
+    font-family: var(--vscode-editor-font-family, monospace);
+  }
+  
+  .trace-error-count {
+    color: var(--vscode-errorForeground) !important;
+    font-weight: 600 !important;
+  }
+  
+  .trace-slowest-spans {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .trace-slow-span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    font-size: 11px;
+  }
+  
+  .trace-slow-span:hover {
+    background: var(--vscode-list-hoverBackground);
+  }
+  
+  .trace-slow-span-rank {
+    color: var(--vscode-descriptionForeground);
+    font-weight: 600;
+    min-width: 20px;
+  }
+  
+  .trace-slow-span-name {
+    flex: 1;
+    color: var(--vscode-foreground);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .trace-slow-span-duration {
+    color: var(--vscode-charts-red);
+    font-family: var(--vscode-editor-font-family, monospace);
+    font-weight: 600;
+  }
+  
+  .trace-type-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .trace-type-stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 4px;
+    border-radius: 3px;
+    font-size: 10px;
+  }
+  
+  .trace-type-stat-label {
+    font-weight: 600;
+    padding: 2px 4px;
+    border-radius: 2px;
+    min-width: 60px;
+    text-align: center;
+  }
+  
+  .trace-type-stat-count {
+    color: var(--vscode-descriptionForeground);
+    min-width: 50px;
+  }
+  
+  .trace-type-stat-duration {
+    color: var(--vscode-foreground);
+    font-family: var(--vscode-editor-font-family, monospace);
+    font-weight: 500;
+    margin-left: auto;
+  }
+  
+  /* Remove old responsive rules that are no longer needed */
+  @media (max-width: 1200px) {
+    .trace-main-content {
+      flex-direction: column;
+    }
+    
+    .trace-spans-container.with-details-panel {
+      flex: 1;
+    }
+    
+    .trace-right-panel {
+      flex: 0 0 250px;
+    }
   }
