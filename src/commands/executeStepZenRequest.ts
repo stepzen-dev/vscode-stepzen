@@ -1,74 +1,16 @@
 import * as vscode from "vscode";
-import * as fs from "fs";
-import * as path from "path";
-import * as os from "os";
 import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
 import { clearResultsPanel, openResultsPanel } from "../panels/resultsPanel";
 import { summariseDiagnostics, publishDiagnostics } from "../utils/runtimeDiagnostics";
 import { runtimeDiag } from "../extension";
-import { UI, TIMEOUTS, TEMP_FILE_PATTERNS } from "../utils/constants";
+import { UI } from "../utils/constants";
+import { createTempGraphQLFile, cleanupLater } from "../utils/tempFiles";
 import { services } from "../services";
 import { StepZenResponse, StepZenDiagnostic } from "../types";
 import { ValidationError, handleError } from "../errors";
 
 
-/**
- * Creates a temporary GraphQL file with the provided query content
- * @param content The GraphQL query content to write to the file
- * @returns Path to the created temporary file
- */
-function createTempGraphQLFile(content: string): string {
-  if (!content || typeof content !== 'string') {
-    throw new ValidationError(
-      "Invalid query content: expected a non-empty string",
-      "INVALID_QUERY_CONTENT"
-    );
-  }
-  
-  const tempDir = os.tmpdir();
-  const timestamp = new Date().getTime();
-  const randomPart = Math.random().toString(36).substring(2, 10);
-  const filename = `${TEMP_FILE_PATTERNS.QUERY_PREFIX}${timestamp}-${randomPart}${TEMP_FILE_PATTERNS.GRAPHQL_EXTENSION}`;
-  const filePath = path.join(tempDir, filename);
-  
-  try {
-    fs.writeFileSync(filePath, content, 'utf8');
-    services.logger.debug(`Created temporary query file: ${filePath}`);
-    return filePath;
-  } catch (err) {
-    throw new ValidationError(
-      `Failed to create temporary file: ${err instanceof Error ? err.message : String(err)}`,
-      "FILE_CREATE_FAILED",
-      err
-    );
-  }
-}
 
-/**
- * Schedules cleanup of a temporary file
- * @param filePath Path to the temporary file to clean up
- */
-function cleanupLater(filePath: string) {
-  if (!filePath || typeof filePath !== 'string') {
-    services.logger.warn("Invalid path provided to cleanupLater");
-    return;
-  }
-  
-  setTimeout(() => {
-    try {
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-        services.logger.debug(`Cleaned up temporary file: ${filePath}`);
-      }
-    } catch (e) {
-      handleError(new ValidationError(
-        `Failed to clean up temporary file: ${filePath}`,
-        "FILE_CLEANUP_FAILED",
-        e
-      ));
-    }
-  }, TIMEOUTS.FILE_CLEANUP_DELAY_MS);
-}
 
 /**
  * Executes a StepZen request using the CLI service
