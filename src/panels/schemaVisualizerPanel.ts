@@ -69,7 +69,7 @@ class SchemaVisualizerPanel extends BaseWebviewPanel {
       this.panel = this.createWebviewPanel(
         UI.SCHEMA_VISUALIZER_VIEW_TYPE,
         UI.SCHEMA_VISUALIZER_TITLE,
-        vscode.ViewColumn.Beside
+        vscode.ViewColumn.Active
       );
 
       // Setup message handling

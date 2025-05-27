@@ -68,34 +68,70 @@ body {
   .rjv span.null { color: var(--null) !important; }
   .rjv ul { margin-block-start: 2px; }
   
-  /* Trace viewer styles */
+  /* Enhanced Trace viewer styles */
   .trace-viewer {
     font-family: var(--vscode-editor-font-family, monospace);
     font-size: 12px;
     line-height: 1.4;
     margin: 0;
     padding: 10px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
   }
   
+  /* Main content area with improved layout */
+  .trace-main-content {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    gap: 12px;
+  }
+  
+  .trace-spans-container {
+    flex: 1;
+    overflow-y: auto;
+    max-height: calc(100vh - 120px);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 4px;
+    background: var(--vscode-editor-background);
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .trace-spans-container.with-details-panel {
+    flex: 0 0 60%;
+  }
+  
+  /* Header inside spans container */
   .trace-header {
-    margin-bottom: 16px;
+    flex-shrink: 0;
+    background: var(--vscode-editor-background);
+    border-bottom: 1px solid var(--vscode-panel-border);
   }
   
   .trace-labels {
     display: flex;
     justify-content: space-between;
-    padding: 0 4px 4px 4px;
-    border-bottom: 1px solid var(--vscode-panel-border);
+    padding: 8px 4px 4px 4px;
+    font-weight: 600;
   }
   
   .trace-title {
     font-weight: bold;
+    color: var(--vscode-foreground);
+    width: 280px; /* Match span info width */
+  }
+  
+  .trace-duration-label {
+    color: var(--vscode-descriptionForeground);
   }
   
   .trace-timeline-header {
     position: relative;
     height: 20px;
-    margin-top: 8px;
+    margin: 4px 8px 8px 288px; /* Align with span timeline area */
+    border-bottom: 1px solid var(--vscode-widget-border);
   }
   
   .trace-time-marker {
@@ -103,29 +139,69 @@ body {
     transform: translateX(-50%);
     font-size: 10px;
     color: var(--vscode-descriptionForeground);
-  }
-  
-  .trace-spans-container {
-    overflow-y: auto;
-    max-height: calc(100vh - 120px);
+    background: var(--vscode-editor-background);
+    padding: 0 2px;
   }
   
   .trace-spans {
+    flex: 1;
     position: relative;
+    padding: 8px;
+    overflow-y: auto;
   }
   
+  /* New right panel that switches between insights and details */
+  .trace-right-panel {
+    flex: 0 0 40%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Enhanced span styling with hierarchy support */
   .trace-span {
     display: flex;
-    height: 24px;
-    margin-bottom: 4px;
+    min-height: 28px;
+    margin-bottom: 2px;
     align-items: center;
+    border-radius: 3px;
+    transition: background-color 0.15s ease;
+  }
+  
+  .trace-span:hover {
+    background-color: var(--vscode-list-hoverBackground);
   }
   
   .trace-span-info {
-    width: 250px;
+    width: 280px;
     display: flex;
-    justify-content: space-between;
-    padding-right: 10px;
+    align-items: center;
+    padding: 4px 8px;
+    gap: 6px;
+    border-right: 1px solid var(--vscode-widget-border);
+  }
+  
+  /* Expansion toggle for hierarchical spans */
+  .trace-span-toggle {
+    width: 12px;
+    height: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 10px;
+    color: var(--vscode-foreground);
+    user-select: none;
+    flex-shrink: 0;
+  }
+  
+  .trace-span-toggle:hover {
+    background-color: var(--vscode-button-hoverBackground);
+    border-radius: 2px;
+  }
+  
+  .trace-span-toggle-spacer {
+    width: 12px;
+    flex-shrink: 0;
   }
   
   .trace-span-name {
@@ -133,59 +209,623 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 2px;
+    transition: background-color 0.15s ease;
+  }
+  
+  .trace-span-name:hover {
+    background-color: var(--vscode-button-hoverBackground);
+    color: var(--vscode-button-foreground);
   }
   
   .trace-span-duration {
     flex-shrink: 0;
     text-align: right;
     color: var(--vscode-descriptionForeground);
-    margin-left: 8px;
+    font-size: 11px;
+    min-width: 50px;
   }
   
   .trace-span-timeline {
     flex: 1;
     position: relative;
-    height: 16px;
+    height: 20px;
     background-color: var(--vscode-editor-background);
+    margin: 4px 8px;
+    border-radius: 2px;
+    border: 1px solid var(--vscode-widget-border);
   }
   
   .trace-span-bar {
     position: absolute;
-    height: 16px;
+    height: 18px;
     background-color: var(--vscode-progressBar-background);
     border-radius: 2px;
     min-width: 2px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    top: 0;
+    border: 1px solid transparent;
   }
   
-  /* Color coding for different span types */
+  .trace-span-bar:hover {
+    transform: scaleY(1.1);
+    border-color: var(--vscode-focusBorder);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .trace-span-selected {
+    border-color: var(--vscode-focusBorder) !important;
+    box-shadow: 0 0 0 1px var(--vscode-focusBorder);
+    transform: scaleY(1.1);
+  }
+  
+  /* Enhanced color coding for different span types */
   .span-http {
-    background-color: var(--vscode-charts-blue);
+    background: linear-gradient(135deg, var(--vscode-charts-blue), #4A90E2);
   }
   
   .span-db {
-    background-color: var(--vscode-charts-green);
+    background: linear-gradient(135deg, var(--vscode-charts-green), #7ED321);
   }
   
   .span-resolve {
-    background-color: var(--vscode-charts-purple);
+    background: linear-gradient(135deg, var(--vscode-charts-purple), #9013FE);
   }
   
   .span-server {
-    background-color: var(--vscode-charts-yellow);
+    background: linear-gradient(135deg, var(--vscode-charts-yellow), #F5A623);
   }
   
   .span-client {
-    background-color: var(--vscode-charts-orange);
+    background: linear-gradient(135deg, var(--vscode-charts-orange), #FF6B35);
   }
   
   .span-factory {
-    background-color: var(--vscode-charts-red);
+    background: linear-gradient(135deg, var(--vscode-charts-red), #D0021B);
   }
   
   .span-materialization {
-    background-color: var(--vscode-charts-green);
+    background: linear-gradient(135deg, var(--vscode-charts-green), #50E3C2);
   }
   
   .trace-span-error {
-    background-color: var(--vscode-errorForeground) !important;
+    background: linear-gradient(135deg, var(--vscode-errorForeground), #FF4444) !important;
+    animation: pulse-error 2s infinite;
+  }
+  
+  @keyframes pulse-error {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+  
+  /* Details Panel Styles */
+  .trace-details-panel {
+    flex: 1;
+    background: var(--vscode-sideBar-background);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  
+  .trace-details-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--vscode-widget-border);
+    background: var(--vscode-sideBarSectionHeader-background);
+    flex-shrink: 0;
+  }
+  
+  .trace-details-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--vscode-sideBarTitle-foreground);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    margin-right: 12px;
+  }
+  
+  .trace-details-close {
+    background: none;
+    border: none;
+    color: var(--vscode-icon-foreground);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px 8px;
+    border-radius: 3px;
+    transition: background-color 0.15s ease;
+    flex-shrink: 0;
+  }
+  
+  .trace-details-close:hover {
+    background-color: var(--vscode-button-hoverBackground);
+    color: var(--vscode-button-foreground);
+  }
+  
+  .trace-details-content {
+    padding: 16px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  
+  .trace-details-section {
+    margin-bottom: 20px;
+  }
+  
+  .trace-details-section h4 {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--vscode-foreground);
+    border-bottom: 1px solid var(--vscode-widget-border);
+    padding-bottom: 4px;
+  }
+  
+  .trace-details-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 12px;
+    font-size: 12px;
+  }
+  
+  .trace-details-grid > div:nth-child(odd) {
+    color: var(--vscode-descriptionForeground);
+    font-weight: 500;
+  }
+  
+  .trace-details-grid > div:nth-child(even) {
+    color: var(--vscode-foreground);
+    font-family: var(--vscode-editor-font-family, monospace);
+  }
+  
+  .trace-details-attributes {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 3px;
+    background: var(--vscode-editor-background);
+  }
+  
+  .trace-details-attribute {
+    display: flex;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--vscode-widget-border);
+    font-size: 11px;
+  }
+  
+  .trace-details-attribute:last-child {
+    border-bottom: none;
+  }
+  
+  .trace-details-attribute:nth-child(even) {
+    background: var(--vscode-list-inactiveSelectionBackground);
+  }
+  
+  .trace-details-attribute-key {
+    color: var(--vscode-symbolIcon-classForeground);
+    font-weight: 500;
+    min-width: 120px;
+    margin-right: 8px;
+  }
+  
+  .trace-details-attribute-value {
+    color: var(--vscode-foreground);
+    font-family: var(--vscode-editor-font-family, monospace);
+    word-break: break-all;
+    flex: 1;
+  }
+  
+  /* Responsive design for smaller panels */
+  @media (max-width: 800px) {
+    .trace-main-content {
+      flex-direction: column;
+    }
+    
+    .trace-spans-container.with-details-panel {
+      flex: 1;
+    }
+    
+    .trace-right-panel {
+      flex: 0 0 300px;
+    }
+    
+    .trace-span-info {
+      width: 200px;
+    }
+    
+    .trace-title {
+      width: 200px; /* Match smaller span info width */
+    }
+    
+    .trace-timeline-header {
+      margin-left: 208px; /* Adjust for smaller span info width */
+    }
+  }
+  
+  /* VS Code Integration Styles */
+  .trace-details-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  
+  .trace-action-button {
+    padding: 10px 14px;
+    border: 1px solid var(--vscode-button-border);
+    border-radius: 4px;
+    background: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    cursor: pointer;
+    font-size: 13px;
+    font-family: var(--vscode-font-family);
+    font-weight: 500;
+    transition: all 0.15s ease;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+  }
+  
+  .trace-action-button:hover {
+    background: var(--vscode-button-hoverBackground);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+  
+  .trace-action-button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .trace-action-primary {
+    background: var(--vscode-button-background);
+    border-color: var(--vscode-button-border);
+  }
+  
+  .trace-action-primary:hover {
+    background: var(--vscode-button-hoverBackground);
+  }
+  
+  .trace-field-info {
+    margin-top: 12px;
+    padding: 8px;
+    background: var(--vscode-textBlockQuote-background);
+    border-left: 3px solid var(--vscode-textBlockQuote-border);
+    border-radius: 0 3px 3px 0;
+    font-size: 11px;
+  }
+  
+  .trace-field-path,
+  .trace-field-directive {
+    margin-bottom: 4px;
+  }
+  
+  .trace-field-path:last-child,
+  .trace-field-directive:last-child {
+    margin-bottom: 0;
+  }
+  
+  .trace-field-info code {
+    background: var(--vscode-textPreformat-background);
+    color: var(--vscode-textPreformat-foreground);
+    padding: 2px 4px;
+    border-radius: 2px;
+    font-family: var(--vscode-editor-font-family, monospace);
+    font-size: 10px;
+  }
+  
+  .trace-field-info strong {
+    color: var(--vscode-foreground);
+    font-weight: 600;
+  }
+  
+  /* Filter Controls Styles */
+  .trace-filter-controls {
+    background: var(--vscode-sideBar-background);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-end;
+  }
+  
+  .trace-filter-section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 120px;
+  }
+  
+  .trace-filter-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--vscode-descriptionForeground);
+    margin-bottom: 2px;
+  }
+  
+  .trace-search-input,
+  .trace-duration-input {
+    padding: 6px 8px;
+    border: 1px solid var(--vscode-input-border);
+    border-radius: 3px;
+    background: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    font-size: 12px;
+    font-family: var(--vscode-font-family);
+    min-width: 180px;
+  }
+  
+  .trace-search-input:focus,
+  .trace-duration-input:focus {
+    outline: none;
+    border-color: var(--vscode-focusBorder);
+    box-shadow: 0 0 0 1px var(--vscode-focusBorder);
+  }
+  
+  .trace-search-input::placeholder {
+    color: var(--vscode-input-placeholderForeground);
+  }
+  
+  .trace-duration-input {
+    min-width: 80px;
+  }
+  
+  .trace-filter-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .trace-filter-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--vscode-foreground);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 3px;
+    transition: background-color 0.15s ease;
+  }
+  
+  .trace-filter-checkbox-label:hover {
+    background: var(--vscode-list-hoverBackground);
+  }
+  
+  .trace-filter-checkbox-label input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+  }
+  
+  .trace-filter-type-label {
+    font-weight: 500;
+    padding: 2px 4px;
+    border-radius: 2px;
+    font-size: 10px;
+  }
+  
+  /* Span type label colors */
+  .trace-filter-type-label.span-http {
+    background: rgba(74, 144, 226, 0.2);
+    color: #4A90E2;
+  }
+  
+  .trace-filter-type-label.span-db {
+    background: rgba(126, 211, 33, 0.2);
+    color: #7ED321;
+  }
+  
+  .trace-filter-type-label.span-resolve {
+    background: rgba(144, 19, 254, 0.2);
+    color: #9013FE;
+  }
+  
+  .trace-filter-type-label.span-server {
+    background: rgba(245, 166, 35, 0.2);
+    color: #F5A623;
+  }
+  
+  .trace-filter-type-label.span-client {
+    background: rgba(255, 107, 53, 0.2);
+    color: #FF6B35;
+  }
+  
+  .trace-filter-type-label.span-factory {
+    background: rgba(208, 2, 27, 0.2);
+    color: #D0021B;
+  }
+  
+  .trace-filter-type-label.span-materialization {
+    background: rgba(80, 227, 194, 0.2);
+    color: #50E3C2;
+  }
+  
+  /* Secondary action buttons for filters */
+  .trace-action-secondary {
+    background: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
+    border-color: var(--vscode-button-border);
+    padding: 6px 10px;
+    font-size: 11px;
+    min-width: auto;
+  }
+  
+  .trace-action-secondary:hover {
+    background: var(--vscode-button-secondaryHoverBackground);
+  }
+  
+  /* Responsive filter controls */
+  @media (max-width: 1000px) {
+    .trace-filter-controls {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .trace-filter-section {
+      min-width: auto;
+    }
+    
+    .trace-search-input {
+      min-width: auto;
+    }
+  }
+  
+  /* Performance Insights Styles */
+  .trace-insights-container {
+    flex: 1;
+    background: var(--vscode-sideBar-background);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 4px;
+    overflow-y: auto;
+  }
+  
+  .trace-performance-insights {
+    padding: 12px;
+  }
+  
+  .trace-insights-title {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--vscode-foreground);
+    border-bottom: 1px solid var(--vscode-widget-border);
+    padding-bottom: 6px;
+  }
+  
+  .trace-insights-section {
+    margin-bottom: 16px;
+  }
+  
+  .trace-insights-section h5 {
+    margin: 0 0 6px 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--vscode-descriptionForeground);
+  }
+  
+  .trace-insights-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 8px;
+    font-size: 11px;
+  }
+  
+  .trace-insights-grid > div:nth-child(odd) {
+    color: var(--vscode-descriptionForeground);
+    font-weight: 500;
+  }
+  
+  .trace-insights-grid > div:nth-child(even) {
+    color: var(--vscode-foreground);
+    font-family: var(--vscode-editor-font-family, monospace);
+  }
+  
+  .trace-error-count {
+    color: var(--vscode-errorForeground) !important;
+    font-weight: 600 !important;
+  }
+  
+  .trace-slowest-spans {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .trace-slow-span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    font-size: 11px;
+  }
+  
+  .trace-slow-span:hover {
+    background: var(--vscode-list-hoverBackground);
+  }
+  
+  .trace-slow-span-rank {
+    color: var(--vscode-descriptionForeground);
+    font-weight: 600;
+    min-width: 20px;
+  }
+  
+  .trace-slow-span-name {
+    flex: 1;
+    color: var(--vscode-foreground);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .trace-slow-span-duration {
+    color: var(--vscode-charts-red);
+    font-family: var(--vscode-editor-font-family, monospace);
+    font-weight: 600;
+  }
+  
+  .trace-type-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .trace-type-stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 4px;
+    border-radius: 3px;
+    font-size: 10px;
+  }
+  
+  .trace-type-stat-label {
+    font-weight: 600;
+    padding: 2px 4px;
+    border-radius: 2px;
+    min-width: 60px;
+    text-align: center;
+  }
+  
+  .trace-type-stat-count {
+    color: var(--vscode-descriptionForeground);
+    min-width: 50px;
+  }
+  
+  .trace-type-stat-duration {
+    color: var(--vscode-foreground);
+    font-family: var(--vscode-editor-font-family, monospace);
+    font-weight: 500;
+    margin-left: auto;
+  }
+  
+  /* Remove old responsive rules that are no longer needed */
+  @media (max-width: 1200px) {
+    .trace-main-content {
+      flex-direction: column;
+    }
+    
+    .trace-spans-container.with-details-panel {
+      flex: 1;
+    }
+    
+    .trace-right-panel {
+      flex: 0 0 250px;
+    }
   }
