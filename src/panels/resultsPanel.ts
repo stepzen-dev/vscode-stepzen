@@ -10,6 +10,7 @@ import { EXTENSION_URI } from "../extension";
 import { StepZenResponse } from "../types";
 import { UI } from "../utils/constants";
 import { BaseWebviewPanel } from "./BaseWebviewPanel";
+import { services } from "../services";
 
 /**
  * Results panel implementation extending BaseWebviewPanel
@@ -17,6 +18,7 @@ import { BaseWebviewPanel } from "./BaseWebviewPanel";
  */
 class ResultsPanel extends BaseWebviewPanel {
   private static instance: ResultsPanel | undefined;
+  private messageHandler: vscode.Disposable | undefined;
 
   private constructor(extensionUri: Uri) {
     super(extensionUri);
@@ -42,10 +44,132 @@ class ResultsPanel extends BaseWebviewPanel {
         UI.RESULTS_PANEL_TITLE,
         vscode.ViewColumn.Active
       );
+      
+      // Setup message handling for VS Code integration
+      this.setupMessageHandling();
     }
 
     this.panel.webview.html = this.generateHtml(this.panel.webview, payload);
     this.reveal();
+  }
+
+  /**
+   * Setup message handling for webview-to-extension communication
+   */
+  private setupMessageHandling(): void {
+    if (!this.panel) {
+      return;
+    }
+
+    this.messageHandler = this.panel.webview.onDidReceiveMessage(async (message) => {
+      switch (message.command) {
+        case "navigateToSchema":
+          await this.handleNavigateToSchema(message);
+          return;
+          
+        case "debug-log":
+          // Log messages from the webview to the StepZen output channel
+          services.logger.debug(`[Results Panel] ${message.message}`);
+          return;
+          
+        default:
+          services.logger.warn(`Unknown message command: ${message.command}`);
+      }
+    });
+  }
+
+  /**
+   * Handle navigation to schema definition from a span
+   */
+  private async handleNavigateToSchema(message: any): Promise<void> {
+    try {
+      services.logger.info(`Navigate to schema requested for span: ${message.spanName}`);
+      
+      // Extract GraphQL field information from span attributes
+      const fieldPath = message.spanAttributes?.['graphql.field.path'];
+      
+      if (!fieldPath || !Array.isArray(fieldPath)) {
+        vscode.window.showWarningMessage("No GraphQL field path found in span data");
+        return;
+      }
+      
+      // Use schema index to find the field definition
+      const fieldIndex = services.schemaIndex.getFieldIndex();
+      
+      // For field paths like ["customer", "orders"], we want to find the "orders" field on the "Customer" type
+      // The field path contains aliases, but we need to resolve to actual field names
+      let typeName: string;
+      let fieldName: string;
+      
+      if (fieldPath.length === 1) {
+        // Root field like ["customer"] -> Query.customer
+        typeName = "Query";
+        // For root fields, try to get the actual field name from the span name
+        // Span names are typically like "resolve Query.customer"
+        const spanName = message.spanName || '';
+        const resolveMatch = spanName.match(/resolve\s+(\w+)\.(\w+)/);
+        if (resolveMatch) {
+          fieldName = resolveMatch[2]; // Extract actual field name from span name
+        } else {
+          fieldName = fieldPath[0]; // Fallback to path (might be alias)
+        }
+      } else {
+        // Nested field like ["customer", "orders"] -> Customer.orders
+        // We need to resolve the type of the parent field
+        const parentFieldName = fieldPath[fieldPath.length - 2];
+        fieldName = fieldPath[fieldPath.length - 1];
+        
+        // Find the parent field to get its return type
+        const queryFields = fieldIndex["Query"] || [];
+        const parentField = queryFields.find(f => f.name === parentFieldName);
+        
+        if (parentField) {
+          // Extract type name from the field type (remove [] and ! modifiers)
+          typeName = parentField.type.replace(/[\[\]!]/g, '');
+        } else {
+          // Fallback: capitalize the parent field name
+          typeName = parentFieldName.charAt(0).toUpperCase() + parentFieldName.slice(1);
+        }
+        
+        // For nested fields, also try to get actual field name from span name
+        const spanName = message.spanName || '';
+        const resolveMatch = spanName.match(/resolve\s+(\w+)\.(\w+)/);
+        if (resolveMatch) {
+          fieldName = resolveMatch[2]; // Use actual field name from span
+        }
+      }
+      
+      // Find the field in the schema index
+      const typeFields = fieldIndex[typeName] || [];
+      const targetField = typeFields.find(f => f.name === fieldName);
+      
+      if (targetField && targetField.location) {
+        // Navigate to the field definition
+        const uri = vscode.Uri.file(targetField.location.uri);
+        const document = await vscode.workspace.openTextDocument(uri);
+        const editor = await vscode.window.showTextDocument(document);
+        
+        const position = new vscode.Position(
+          targetField.location.line,
+          targetField.location.character
+        );
+        
+        editor.selection = new vscode.Selection(position, position);
+        editor.revealRange(
+          new vscode.Range(position, position),
+          vscode.TextEditorRevealType.InCenter
+        );
+        
+        services.logger.info(`Navigated to ${typeName}.${fieldName} at ${targetField.location.uri}:${targetField.location.line}`);
+      } else {
+        vscode.window.showWarningMessage(`Could not find schema definition for ${typeName}.${fieldName}`);
+        services.logger.warn(`Schema definition not found for ${typeName}.${fieldName}`);
+      }
+      
+    } catch (error) {
+      services.logger.error("Error navigating to schema", error);
+      vscode.window.showErrorMessage("Failed to navigate to schema definition");
+    }
   }
 
   /**
@@ -56,6 +180,10 @@ class ResultsPanel extends BaseWebviewPanel {
   }
 
   protected onDispose(): void {
+    if (this.messageHandler) {
+      this.messageHandler.dispose();
+      this.messageHandler = undefined;
+    }
     super.onDispose();
     ResultsPanel.instance = undefined;
   }
@@ -100,6 +228,9 @@ class ResultsPanel extends BaseWebviewPanel {
       
       <!-- Initialize the panel -->
       <script nonce="${nonce}">
+        // Acquire VS Code API for webview communication
+        const vscode = acquireVsCodeApi();
+        
         // Initialize when the DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
           const payload = ${payloadJs};

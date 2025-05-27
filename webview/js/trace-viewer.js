@@ -321,6 +321,36 @@
         const childrenDuration = span.children.reduce((sum, child) => sum + child.duration, 0);
         const selfTime = span.duration - childrenDuration;
         
+        // Check if this span has GraphQL field information for navigation
+        const hasFieldPath = span.attributes['graphql.field.path'] && Array.isArray(span.attributes['graphql.field.path']);
+        const fieldPath = hasFieldPath ? span.attributes['graphql.field.path'] : null;
+        const directive = span.attributes['graphql.field.directive'];
+        
+        /**
+         * Send a message to the VS Code extension
+         * @param {string} command - The command to send
+         * @param {Object} data - Additional data to send
+         */
+        const sendMessage = (command, data = {}) => {
+          if (typeof vscode !== 'undefined') {
+            vscode.postMessage({
+              command,
+              spanName: span.name,
+              spanId: span.id,
+              spanAttributes: span.attributes,
+              ...data
+            });
+          } else {
+            // Send debug message instead of console.warn for linter compliance
+            if (typeof vscode !== 'undefined') {
+              vscode.postMessage({
+                command: 'debug-log',
+                message: 'VS Code API not available for trace viewer navigation'
+              });
+            }
+          }
+        };
+        
         return createElement('div', { className: 'trace-details-panel' },
           createElement('div', { className: 'trace-details-header' },
             createElement('h3', { className: 'trace-details-title' }, span.name),
@@ -332,6 +362,30 @@
           ),
           
           createElement('div', { className: 'trace-details-content' },
+            // VS Code Integration Actions (if applicable)
+            hasFieldPath ? createElement('div', { className: 'trace-details-section' },
+              createElement('h4', null, 'VS Code Actions'),
+              createElement('div', { className: 'trace-details-actions' },
+                createElement('button', {
+                  className: 'trace-action-button trace-action-primary',
+                  onClick: () => sendMessage('navigateToSchema'),
+                  title: `Navigate to schema definition for ${fieldPath.join('.')}`
+                }, '📄 Go to Schema Definition')
+              ),
+              
+              // Show field path information
+              createElement('div', { className: 'trace-field-info' },
+                createElement('div', { className: 'trace-field-path' },
+                  createElement('strong', null, 'Field Path: '),
+                  createElement('code', null, fieldPath.join(' → '))
+                ),
+                directive ? createElement('div', { className: 'trace-field-directive' },
+                  createElement('strong', null, 'Directive: '),
+                  createElement('code', null, directive)
+                ) : null
+              )
+            ) : null,
+            
             // Timing information
             createElement('div', { className: 'trace-details-section' },
               createElement('h4', null, 'Timing'),
@@ -369,7 +423,9 @@
                 Object.entries(span.attributes).map(([key, value]) =>
                   createElement('div', { key: key, className: 'trace-details-attribute' },
                     createElement('span', { className: 'trace-details-attribute-key' }, key + ':'),
-                    createElement('span', { className: 'trace-details-attribute-value' }, String(value))
+                    createElement('span', { className: 'trace-details-attribute-value' }, 
+                      Array.isArray(value) ? value.join(', ') : String(value)
+                    )
                   )
                 )
               )
@@ -473,4 +529,12 @@
       extractOtelTraces,
       createTraceViewer
     };
+    
+    // Send initialization message to VS Code for debugging
+    if (typeof vscode !== 'undefined') {
+      vscode.postMessage({
+        command: 'debug-log',
+        message: 'Trace viewer initialized with VS Code integration support'
+      });
+    }
   })();

@@ -52,12 +52,12 @@ When clicking a span, display a detailed side panel containing:
 
 ### 3. VS Code Integration Features ⭐ (Unique Value) **🔄 PHASE 2 - IN PROGRESS**
 
-- **⏳ "Go to Schema" button** - navigate from a span to the GraphQL schema definition
-- **⏳ "Go to Resolver" link** - jump to the field resolver in the schema if the span represents field resolution
-- **⏳ "View Query" action** - highlight the part of the GraphQL query this span represents
+- **✅ "Go to Schema" button** - navigate from a span to the GraphQL schema definition
+- **✅ "Go to Resolver" link** - jump to the field resolver in the schema if the span represents field resolution
+- **🔄 "View Query" action** - highlight the part of the GraphQL query this span represents (basic implementation)
 - **⏳ Code lens integration** - show trace timing information directly in GraphQL files
 - **⏳ Diagnostic correlation** - link spans to VS Code diagnostic messages
-- **⏳ File navigation** - open relevant schema files from trace context
+- **✅ File navigation** - open relevant schema files from trace context
 
 ### 4. Smart Filtering & Search **⏳ PHASE 3**
 
@@ -122,18 +122,28 @@ When clicking a span, display a detailed side panel containing:
 
 **Tasks**:
 
-- **⏳ Add message passing between webview and extension**
-- **⏳ Implement "Go to Schema" functionality**
-- **⏳ Create span-to-code navigation features**
+- **✅ Add message passing between webview and extension**
+- **✅ Implement "Go to Schema" functionality**
+- **✅ Create span-to-code navigation features**
 - **⏳ Add code lens integration for timing display**
 - **⏳ Implement diagnostic correlation**
 
 **Deliverables**:
 
-- **⏳ Webview-to-extension communication protocol**
-- **⏳ Schema navigation commands**
+- **✅ Webview-to-extension communication protocol**
+- **✅ Schema navigation commands**
 - **⏳ Code lens enhancements**
 - **⏳ Diagnostic integration**
+
+**Phase 2 Progress Summary**:
+
+- **✅ Message Passing Infrastructure**: Complete webview-to-extension communication
+- **✅ Navigation Buttons**: Added "Go to Schema Definition" button with alias resolution
+- **✅ Field Path Resolution**: Smart GraphQL field path parsing with alias handling
+- **✅ Schema Integration**: Uses existing schema index service for navigation
+- **✅ UI Enhancement**: Professional action button with VS Code theming
+- **✅ Error Handling**: Comprehensive error handling with user feedback
+- **✅ Alias Support**: Resolves GraphQL aliases to actual field names using span names
 
 ### Phase 3: Advanced Analysis Features **⏳ FUTURE**
 
@@ -211,6 +221,44 @@ When clicking a span, display a detailed side panel containing:
 - Provides comprehensive span inspection capabilities
 - Matches the quality of dedicated tracing tools like Jaeger
 - Optimized for VS Code integration and GraphQL development workflows
+
+## Phase 2 Achievements Summary
+
+**What was delivered:**
+
+- **Webview Communication**: Full bidirectional message passing between trace viewer and VS Code extension
+- **Schema Navigation**: Click any GraphQL resolver span to jump directly to its schema definition
+- **Smart Field Resolution**: Intelligent parsing of GraphQL field paths to resolve correct types and fields
+- **Professional Action Buttons**: VS Code-themed buttons with hover effects and clear iconography
+- **Field Path Display**: Visual representation of GraphQL field paths (e.g., "customer → orders")
+- **Error Handling**: Comprehensive error handling with user-friendly messages
+- **Schema Index Integration**: Leverages existing schema indexing service for accurate navigation
+- **Responsive Design**: Action buttons adapt to different panel sizes
+
+**Key Features:**
+
+- **"Go to Schema Definition" Button**: Navigate from trace span to GraphQL field definition
+- **Alias Resolution**: Handles GraphQL aliases by extracting actual field names from span names
+- **Field Path Display**: Visual representation of GraphQL field paths (e.g., "customer → orders")
+- **Field Path Resolution**: Handles both root fields (Query.customer) and nested fields (Customer.orders)
+- **Type Resolution**: Smart type inference from parent field return types
+- **VS Code Integration**: Seamless file navigation with cursor positioning and highlighting
+
+**Technical Implementation:**
+
+- **Message Protocol**: Structured command system for webview-extension communication
+- **Field Path Parsing**: Robust parsing of OTEL `graphql.field.path` arrays
+- **Schema Index Usage**: Integration with existing `services.schemaIndex` for field lookups
+- **Error Recovery**: Graceful fallbacks when schema definitions aren't found
+- **UI Consistency**: Matches VS Code design language and theming
+
+**Impact:**
+
+- Unique differentiation from generic trace viewers like Jaeger
+- Seamless developer workflow from trace analysis to code editing
+- Leverages VS Code's powerful editor capabilities for GraphQL development
+- Provides context-aware navigation that understands GraphQL schema structure
+- Reduces context switching between trace analysis and code editing
 
 ---
 

@@ -427,3 +427,82 @@ body {
       width: 200px;
     }
   }
+  
+  /* VS Code Integration Styles */
+  .trace-details-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  
+  .trace-action-button {
+    padding: 10px 14px;
+    border: 1px solid var(--vscode-button-border);
+    border-radius: 4px;
+    background: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    cursor: pointer;
+    font-size: 13px;
+    font-family: var(--vscode-font-family);
+    font-weight: 500;
+    transition: all 0.15s ease;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+  }
+  
+  .trace-action-button:hover {
+    background: var(--vscode-button-hoverBackground);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+  
+  .trace-action-button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .trace-action-primary {
+    background: var(--vscode-button-background);
+    border-color: var(--vscode-button-border);
+  }
+  
+  .trace-action-primary:hover {
+    background: var(--vscode-button-hoverBackground);
+  }
+  
+  .trace-field-info {
+    margin-top: 12px;
+    padding: 8px;
+    background: var(--vscode-textBlockQuote-background);
+    border-left: 3px solid var(--vscode-textBlockQuote-border);
+    border-radius: 0 3px 3px 0;
+    font-size: 11px;
+  }
+  
+  .trace-field-path,
+  .trace-field-directive {
+    margin-bottom: 4px;
+  }
+  
+  .trace-field-path:last-child,
+  .trace-field-directive:last-child {
+    margin-bottom: 0;
+  }
+  
+  .trace-field-info code {
+    background: var(--vscode-textPreformat-background);
+    color: var(--vscode-textPreformat-foreground);
+    padding: 2px 4px;
+    border-radius: 2px;
+    font-family: var(--vscode-editor-font-family, monospace);
+    font-size: 10px;
+  }
+  
+  .trace-field-info strong {
+    color: var(--vscode-foreground);
+    font-weight: 600;
+  }
