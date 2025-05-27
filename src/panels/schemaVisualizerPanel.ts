@@ -12,7 +12,6 @@ import type {
   TypeRelationship,
 } from "../services/schema/indexer";
 import { services } from "../services";
-import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
 import * as path from "path";
 import * as fs from "fs";
 import { MESSAGES, FILE_PATTERNS, UI } from "../utils/constants";
@@ -94,16 +93,18 @@ class SchemaVisualizerPanel extends BaseWebviewPanel {
       // Build the schema model for visualization
       const schemaModel = this.buildSchemaModel();
 
-      // Debug logging
+      // Validate the schema model
+      const typeCount = Object.keys(schemaModel.types).length;
+      const fieldCount = Object.keys(schemaModel.fields).length;
+      const relationshipCount = schemaModel.relationships.length;
+
       services.logger.debug(
-        `Schema model built: ${Object.keys(schemaModel.types).length} types, ${
-          Object.keys(schemaModel.fields).length
-        } fields with entries, ${schemaModel.relationships.length} relationships`,
+        `Schema model built: ${typeCount} types, ${fieldCount} field entries, ${relationshipCount} relationships`,
       );
 
-      if (Object.keys(schemaModel.types).length === 0) {
-        services.logger.warn("No types found in schema model");
-        this.panel.webview.html = this.getNoProjectHtml();
+      if (typeCount === 0) {
+        services.logger.warn("No types found in schema model - showing empty schema message");
+        this.panel.webview.html = this.getEmptySchemaHtml();
         return;
       }
 
@@ -119,7 +120,7 @@ class SchemaVisualizerPanel extends BaseWebviewPanel {
   private setupMessageHandling(): void {
     if (!this.panel) {return;}
 
-    this.messageHandler = this.panel.webview.onDidReceiveMessage((message) => {
+    this.messageHandler = this.panel.webview.onDidReceiveMessage(async (message) => {
       switch (message.command) {
         case "navigateToLocation":
           const uri = vscode.Uri.file(message.location.uri);
@@ -140,6 +141,19 @@ class SchemaVisualizerPanel extends BaseWebviewPanel {
         case "debug-log":
           // Log messages from the webview to the StepZen output channel
           services.logger.debug(`[Webview] ${message.message}`);
+          return;
+        case "refresh-schema":
+          // Handle schema refresh request
+          services.logger.info("Schema refresh requested from visualizer");
+          try {
+            // Clear the schema index cache
+            services.schemaIndex.clearState();
+            // Reload the schema data
+            await this.openWithFocus();
+          } catch (error) {
+            services.logger.error("Failed to refresh schema", error);
+            vscode.window.showErrorMessage("Failed to refresh schema data. Check the output for details.");
+          }
           return;
       }
     });
@@ -199,7 +213,7 @@ class SchemaVisualizerPanel extends BaseWebviewPanel {
       <body>
         <div class="loading">
           <div class="spinner"></div>
-          <div>Loading schema data...</div>
+          <div>${MESSAGES.SCHEMA_VISUALIZER_LOADING}</div>
         </div>
       </body>
       </html>
@@ -212,10 +226,15 @@ class SchemaVisualizerPanel extends BaseWebviewPanel {
    * @returns true if schema data was successfully loaded, false otherwise
    */
   private async ensureSchemaDataLoaded(): Promise<boolean> {
+    services.logger.debug("Checking if schema data is available...");
+    
     const fieldIndex = services.schemaIndex.getFieldIndex();
+    const typeCount = Object.keys(fieldIndex).length;
+    
+    services.logger.debug(`Current field index has ${typeCount} types`);
 
     // If we already have schema data, return true
-    if (Object.keys(fieldIndex).length > 0) {
+    if (typeCount > 0) {
       services.logger.debug("Using existing schema data");
       return true;
     }
@@ -223,17 +242,18 @@ class SchemaVisualizerPanel extends BaseWebviewPanel {
     services.logger.info("Schema data not found, attempting to load project...");
 
     try {
-      // Find StepZen project root using the active editor or workspace folders
-      let projectRoot: string;
+      // Find StepZen project root using the project resolver service
       let hintUri: vscode.Uri | undefined;
       
       // Get hint URI from active editor if available
       if (vscode.window.activeTextEditor) {
         hintUri = vscode.window.activeTextEditor.document.uri;
+        services.logger.debug(`Using active editor URI: ${hintUri.fsPath}`);
       } 
       // Otherwise use the first workspace folder
       else if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
         hintUri = vscode.workspace.workspaceFolders[0].uri;
+        services.logger.debug(`Using workspace folder URI: ${hintUri.fsPath}`);
       }
 
       // If we have no hint, we can't proceed
@@ -242,9 +262,12 @@ class SchemaVisualizerPanel extends BaseWebviewPanel {
         return false;
       }
 
-      // Use the existing utility to find the project root
-      projectRoot = await resolveStepZenProjectRoot(hintUri);
+      // Use the project resolver service to find the project root
+      const projectRoot = await services.projectResolver.resolveStepZenProjectRoot(hintUri);
       const indexPath = path.join(projectRoot, FILE_PATTERNS.MAIN_SCHEMA_FILE);
+
+      services.logger.debug(`Resolved project root: ${projectRoot}`);
+      services.logger.debug(`Index path: ${indexPath}`);
 
       // Verify that the index file exists
       if (!fs.existsSync(indexPath)) {
@@ -252,10 +275,21 @@ class SchemaVisualizerPanel extends BaseWebviewPanel {
         return false;
       }
 
-      // Scan the project
+      // Scan the project using the schema index service
       services.logger.info(`Scanning StepZen project at ${indexPath}`);
       await services.schemaIndex.scan(indexPath);
-      services.logger.debug("Schema scan completed successfully");
+      
+      // Verify the scan worked
+      const newFieldIndex = services.schemaIndex.getFieldIndex();
+      const newTypeCount = Object.keys(newFieldIndex).length;
+      
+      services.logger.debug(`Schema scan completed, found ${newTypeCount} types`);
+      
+      if (newTypeCount === 0) {
+        services.logger.warn("Schema scan completed but no types were found");
+        return false;
+      }
+      
       return true;
     } catch (error) {
       services.logger.error(`Failed to load schema data`, error);
@@ -270,9 +304,15 @@ class SchemaVisualizerPanel extends BaseWebviewPanel {
    * @returns A complete schema model for visualization
    */
   private buildSchemaModel(): SchemaVisualizerModel {
+    services.logger.debug("Building schema model for visualization...");
+    
     const fieldIndex = services.schemaIndex.getFieldIndex();
     const typeDirectives = services.schemaIndex.getTypeDirectives();
     const relationships = services.schemaIndex.getTypeRelationships();
+
+    services.logger.debug(`Field index has ${Object.keys(fieldIndex).length} types`);
+    services.logger.debug(`Type directives has ${Object.keys(typeDirectives).length} entries`);
+    services.logger.debug(`Found ${relationships.length} relationships`);
 
     const model: SchemaVisualizerModel = {
       types: {},
@@ -291,9 +331,81 @@ class SchemaVisualizerPanel extends BaseWebviewPanel {
         directives: typeDirectives[typeName] || [],
         location,
       };
+      
+      services.logger.debug(`Added type ${typeName} with ${fields.length} fields`);
     }
 
+    services.logger.debug(`Schema model built with ${Object.keys(model.types).length} types`);
     return model;
+  }
+
+  /**
+   * Generates HTML for when the schema is empty (no types found)
+   * 
+   * @returns HTML string for the empty schema message
+   */
+  private getEmptySchemaHtml(): string {
+    const nonce = this.nonce();
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="Content-Security-Policy" content="${this.csp(this.panel!.webview, nonce)}">
+        <meta name="color-scheme" content="light dark">
+        <title>StepZen Schema Visualizer</title>
+        <style nonce="${nonce}">
+          body {
+            font-family: var(--vscode-font-family);
+            padding: 2rem;
+            text-align: center;
+            color: var(--vscode-foreground);
+            background-color: var(--vscode-editor-background);
+          }
+          .message-container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 2rem;
+            border: 1px solid var(--vscode-widget-border);
+            border-radius: 8px;
+            background-color: var(--vscode-editor-background);
+          }
+          h2 {
+            color: var(--vscode-notificationsWarningIcon-foreground);
+            margin-top: 0;
+          }
+          p {
+            line-height: 1.5;
+            color: var(--vscode-descriptionForeground);
+          }
+          .suggestion {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background-color: var(--vscode-textBlockQuote-background);
+            border-left: 4px solid var(--vscode-textBlockQuote-border);
+            text-align: left;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="message-container">
+          <h2>${MESSAGES.SCHEMA_VISUALIZER_NO_TYPES_FOUND}</h2>
+          <p>
+            ${MESSAGES.SCHEMA_VISUALIZER_NO_TYPES_DESCRIPTION}
+          </p>
+          <div class="suggestion">
+            <strong>Suggestions:</strong>
+            <ul>
+              <li>Make sure your schema files contain type definitions</li>
+              <li>Check that your index.graphql file properly references other schema files</li>
+              <li>Verify that the @sdl directive includes all necessary files</li>
+              <li>Try refreshing the visualizer after making changes</li>
+            </ul>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
   }
 
   /**
@@ -343,6 +455,17 @@ class SchemaVisualizerPanel extends BaseWebviewPanel {
       </body>
       </html>
     `;
+  }
+
+  /**
+   * Override CSP to allow inline styles for dynamic content
+   * 
+   * @param webview The webview to generate CSP for
+   * @param nonce The nonce value to include in the CSP
+   * @returns CSP header string
+   */
+  protected csp(webview: vscode.Webview, nonce: string): string {
+    return `default-src 'none'; img-src ${webview.cspSource}; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}' ${webview.cspSource};`;
   }
 
   /**
@@ -423,6 +546,7 @@ class SchemaVisualizerPanel extends BaseWebviewPanel {
         <button id="zoom-in" title="Zoom in">+</button>
         <button id="zoom-out" title="Zoom out">-</button>
         <button id="reset" title="Reset view">Reset</button>
+        <button id="refresh" title="Refresh schema data">🔄</button>
         <div style="position: relative; flex: 1; display: flex; align-items: center;">
           <input type="text" id="search" placeholder="Search for types or fields..." style="width: 100%;">
           <!-- Search navigation buttons will be added by JS -->
@@ -435,6 +559,9 @@ class SchemaVisualizerPanel extends BaseWebviewPanel {
 
         <!-- Then pass data and create navigator function -->
         <script nonce="${nonce}">
+        // Acquire VS Code API first
+        const vscode = acquireVsCodeApi();
+        
         // Get VSCode theme info from body class
         const vscodeTheme = document.body.classList.contains('vscode-dark') ? 'dark' : 'light';
         // Use debug message for theme detection
@@ -467,7 +594,6 @@ class SchemaVisualizerPanel extends BaseWebviewPanel {
         // Function to navigate back to VSCode
         function navigateToLocation(location) {
           if (location) {
-            const vscode = acquireVsCodeApi();
             vscode.postMessage({
               command: 'navigateToLocation',
               location: location

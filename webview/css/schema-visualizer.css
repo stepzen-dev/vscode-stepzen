@@ -187,8 +187,32 @@ button {
 
 /* Add styles for fields in the type boxes */
 .fields-container {
-    padding: 10px;
+    width: 100%;
+    height: 100%;
+    padding: 40px 15px 15px 15px;
+    overflow: hidden;
+    box-sizing: border-box;
     font-family: Monaco, Menlo, 'Courier New', monospace;
+    color: #333333;
+}
+
+.fields-container.dark-theme {
+    color: #e4e4e4;
+}
+
+.field-item {
+    font: 12px monospace;
+    cursor: pointer;
+    margin-bottom: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 2px 0;
+    color: #333333;
+}
+
+.field-item.dark-theme {
+    color: #e4e4e4;
 }
 
 /* Add styling for relationship labels */
@@ -210,4 +234,51 @@ button {
 /* Fix for grid pattern in dark mode */
 .vscode-dark .joint-paper > svg > pattern rect {
     fill: rgba(255, 255, 255, 0.05);
+}
+
+/* Search navigation buttons */
+#search-next, #search-prev {
+    margin-left: 4px;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    min-width: 24px;
+    height: 24px;
+}
+
+.vscode-light #search-next, .vscode-light #search-prev {
+    background: #ffffff;
+    color: #333;
+    border: 1px solid #cccccc;
+}
+
+.vscode-dark #search-next, .vscode-dark #search-prev {
+    background: #3c3c3c;
+    color: #cccccc;
+    border: 1px solid #565656;
+}
+
+.vscode-light #search-next:hover, .vscode-light #search-prev:hover {
+    background: #f0f0f0;
+}
+
+.vscode-dark #search-next:hover, .vscode-dark #search-prev:hover {
+    background: #4c4c4c;
+}
+
+/* Search count styles */
+#search-count {
+    padding: 0 8px;
+    font-size: 12px;
+    min-width: 80px;
+    display: none;
+}
+
+.vscode-light #search-count {
+    color: #666;
+}
+
+.vscode-dark #search-count {
+    color: #cccccc;
 }
