@@ -137,6 +137,23 @@ export const MESSAGES = {
   SCHEMA_VISUALIZER_LOADING: "Loading schema data...",
   SCHEMA_VISUALIZER_ERROR_TITLE: "Schema Visualization Error",
   EXPLORER_LOADING: "Loading...",
+  // Run request messages
+  NO_DOCUMENT_AVAILABLE: "No document available in active editor.",
+  NO_GRAPHQL_QUERY_FOUND: "No GraphQL query selected or found.",
+  INVALID_OPERATION_PROVIDED: "Invalid operation provided",
+  DOCUMENT_NOT_FOUND: "Could not open document",
+  INVALID_OPERATION_RANGE: "Invalid operation range",
+  INVALID_DOCUMENT_ID: "Invalid document ID provided",
+  INVALID_OPERATION_NAME: "Invalid operation name provided",
+  PERSISTED_DOC_MAP_NOT_AVAILABLE: "Persisted document map is not available",
+  PERSISTED_DOC_NOT_FOUND: "Could not find persisted document.",
+  INVALID_FILE_URI: "Invalid file URI in persisted document entry",
+  INVALID_OPERATIONS_LIST: "Invalid operations list in persisted document entry",
+  OPERATION_NOT_FOUND_IN_DOC: "Operation \"{0}\" not found in document.",
+  RESULTS_CLEARED: "Results cleared",
+  // Workspace trust messages
+  GRAPHQL_OPERATIONS_NOT_AVAILABLE_UNTRUSTED: "Running GraphQL operations is not available in untrusted workspaces. Open this folder in a trusted workspace to enable this feature.",
+  PERSISTED_OPERATIONS_NOT_AVAILABLE_UNTRUSTED: "Running persisted GraphQL operations is not available in untrusted workspaces. Open this folder in a trusted workspace to enable this feature.",
 } as const;
 
 // Type definitions for better type safety

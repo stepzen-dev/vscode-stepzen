@@ -32,31 +32,7 @@ function extractOperationNames(query: string): string[] {
   return [...query.matchAll(GRAPHQL.OPERATION_TYPE_PATTERN)].map(([, , name]) => name);
 }
 
-/**
- * Creates a temporary file containing the GraphQL query
- * @param query The GraphQL query string to write to the file
- * @returns Path to the created temporary file
- * @throws Error if query is invalid
- */
-// function createTempGraphQLFile(query: string): string {
-//   // Add validation
-//   if (!query || typeof query !== 'string') {
-//     throw new ValidationError(
-//       "Invalid query: expected a non-empty string",
-//       "INVALID_QUERY"
-//     );
-//   }
 
-//   const tmpDir = os.tmpdir();
-//   const timestamp = new Date().getTime();
-//   const tmp = path.join(
-//     tmpDir,
-//     `stepzen-request-${timestamp}.graphql`
-//   );
-//   fs.writeFileSync(tmp, query);
-//   services.logger.debug(`Created temporary query file: ${tmp}`);
-//   return tmp;
-// }
 
 const SCALARS = new Set<string>(GRAPHQL.SCALAR_TYPES);
 
@@ -181,7 +157,7 @@ export async function runGraphQLRequest() {
 
     // Verify document exists
     if (!editor.document) {
-      vscode.window.showErrorMessage("No document available in active editor.");
+      vscode.window.showErrorMessage(MESSAGES.NO_DOCUMENT_AVAILABLE);
       services.logger.warn("Run GraphQL Request failed: No document available");
       return;
     }
@@ -190,7 +166,7 @@ export async function runGraphQLRequest() {
       editor.selection.isEmpty ? undefined : editor.selection
     );
     if (!query || !query.trim()) {
-      vscode.window.showWarningMessage("No GraphQL query selected or found.");
+      vscode.window.showWarningMessage(MESSAGES.NO_GRAPHQL_QUERY_FOUND);
       services.logger.warn("Run GraphQL Request failed: No query found");
       return;
     }
@@ -239,15 +215,14 @@ export async function runGraphQLRequest() {
 export async function runOperation(operation: OperationEntry) {
   // Check workspace trust first
   if (!vscode.workspace.isTrusted) {
-    const message = "Running GraphQL operations is not available in untrusted workspaces. Open this folder in a trusted workspace to enable this feature.";
-    vscode.window.showWarningMessage(message);
+    vscode.window.showWarningMessage(MESSAGES.GRAPHQL_OPERATIONS_NOT_AVAILABLE_UNTRUSTED);
     return;
   }
 
   // Validate operation parameter
   if (!operation || !operation.fileUri) {
     handleError(new ValidationError(
-      "Invalid operation provided",
+      MESSAGES.INVALID_OPERATION_PROVIDED,
       "INVALID_OPERATION"
     ));
     return;
@@ -257,7 +232,7 @@ export async function runOperation(operation: OperationEntry) {
     const document = await vscode.workspace.openTextDocument(operation.fileUri);
     if (!document) {
       handleError(new ValidationError(
-        `Could not open document: ${operation.fileUri.toString()}`,
+        `${MESSAGES.DOCUMENT_NOT_FOUND}: ${operation.fileUri.toString()}`,
         "DOCUMENT_NOT_FOUND"
       ));
       return;
@@ -266,7 +241,7 @@ export async function runOperation(operation: OperationEntry) {
   
   // Validate operation range
   if (!operation.range || typeof operation.range.start !== 'number' || typeof operation.range.end !== 'number') {
-    vscode.window.showErrorMessage("Invalid operation range");
+    vscode.window.showErrorMessage(MESSAGES.INVALID_OPERATION_RANGE);
     return;
   }
 
@@ -300,38 +275,37 @@ export async function runOperation(operation: OperationEntry) {
 export async function runPersisted(documentId: string, operationName: string) {
   // Check workspace trust first
   if (!vscode.workspace.isTrusted) {
-    const message = "Running persisted GraphQL operations is not available in untrusted workspaces. Open this folder in a trusted workspace to enable this feature.";
-    vscode.window.showWarningMessage(message);
+    vscode.window.showWarningMessage(MESSAGES.PERSISTED_OPERATIONS_NOT_AVAILABLE_UNTRUSTED);
     return;
   }
   
   // Validate parameters
   if (!documentId || typeof documentId !== 'string') {
-    vscode.window.showErrorMessage("Invalid document ID provided");
+    vscode.window.showErrorMessage(MESSAGES.INVALID_DOCUMENT_ID);
     return;
   }
   
   if (!operationName || typeof operationName !== 'string') {
-    vscode.window.showErrorMessage("Invalid operation name provided");
+    vscode.window.showErrorMessage(MESSAGES.INVALID_OPERATION_NAME);
     return;
   }
   
   const persistedDocMap = services.schemaIndex.getPersistedDocMap();
   if (!persistedDocMap) {
-    vscode.window.showErrorMessage("Persisted document map is not available");
+    vscode.window.showErrorMessage(MESSAGES.PERSISTED_DOC_MAP_NOT_AVAILABLE);
     return;
   }
   
   const entry = Object.values(persistedDocMap).find(e => e && e.documentId === documentId);
   if (!entry) {
-    vscode.window.showErrorMessage("Could not find persisted document.");
+    vscode.window.showErrorMessage(MESSAGES.PERSISTED_DOC_NOT_FOUND);
     return;
   }
   
   try {
     // Open the file to extract the operation for variable analysis
     if (!entry.fileUri) {
-      vscode.window.showErrorMessage("Invalid file URI in persisted document entry");
+      vscode.window.showErrorMessage(MESSAGES.INVALID_FILE_URI);
       return;
     }
     
@@ -345,20 +319,20 @@ export async function runPersisted(documentId: string, operationName: string) {
     
     // Validate operations array
     if (!entry.operations || !Array.isArray(entry.operations)) {
-      vscode.window.showErrorMessage("Invalid operations list in persisted document entry");
+      vscode.window.showErrorMessage(MESSAGES.INVALID_OPERATIONS_LIST);
       return;
     }
     
     // Find the specific operation
     const op = entry.operations.find(o => o && o.name === operationName);
     if (!op) {
-      vscode.window.showErrorMessage(`Operation "${operationName}" not found in document.`);
+      vscode.window.showErrorMessage(MESSAGES.OPERATION_NOT_FOUND_IN_DOC.replace("{0}", operationName));
       return;
     }
   
     // Validate operation range
     if (!op.range || typeof op.range.start !== 'number' || typeof op.range.end !== 'number') {
-      vscode.window.showErrorMessage("Invalid operation range");
+      vscode.window.showErrorMessage(MESSAGES.INVALID_OPERATION_RANGE);
       return;
     }
     
@@ -389,102 +363,6 @@ export async function runPersisted(documentId: string, operationName: string) {
 export function clearResults(): void {
   clearResultsPanel();
   runtimeDiag.clear(); // Also clear any diagnostics
-  services.logger.info("Results cleared");
+  services.logger.info(MESSAGES.RESULTS_CLEARED);
 }
 
-/* -------------------------------------------------------------
- * Helper utilities
- * ------------------------------------------------------------*/
-/**
- * Executes a shell command asynchronously and returns the output
- * 
- * @param command The command string to execute
- * @param options Options for the child process
- * @returns Promise resolving to an object containing stdout
- */
-/**
- * Executes a shell command asynchronously and returns the output
- * 
- * @param command The command string to execute
- * @param options Options for the child process
- * @returns Promise resolving to an object containing stdout
- * @throws Error if command is invalid or execution fails
- */
-/**
- * Executes a shell command asynchronously
- * @param command The command to execute
- * @param options Options for the child process
- * @returns Promise resolving to the command's stdout
- * @throws StepZenError if the command fails
- * 
- * Note: For StepZen CLI operations, prefer using the StepzenCliService instead.
- */
-
-// TODO: cleanup old comments
-// This function is kept for backward compatibility with other parts of the code
-// that might still be using it, but for StepZen CLI operations we now prefer the StepzenCliService
-// function execAsync(command: string, options: cp.ExecOptions = {}): Promise<{ stdout: string }> {
-//   // Validate inputs
-//   if (!command || typeof command !== 'string') {
-//     return Promise.reject(new ValidationError(
-//       "Invalid command: expected a non-empty string",
-//       "INVALID_COMMAND"
-//     ));
-//   }
-  
-//   return new Promise<{ stdout: string }>((resolve, reject) => {
-//     cp.exec(command, { ...options, maxBuffer: 10_000_000 }, (err, stdout, stderr) => {
-//       if (err) {
-//         reject(new ValidationError(
-//           `Command failed: ${command}`,
-//           "COMMAND_FAILED",
-//           err
-//         ));
-//       } else if (!stdout) {
-//         resolve({ stdout: "" });
-//       } else {
-//         resolve({ stdout });
-//       }
-//     });
-//   });
-// }
-
-// TODO: cleanup dead code
-// /**
-//  * Schedules a temporary file for cleanup after a delay
-//  * 
-//  * @param file Path to the temporary file to delete
-//  */
-// /**
-//  * Safely deletes a temporary file after a delay
-//  * @param file Path to the temporary file to delete
-//  * @param delayMs Delay in milliseconds before deletion attempt
-//  */
-// function cleanupLater(file: string, delayMs: number = TIMEOUTS.FILE_CLEANUP_DELAY_MS): void {
-//   // Add validation
-//   if (!file || typeof file !== "string") {
-//     services.logger.warn("Invalid file path provided for cleanup");
-//     return;
-//   }
-
-//   // Only attempt to clean up files in the temp directory
-//   if (!file.startsWith(os.tmpdir())) {
-//     services.logger.warn(`Refusing to clean up non-temporary file: ${file}`);
-//     return;
-//   }
-
-//   setTimeout(() => {
-//     try {
-//       if (fs.existsSync(file)) {
-//         fs.unlinkSync(file);
-//         services.logger.debug(`Temporary file cleaned up: ${file}`);
-//       }
-//     } catch (err) {
-//       handleError(new ValidationError(
-//         `Failed to clean up temporary file: ${file}`,
-//         "FILE_CLEANUP_FAILED",
-//         err
-//       ));
-//     }
-//   }, delayMs);
-// }
