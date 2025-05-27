@@ -18,7 +18,32 @@ The extension uses automated release workflows that:
 
 ## Quick Release (Recommended)
 
-Use the provided release script for a guided release process:
+### For Repositories with Branch Protection
+
+The recommended workflow for repositories with branch protection enabled:
+
+```bash
+# 1. Create a release branch
+git checkout -b release/v0.1.3
+
+# 2. Run the release script
+npm run release
+# Or specify version directly: ./scripts/release.sh 0.1.3
+
+# 3. Push the release branch
+git push origin release/v0.1.3
+
+# 4. Create a Pull Request to merge into main
+# 5. After PR is merged, create and push the tag:
+git checkout main
+git pull origin main
+git tag v0.1.3
+git push origin v0.1.3
+```
+
+### For Direct Main Access
+
+If you have direct push access to main:
 
 ```bash
 # Interactive mode (prompts for version)
@@ -28,13 +53,13 @@ npm run release
 ./scripts/release.sh 0.1.3
 ```
 
-This script will:
+The script will:
 
 1. Validate the new version format
 2. Update `package.json` and `package-lock.json`
 3. Run linting and compilation checks
 4. Commit the version change
-5. Create a git tag
+5. Create a git tag (if on main) or provide PR workflow instructions
 6. Provide instructions for pushing
 
 ## Manual Release Process
@@ -55,7 +80,7 @@ npm version 0.1.3 --no-git-tag-version
 npm run ci:lint
 npm run compile
 
-# Optional: Test packaging locally
+# Optional: Test packaging locally (requires publisher field in package.json)
 npx @vscode/vsce package --no-yarn
 ```
 
@@ -104,6 +129,22 @@ When you push a tag matching `v*`, the GitHub Actions workflow will:
 3. **Package** the extension into VSIX files
 4. **Upload** artifacts to GitHub Actions (30-day retention)
 5. **Publish** to marketplace (if `VSCE_PAT` secret is configured)
+
+## Publisher Configuration
+
+The extension requires a `publisher` field in `package.json` for packaging. Currently set to `stepzen-dev` for development builds.
+
+### For Development/Internal Releases
+- Keep `"publisher": "stepzen-dev"` for internal testing and development
+- VSIX files can be installed manually via "Install from VSIX..." in VS Code
+
+### For Official IBM Publishing
+When ready for official IBM marketplace publishing:
+
+1. Update `package.json` publisher to the official IBM publisher ID
+2. Generate a Personal Access Token from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/manage)
+3. Add it as a repository secret named `VSCE_PAT`
+4. Uncomment the publish step in `.github/workflows/release.yml`
 
 ## Marketplace Publishing
 

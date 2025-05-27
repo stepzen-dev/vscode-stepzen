@@ -40,6 +40,22 @@ if ! git diff-index --quiet HEAD --; then
     exit 1
 fi
 
+# Check if we're on main branch (for branch protection workflow)
+CURRENT_BRANCH=$(git branch --show-current)
+if [ "$CURRENT_BRANCH" = "main" ]; then
+    print_warning "You're on the main branch. For repositories with branch protection:"
+    print_warning "1. Create a release branch: git checkout -b release/v$NEW_VERSION"
+    print_warning "2. Run this script again from the release branch"
+    print_warning "3. Push the branch and create a PR"
+    echo ""
+    echo -n "Continue anyway? (y/N): "
+    read CONTINUE
+    if [[ ! $CONTINUE =~ ^[Yy]$ ]]; then
+        print_info "Exiting. Create a release branch first."
+        exit 0
+    fi
+fi
+
 # Get current version from package.json
 CURRENT_VERSION=$(node -p "require('./package.json').version")
 print_info "Current version: $CURRENT_VERSION"
@@ -69,22 +85,42 @@ print_info "Updating version to $NEW_VERSION..."
 # Update package.json version
 npm version $NEW_VERSION --no-git-tag-version
 
-# Run tests and build
-print_info "Running tests and build..."
+# Run tests and linting (build will happen in CI)
+print_info "Running tests and linting..."
 npm run ci:lint
-npm run compile
 
 # Commit the version change
 git add package.json package-lock.json
 git commit -m "chore(release): bump version to $NEW_VERSION"
 
-# Create and push tag
-print_info "Creating tag v$NEW_VERSION..."
-git tag "v$NEW_VERSION"
+print_info "Version bump committed successfully!"
 
-print_warning "Ready to push. Run the following commands to complete the release:"
-echo ""
-echo "  git push origin main"
-echo "  git push origin v$NEW_VERSION"
-echo ""
-print_info "The GitHub Actions workflow will automatically build and package the extension." 
+# Provide next steps based on current branch
+if [ "$CURRENT_BRANCH" = "main" ]; then
+    # Direct to main workflow (not recommended with branch protection)
+    print_info "Creating tag v$NEW_VERSION..."
+    git tag "v$NEW_VERSION"
+    
+    print_warning "Ready to push. Run the following commands to complete the release:"
+    echo ""
+    echo "  git push origin main"
+    echo "  git push origin v$NEW_VERSION"
+    echo ""
+else
+    # Branch-based workflow (recommended)
+    print_warning "Next steps for release branch workflow:"
+    echo ""
+    echo "  1. Push the release branch:"
+    echo "     git push origin $CURRENT_BRANCH"
+    echo ""
+    echo "  2. Create a Pull Request to merge into main"
+    echo ""
+    echo "  3. After PR is merged, create and push the tag:"
+    echo "     git checkout main"
+    echo "     git pull origin main"
+    echo "     git tag v$NEW_VERSION"
+    echo "     git push origin v$NEW_VERSION"
+    echo ""
+fi
+
+print_info "The GitHub Actions workflow will automatically build and package the extension when the tag is pushed." 
