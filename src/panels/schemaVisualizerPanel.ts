@@ -16,6 +16,7 @@ import { resolveStepZenProjectRoot } from "../utils/stepzenProject";
 import * as path from "path";
 import * as fs from "fs";
 import { MESSAGES, FILE_PATTERNS, UI } from "../utils/constants";
+import { BaseWebviewPanel } from "./BaseWebviewPanel";
 
 /**
  * Model representing the GraphQL schema for visualization
@@ -34,31 +35,91 @@ interface SchemaVisualizerModel {
   relationships: TypeRelationship[];
 }
 
-/** The singleton schema visualizer panel instance */
-let panel: vscode.WebviewPanel | undefined;
+/**
+ * Schema visualizer panel implementation extending BaseWebviewPanel
+ * Displays GraphQL schema as an interactive diagram
+ */
+class SchemaVisualizerPanel extends BaseWebviewPanel {
+  private static instance: SchemaVisualizerPanel | undefined;
+  private messageHandler: vscode.Disposable | undefined;
 
-export async function openSchemaVisualizerPanel(
-  extensionUri: Uri,
-  focusedType?: string,
-) {
-  services.logger.info(
-    `Opening Schema Visualizer${focusedType ? ` focused on type: ${focusedType}` : ""}`,
-  );
+  private constructor(extensionUri: Uri) {
+    super(extensionUri);
+  }
 
-  // Create panel if it doesn't exist
-  if (!panel) {
-    panel = vscode.window.createWebviewPanel(
-      UI.SCHEMA_VISUALIZER_VIEW_TYPE,
-      UI.SCHEMA_VISUALIZER_TITLE,
-      vscode.ViewColumn.Beside,
-      {
-        enableScripts: true,
-        localResourceRoots: [Uri.joinPath(extensionUri, "webview")],
-      },
+  /**
+   * Gets or creates the singleton schema visualizer panel instance
+   */
+  public static getInstance(extensionUri: Uri): SchemaVisualizerPanel {
+    if (!SchemaVisualizerPanel.instance) {
+      SchemaVisualizerPanel.instance = new SchemaVisualizerPanel(extensionUri);
+    }
+    return SchemaVisualizerPanel.instance;
+  }
+
+  /**
+   * Opens or reveals the schema visualizer panel
+   */
+  public async openWithFocus(focusedType?: string): Promise<void> {
+    services.logger.info(
+      `Opening Schema Visualizer${focusedType ? ` focused on type: ${focusedType}` : ""}`,
     );
 
-    // Setup message handling
-    const messageHandler = panel.webview.onDidReceiveMessage((message) => {
+    // Create panel if it doesn't exist
+    if (!this.panel) {
+      this.panel = this.createWebviewPanel(
+        UI.SCHEMA_VISUALIZER_VIEW_TYPE,
+        UI.SCHEMA_VISUALIZER_TITLE,
+        vscode.ViewColumn.Beside
+      );
+
+      // Setup message handling
+      this.setupMessageHandling();
+      
+      // Initially show loading state
+      this.panel.webview.html = this.getLoadingHtml();
+    }
+    
+    this.reveal();
+
+    try {
+      // Ensure schema data is loaded
+      const dataLoaded = await this.ensureSchemaDataLoaded();
+
+      if (!dataLoaded) {
+        this.panel.webview.html = this.getNoProjectHtml();
+        return;
+      }
+
+      // Build the schema model for visualization
+      const schemaModel = this.buildSchemaModel();
+
+      // Debug logging
+      services.logger.debug(
+        `Schema model built: ${Object.keys(schemaModel.types).length} types, ${
+          Object.keys(schemaModel.fields).length
+        } fields with entries, ${schemaModel.relationships.length} relationships`,
+      );
+
+      if (Object.keys(schemaModel.types).length === 0) {
+        services.logger.warn("No types found in schema model");
+        this.panel.webview.html = this.getNoProjectHtml();
+        return;
+      }
+
+      // Update the webview with the schema data
+      this.panel.webview.html = this.generateHtml(this.panel.webview, { schemaModel, focusedType });
+      
+    } catch (error) {
+      services.logger.error(`Error loading schema visualizer`, error);
+      this.panel.webview.html = this.getNoProjectHtml();
+    }
+  }
+
+  private setupMessageHandling(): void {
+    if (!this.panel) {return;}
+
+    this.messageHandler = this.panel.webview.onDidReceiveMessage((message) => {
       switch (message.command) {
         case "navigateToLocation":
           const uri = vscode.Uri.file(message.location.uri);
@@ -82,26 +143,28 @@ export async function openSchemaVisualizerPanel(
           return;
       }
     });
+  }
 
-    // Clean up when panel is closed
-    panel.onDidDispose(
-      () => {
-        messageHandler.dispose();
-        panel = undefined;
-      },
-      null,
-      [],
-    );
-    
-    // Initially show loading state
-    panel.webview.html = `
+  protected onDispose(): void {
+    if (this.messageHandler) {
+      this.messageHandler.dispose();
+      this.messageHandler = undefined;
+    }
+    super.onDispose();
+    SchemaVisualizerPanel.instance = undefined;
+  }
+
+  private getLoadingHtml(): string {
+    const nonce = this.nonce();
+    return `
       <!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8">
+        <meta http-equiv="Content-Security-Policy" content="${this.csp(this.panel!.webview, nonce)}">
         <meta name="color-scheme" content="light dark">
         <title>StepZen Schema Visualizer</title>
-        <style>
+        <style nonce="${nonce}">
           html, body {
             margin: 0;
             padding: 0;
@@ -142,235 +205,172 @@ export async function openSchemaVisualizerPanel(
       </html>
     `;
   }
-  
-  panel.reveal();
 
-  try {
-    // Ensure schema data is loaded
-    const dataLoaded = await ensureSchemaDataLoaded();
+  /**
+   * Ensures that schema data is loaded before the visualizer is opened.
+   * If the schema data appears to be empty, this will trigger a scan of the project.
+   * @returns true if schema data was successfully loaded, false otherwise
+   */
+  private async ensureSchemaDataLoaded(): Promise<boolean> {
+    const fieldIndex = services.schemaIndex.getFieldIndex();
 
-    if (!dataLoaded) {
-      panel.webview.html = getNoProjectHtml();
-      return;
+    // If we already have schema data, return true
+    if (Object.keys(fieldIndex).length > 0) {
+      services.logger.debug("Using existing schema data");
+      return true;
     }
 
-    // Build the schema model for visualization
-    const schemaModel = buildSchemaModel();
+    services.logger.info("Schema data not found, attempting to load project...");
 
-    // Debug logging
-    services.logger.debug(
-      `Schema model built: ${Object.keys(schemaModel.types).length} types, ${
-        Object.keys(schemaModel.fields).length
-      } fields with entries, ${schemaModel.relationships.length} relationships`,
-    );
+    try {
+      // Find StepZen project root using the active editor or workspace folders
+      let projectRoot: string;
+      let hintUri: vscode.Uri | undefined;
+      
+      // Get hint URI from active editor if available
+      if (vscode.window.activeTextEditor) {
+        hintUri = vscode.window.activeTextEditor.document.uri;
+      } 
+      // Otherwise use the first workspace folder
+      else if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+        hintUri = vscode.workspace.workspaceFolders[0].uri;
+      }
 
-    if (Object.keys(schemaModel.types).length === 0) {
-      services.logger.warn("No types found in schema model");
-      panel.webview.html = getNoProjectHtml();
-      return;
-    }
+      // If we have no hint, we can't proceed
+      if (!hintUri) {
+        services.logger.warn("No workspace folder or active editor available");
+        return false;
+      }
 
-    // Update the webview with the schema data
-    panel.webview.html = getSchemaVisualizerHtml(
-      panel.webview,
-      extensionUri,
-      schemaModel,
-      focusedType,
-    );
-    
-  } catch (error) {
-    services.logger.error(`Error loading schema visualizer`, error);
-    panel.webview.html = getNoProjectHtml();
-  }
-}
+      // Use the existing utility to find the project root
+      projectRoot = await resolveStepZenProjectRoot(hintUri);
+      const indexPath = path.join(projectRoot, FILE_PATTERNS.MAIN_SCHEMA_FILE);
 
-// TODO: CLEANUP
-// /**
-//  * Clears the schema visualizer panel by disposing the webview panel
-//  * Used when closing the visualizer or when the extension is deactivated
-//  */
-// function clearSchemaVisualizerPanel(): void {
-//   if (panel) {
-//     panel.dispose();
-//     panel = undefined;
-//   }
-// }
+      // Verify that the index file exists
+      if (!fs.existsSync(indexPath)) {
+        services.logger.warn(`Index file not found at ${indexPath}`);
+        return false;
+      }
 
-/**
- * Ensures that schema data is loaded before the visualizer is opened.
- * If the schema data appears to be empty, this will trigger a scan of the project.
- * @returns true if schema data was successfully loaded, false otherwise
- */
-async function ensureSchemaDataLoaded(): Promise<boolean> {
-  const fieldIndex = services.schemaIndex.getFieldIndex();
-
-  // If we already have schema data, return true
-  if (Object.keys(fieldIndex).length > 0) {
-    services.logger.debug("Using existing schema data");
-    return true;
-  }
-
-  services.logger.info("Schema data not found, attempting to load project...");
-
-  try {
-    // Find StepZen project root using the active editor or workspace folders
-    let projectRoot: string;
-    let hintUri: vscode.Uri | undefined;
-    
-    // Get hint URI from active editor if available
-    if (vscode.window.activeTextEditor) {
-      hintUri = vscode.window.activeTextEditor.document.uri;
-    } 
-    // Otherwise use the first workspace folder
-    else if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
-      hintUri = vscode.workspace.workspaceFolders[0].uri;
-    }
-
-    // If we have no hint, we can't proceed
-    if (!hintUri) {
-      services.logger.warn("No workspace folder or active editor available");
+      // Scan the project
+      services.logger.info(`Scanning StepZen project at ${indexPath}`);
+      await services.schemaIndex.scan(indexPath);
+      services.logger.debug("Schema scan completed successfully");
+      return true;
+    } catch (error) {
+      services.logger.error(`Failed to load schema data`, error);
       return false;
     }
-
-    // Use the existing utility to find the project root
-    projectRoot = await resolveStepZenProjectRoot(hintUri);
-    const indexPath = path.join(projectRoot, FILE_PATTERNS.MAIN_SCHEMA_FILE);
-
-    // Verify that the index file exists
-    if (!fs.existsSync(indexPath)) {
-      services.logger.warn(`Index file not found at ${indexPath}`);
-      return false;
-    }
-
-    // Scan the project
-    services.logger.info(`Scanning StepZen project at ${indexPath}`);
-    await services.schemaIndex.scan(indexPath);
-    services.logger.debug("Schema scan completed successfully");
-    return true;
-  } catch (error) {
-    services.logger.error(`Failed to load schema data`, error);
-    return false;
   }
-}
 
-/**
- * Builds a schema model for visualization using the current schema data
- * Collects types, fields, directives and relationships into a unified model
- * 
- * @returns A complete schema model for visualization
- */
-function buildSchemaModel(): SchemaVisualizerModel {
-  const fieldIndex = services.schemaIndex.getFieldIndex();
-  const typeDirectives = services.schemaIndex.getTypeDirectives();
-  const relationships = services.schemaIndex.getTypeRelationships();
+  /**
+   * Builds a schema model for visualization using the current schema data
+   * Collects types, fields, directives and relationships into a unified model
+   * 
+   * @returns A complete schema model for visualization
+   */
+  private buildSchemaModel(): SchemaVisualizerModel {
+    const fieldIndex = services.schemaIndex.getFieldIndex();
+    const typeDirectives = services.schemaIndex.getTypeDirectives();
+    const relationships = services.schemaIndex.getTypeRelationships();
 
-  const model: SchemaVisualizerModel = {
-    types: {},
-    fields: fieldIndex,
-    relationships: relationships,
-  };
-
-  // Create type entries
-  for (const typeName in fieldIndex) {
-    const fields = fieldIndex[typeName];
-    // Use first field's location as the type location (simplified approach)
-    const location = fields.length > 0 ? fields[0].location : null;
-
-    model.types[typeName] = {
-      name: typeName,
-      directives: typeDirectives[typeName] || [],
-      location,
+    const model: SchemaVisualizerModel = {
+      types: {},
+      fields: fieldIndex,
+      relationships: relationships,
     };
+
+    // Create type entries
+    for (const typeName in fieldIndex) {
+      const fields = fieldIndex[typeName];
+      // Use first field's location as the type location (simplified approach)
+      const location = fields.length > 0 ? fields[0].location : null;
+
+      model.types[typeName] = {
+        name: typeName,
+        directives: typeDirectives[typeName] || [],
+        location,
+      };
+    }
+
+    return model;
   }
 
-  return model;
-}
+  /**
+   * Generates HTML for an error message when no StepZen project is found
+   * 
+   * @returns HTML string for the error message
+   */
+  private getNoProjectHtml(): string {
+    const nonce = this.nonce();
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="Content-Security-Policy" content="${this.csp(this.panel!.webview, nonce)}">
+        <title>StepZen Schema Visualizer</title>
+        <style nonce="${nonce}">
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            padding: 2rem;
+            text-align: center;
+          }
+          .error-container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 2rem;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+          }
+          h2 {
+            color: #d32f2f;
+            margin-top: 0;
+          }
+          p {
+            line-height: 1.5;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="error-container">
+          <h2>No StepZen Project Found</h2>
+          <p>
+            ${MESSAGES.STEPZEN_PROJECT_DESCRIPTION}
+          </p>
+        </div>
+      </body>
+      </html>
+    `;
+  }
 
-/**
- * Generates HTML for an error message when no StepZen project is found
- * 
- * @returns HTML string for the error message
- */
-function getNoProjectHtml(): string {
-  return `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <title>StepZen Schema Visualizer</title>
-      <style>
-        body {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-          padding: 2rem;
-          text-align: center;
-        }
-        .error-container {
-          max-width: 500px;
-          margin: 0 auto;
-          padding: 2rem;
-          border: 1px solid #ccc;
-          border-radius: 8px;
-          background-color: #f9f9f9;
-        }
-        h2 {
-          color: #d32f2f;
-          margin-top: 0;
-        }
-        p {
-          line-height: 1.5;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="error-container">
-        <h2>No StepZen Project Found</h2>
-        <p>
-          ${MESSAGES.STEPZEN_PROJECT_DESCRIPTION}
-        </p>
-      </div>
-    </body>
-    </html>
-  `;
-}
+  /**
+   * Generates the HTML for the schema visualizer webview panel
+   * Includes all necessary scripts, styles, and data for the visualization
+   * 
+   * @param webview The webview to generate HTML for
+   * @param data Object containing schemaModel and focusedType
+   * @returns HTML string for the webview
+   */
+  protected generateHtml(webview: vscode.Webview, data: { schemaModel: SchemaVisualizerModel, focusedType?: string }): string {
+    const { schemaModel, focusedType } = data;
+    // Load resources
+    const jointJsUri = this.getWebviewUri(webview, ["libs", "joint.min.js"]);
+    const customJsUri = this.getWebviewUri(webview, ["js", "schema-visualizer.js"]);
+    const customCssUri = this.getWebviewUri(webview, ["css", "schema-visualizer.css"]);
+    const nonce = this.nonce();
 
-/**
- * Generates the HTML for the schema visualizer webview panel
- */
-/**
- * Generates the HTML for the schema visualizer webview panel
- * Includes all necessary scripts, styles, and data for the visualization
- * 
- * @param webview The webview to generate HTML for
- * @param extUri The extension URI for resource loading
- * @param schemaModel The schema model to visualize
- * @param focusedType Optional type name to focus on initially
- * @returns HTML string for the webview
- */
-function getSchemaVisualizerHtml(
-  webview: vscode.Webview,
-  extUri: Uri,
-  schemaModel: SchemaVisualizerModel,
-  focusedType?: string,
-): string {
-  // Helper to get webview URIs
-  const getUri = (pathList: string[]) => {
-    return webview.asWebviewUri(Uri.joinPath(extUri, "webview", ...pathList));
-  };
-
-  // Load resources
-  const jointJsUri = getUri(["libs", "joint.min.js"]);
-  const customJsUri = getUri(["js", "schema-visualizer.js"]);
-  const customCssUri = getUri(["css", "schema-visualizer.css"]);
-
-  return `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="color-scheme" content="light dark">
-      <title>StepZen Schema Visualizer</title>
-      <link rel="stylesheet" href="${customCssUri}">
-      <style>
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="Content-Security-Policy" content="${this.csp(webview, nonce)}">
+        <meta name="color-scheme" content="light dark">
+        <title>StepZen Schema Visualizer</title>
+        <link rel="stylesheet" href="${customCssUri}">
+        <style nonce="${nonce}">
         html, body {
           margin: 0;
           padding: 0;
@@ -430,11 +430,11 @@ function getSchemaVisualizerHtml(
       </div>
       <div id="diagram"></div>
 
-      <!-- Load JointJS v4 first -->
-      <script src="${jointJsUri}"></script>
+        <!-- Load JointJS v4 first -->
+        <script nonce="${nonce}" src="${jointJsUri}"></script>
 
-      <!-- Then pass data and create navigator function -->
-      <script>
+        <!-- Then pass data and create navigator function -->
+        <script nonce="${nonce}">
         // Get VSCode theme info from body class
         const vscodeTheme = document.body.classList.contains('vscode-dark') ? 'dark' : 'light';
         // Use debug message for theme detection
@@ -506,9 +506,23 @@ function getSchemaVisualizerHtml(
         debugLog('Initializing schema visualizer');
       </script>
 
-      <!-- Finally load our custom script -->
-      <script src="${customJsUri}"></script>
-    </body>
-    </html>
-  `;
+        <!-- Finally load our custom script -->
+        <script nonce="${nonce}" src="${customJsUri}"></script>
+      </body>
+      </html>
+    `;
+  }
+}
+
+/** The singleton schema visualizer panel instance */
+let schemaVisualizerPanel: SchemaVisualizerPanel | undefined;
+
+export async function openSchemaVisualizerPanel(
+  extensionUri: Uri,
+  focusedType?: string,
+) {
+  if (!schemaVisualizerPanel) {
+    schemaVisualizerPanel = SchemaVisualizerPanel.getInstance(extensionUri);
+  }
+  await schemaVisualizerPanel.openWithFocus(focusedType);
 }
