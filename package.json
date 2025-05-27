@@ -2,6 +2,7 @@
   "name": "vscode-stepzen",
   "displayName": "StepZen: GraphQL Toolkit",
   "description": "Build, explore, and deploy StepZen GraphQL schemas without leaving VS Code.",
+  "publisher": "stepzen-dev",
   "keywords": [
     "stepzen",
     "graphql"
