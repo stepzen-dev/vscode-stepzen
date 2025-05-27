@@ -40,7 +40,7 @@ class ResultsPanel extends BaseWebviewPanel {
       this.panel = this.createWebviewPanel(
         UI.RESULTS_PANEL_VIEW_TYPE,
         UI.RESULTS_PANEL_TITLE,
-        vscode.ViewColumn.Beside
+        vscode.ViewColumn.Active
       );
     }
 

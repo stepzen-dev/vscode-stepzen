@@ -1,3 +1,8 @@
+/**
+ * Copyright IBM Corp. 2025
+ * Assisted by CursorAI
+ */
+
 // trace-viewer.js
 (function() {
     /**
@@ -44,14 +49,42 @@
             const relativeStart = startMs - earliestTime;
             const duration = endMs - startMs;
             
+            // Extract all attributes for comprehensive details
+            const attributes = {};
+            if (span.attributes) {
+              span.attributes.forEach(attr => {
+                if (attr.key && attr.value) {
+                  // Handle different value types
+                  if (attr.value.stringValue !== undefined) {
+                    attributes[attr.key] = attr.value.stringValue;
+                  } else if (attr.value.intValue !== undefined) {
+                    attributes[attr.key] = attr.value.intValue;
+                  } else if (attr.value.doubleValue !== undefined) {
+                    attributes[attr.key] = attr.value.doubleValue;
+                  } else if (attr.value.boolValue !== undefined) {
+                    attributes[attr.key] = attr.value.boolValue;
+                  } else if (attr.value.arrayValue !== undefined) {
+                    // Handle array values (e.g., graphql.field.path)
+                    const arrayValues = attr.value.arrayValue.values || [];
+                    attributes[attr.key] = arrayValues.map(v => {
+                      if (v.stringValue !== undefined) return v.stringValue;
+                      if (v.intValue !== undefined) return v.intValue;
+                      if (v.doubleValue !== undefined) return v.doubleValue;
+                      if (v.boolValue !== undefined) return v.boolValue;
+                      return v;
+                    });
+                  }
+                }
+              });
+            }
+            
             // Extract http info from attributes if present
-            const httpMethod = span.attributes?.find(a => a.key === 'http.method')?.value?.stringValue;
-            const httpUrl = span.attributes?.find(a => a.key === 'http.url')?.value?.stringValue;
-            const httpStatus = span.attributes?.find(a => a.key === 'http.status_code')?.value?.intValue || 
-                               span.attributes?.find(a => a.key === 'http.status_code')?.value?.stringValue;
+            const httpMethod = attributes['http.method'];
+            const httpUrl = attributes['http.url'];
+            const httpStatus = attributes['http.status_code'];
             
             // Get span kind and set color class
-            const spanKind = span.attributes?.find(a => a.key === 'span.kind')?.value?.stringValue || '';
+            const spanKind = attributes['span.kind'] || span.kind || '';
             let typeClass = '';
             
             if (span.name?.startsWith('fetch:')) typeClass = 'span-http';
@@ -62,6 +95,10 @@
             else if (span.name?.includes('factory')) typeClass = 'span-factory';
             else if (span.name?.includes('materializ')) typeClass = 'span-materialization';
             
+            // Determine span status
+            const status = span.status || {};
+            const isError = status.code === 2 || httpStatus >= 400; // OTEL status code 2 = ERROR
+            
             const spanInfo = {
               id: span.spanId,
               parentId: span.parentSpanId || null,
@@ -70,13 +107,20 @@
               duration: duration,
               endTime: relativeStart + duration,
               typeClass: typeClass,
-              attributes: {
-                httpMethod,
-                httpUrl,
-                httpStatus,
-                spanKind
-              },
-              children: []
+              isError: isError,
+              status: status,
+              attributes: attributes,
+              httpMethod,
+              httpUrl,
+              httpStatus,
+              spanKind,
+              children: [],
+              level: 0, // Will be calculated later
+              expanded: true, // For collapsible functionality
+              // Store original OTEL data for details panel
+              originalSpan: span,
+              resource: rs.resource || {},
+              scope: ss.scope || {}
             };
             
             spans.push(spanInfo);
@@ -85,19 +129,25 @@
         }
       }
       
-      // Build the parent-child relationships
+      // Build the parent-child relationships and calculate levels
       const rootSpans = [];
       for (const span of spans) {
         if (span.parentId && spanMap.has(span.parentId)) {
           const parent = spanMap.get(span.parentId);
           parent.children.push(span);
+          span.level = parent.level + 1;
         } else {
           rootSpans.push(span);
+          span.level = 0;
         }
       }
       
-      // Sort spans by start time
-      spans.sort((a, b) => a.startTime - b.startTime);
+      // Sort children by start time
+      function sortChildren(span) {
+        span.children.sort((a, b) => a.startTime - b.startTime);
+        span.children.forEach(sortChildren);
+      }
+      rootSpans.forEach(sortChildren);
       
       // Calculate total duration
       const totalDuration = spans.length ? 
@@ -111,13 +161,17 @@
     }
   
     /**
-     * Create a trace viewer component
+     * Create a trace viewer component with hierarchical display and details panel
      * @param {Function} createElement - React.createElement function
      * @param {Object} traceData - Normalized trace data
      * @return {React.Element} Trace viewer component
      */
     function createTraceViewer(createElement, traceData) {
-      const { spans, duration } = traceData;
+      const { rootSpans, duration } = traceData;
+      
+      // State for selected span and details panel
+      let selectedSpan = null;
+      let detailsPanelVisible = false;
       
       /**
        * Format a duration for display
@@ -138,6 +192,196 @@
        */
       const timeToPercent = (time) => {
         return (time / duration * 100).toFixed(2) + '%';
+      };
+      
+      /**
+       * Convert time to percentage number for width calculations
+       * @param {number} time - Time in milliseconds
+       * @return {number} Percentage as number
+       */
+      const timeToPercentNumber = (time) => {
+        return (time / duration * 100);
+      };
+      
+      /**
+       * Toggle span expansion state
+       * @param {Object} span - Span to toggle
+       */
+      const toggleSpanExpansion = (span) => {
+        span.expanded = !span.expanded;
+        // Re-render the component
+        rerenderTraceViewer();
+      };
+      
+      /**
+       * Select a span and show details panel
+       * @param {Object} span - Span to select
+       */
+      const selectSpan = (span) => {
+        selectedSpan = span;
+        detailsPanelVisible = true;
+        rerenderTraceViewer();
+      };
+      
+      /**
+       * Close the details panel
+       */
+      const closeDetailsPanel = () => {
+        selectedSpan = null;
+        detailsPanelVisible = false;
+        rerenderTraceViewer();
+      };
+      
+      /**
+       * Recursively render spans with hierarchy
+       * @param {Array} spans - Array of spans to render
+       * @return {Array} Array of React elements
+       */
+      const renderSpansHierarchy = (spans) => {
+        const elements = [];
+        
+        for (const span of spans) {
+          // Calculate bar position and width
+          const barStyle = {
+            left: timeToPercent(span.startTime),
+            width: Math.max(timeToPercentNumber(span.duration), 0.1) + '%' // Use number function for width
+          };
+          
+          // Build class name with type and error status
+          const barClassName = 'trace-span-bar ' + 
+                              (span.typeClass || '') + 
+                              (span.isError ? ' trace-span-error' : '') +
+                              (selectedSpan?.id === span.id ? ' trace-span-selected' : '');
+          
+          // Create indentation for hierarchy
+          const indentStyle = {
+            paddingLeft: (span.level * 20) + 'px'
+          };
+          
+          // Create the span element
+          const spanElement = createElement('div', {
+            key: span.id,
+            className: 'trace-span',
+            'data-id': span.id,
+            'data-level': span.level
+          },
+            createElement('div', { 
+              className: 'trace-span-info',
+              style: indentStyle
+            },
+              // Expansion toggle for spans with children
+              span.children.length > 0 ? createElement('span', {
+                className: 'trace-span-toggle ' + (span.expanded ? 'expanded' : 'collapsed'),
+                onClick: (e) => {
+                  e.stopPropagation();
+                  toggleSpanExpansion(span);
+                }
+              }, span.expanded ? '▼' : '▶') : createElement('span', {
+                className: 'trace-span-toggle-spacer'
+              }),
+              
+              createElement('div', { 
+                className: 'trace-span-name',
+                onClick: () => selectSpan(span),
+                title: `Click to view details\n${span.name}`
+              }, span.name),
+              
+              createElement('div', { className: 'trace-span-duration' }, formatDuration(span.duration))
+            ),
+            createElement('div', { className: 'trace-span-timeline' },
+              createElement('div', {
+                className: barClassName,
+                style: barStyle,
+                onClick: () => selectSpan(span),
+                title: `${span.name}\nDuration: ${formatDuration(span.duration)}\nStart: ${formatDuration(span.startTime)}`
+              })
+            )
+          );
+          
+          elements.push(spanElement);
+          
+          // Recursively render children if expanded
+          if (span.expanded && span.children.length > 0) {
+            elements.push(...renderSpansHierarchy(span.children));
+          }
+        }
+        
+        return elements;
+      };
+      
+      /**
+       * Create the details panel content
+       * @param {Object} span - Selected span
+       * @return {React.Element} Details panel element
+       */
+      const createDetailsPanel = (span) => {
+        if (!span) return null;
+        
+        // Calculate self time (time spent in this span excluding children)
+        const childrenDuration = span.children.reduce((sum, child) => sum + child.duration, 0);
+        const selfTime = span.duration - childrenDuration;
+        
+        return createElement('div', { className: 'trace-details-panel' },
+          createElement('div', { className: 'trace-details-header' },
+            createElement('h3', { className: 'trace-details-title' }, span.name),
+            createElement('button', {
+              className: 'trace-details-close',
+              onClick: closeDetailsPanel,
+              title: 'Close details panel'
+            }, '×')
+          ),
+          
+          createElement('div', { className: 'trace-details-content' },
+            // Timing information
+            createElement('div', { className: 'trace-details-section' },
+              createElement('h4', null, 'Timing'),
+              createElement('div', { className: 'trace-details-grid' },
+                createElement('div', null, 'Duration:'),
+                createElement('div', null, formatDuration(span.duration)),
+                createElement('div', null, 'Self Time:'),
+                createElement('div', null, formatDuration(selfTime)),
+                createElement('div', null, 'Start Time:'),
+                createElement('div', null, formatDuration(span.startTime)),
+                createElement('div', null, 'End Time:'),
+                createElement('div', null, formatDuration(span.endTime))
+              )
+            ),
+            
+            // Status information
+            span.status && Object.keys(span.status).length > 0 ? createElement('div', { className: 'trace-details-section' },
+              createElement('h4', null, 'Status'),
+              createElement('div', { className: 'trace-details-grid' },
+                span.status.code !== undefined ? [
+                  createElement('div', { key: 'status-code-label' }, 'Code:'),
+                  createElement('div', { key: 'status-code-value' }, span.status.code)
+                ] : null,
+                span.status.message ? [
+                  createElement('div', { key: 'status-msg-label' }, 'Message:'),
+                  createElement('div', { key: 'status-msg-value' }, span.status.message)
+                ] : null
+              )
+            ) : null,
+            
+            // Attributes
+            Object.keys(span.attributes).length > 0 ? createElement('div', { className: 'trace-details-section' },
+              createElement('h4', null, 'Attributes'),
+              createElement('div', { className: 'trace-details-attributes' },
+                Object.entries(span.attributes).map(([key, value]) =>
+                  createElement('div', { key: key, className: 'trace-details-attribute' },
+                    createElement('span', { className: 'trace-details-attribute-key' }, key + ':'),
+                    createElement('span', { className: 'trace-details-attribute-value' }, String(value))
+                  )
+                )
+              )
+            ) : null,
+            
+            // Children summary
+            span.children.length > 0 ? createElement('div', { className: 'trace-details-section' },
+              createElement('h4', null, 'Children'),
+              createElement('div', null, `${span.children.length} child span${span.children.length === 1 ? '' : 's'}`)
+            ) : null
+          )
+        );
       };
       
       // Create time scale markers
@@ -169,80 +413,59 @@
         )
       );
       
-      // Create spans list element
-      const spansElement = createElement('div', { className: 'trace-spans-container' },
-        createElement('div', { className: 'trace-spans' },
-          spans.map(span => {
-            // Calculate bar position and width
-            const barStyle = {
-              left: timeToPercent(span.startTime),
-              width: timeToPercent(span.duration) 
-            };
-            
-            // Determine if this is an error span
-            const isError = span.attributes.httpStatus >= 400;
-            
-            // Build class name with type and error status
-            const barClassName = 'trace-span-bar ' + 
-                                (span.typeClass || '') + 
-                                (isError ? ' trace-span-error' : '');
-            
-
-            // Enhanced tooltip creation
-            const createTooltip = (span) => {
-              const lines = [
-                span.name,
-                `Start: ${formatDuration(span.startTime)}`,
-                `Duration: ${formatDuration(span.duration)}`
-              ];
-              
-              // Add all attributes with values to the tooltip
-              if (span.attributes) {
-                const attrEntries = Object.entries(span.attributes)
-                  .filter(([_, value]) => value !== undefined && value !== null);
-                
-                if (attrEntries.length > 0) {
-                  lines.push(''); // Empty line to separate basic info from attributes
-                  lines.push('Attributes:');
-                  attrEntries.forEach(([key, value]) => {
-                    lines.push(`  ${key}: ${value}`);
-                  });
-                }
-              }
-              
-              return lines.join('\n');
-            };
-            const tooltip = createTooltip(span);
-
-            
-            // Create the span element
-            return createElement('div', {
-              key: span.id,
-              className: 'trace-span',
-              'data-id': span.id,
-              'data-parent': span.parentId || ''
-            },
-              createElement('div', { className: 'trace-span-info' },
-                createElement('div', { className: 'trace-span-name' }, span.name),
-                createElement('div', { className: 'trace-span-duration' }, formatDuration(span.duration))
-              ),
-              createElement('div', { className: 'trace-span-timeline' },
-                createElement('div', {
-                  className: barClassName,
-                  style: barStyle,
-                  title: tooltip
-                })
-              )
-            );
-          })
-        )
+      // Create main content area
+      const mainContent = createElement('div', { className: 'trace-main-content' },
+        // Spans container
+        createElement('div', { 
+          className: 'trace-spans-container' + (detailsPanelVisible ? ' with-details-panel' : '')
+        },
+          createElement('div', { className: 'trace-spans' },
+            renderSpansHierarchy(rootSpans)
+          )
+        ),
+        
+        // Details panel (conditionally rendered)
+        detailsPanelVisible ? createDetailsPanel(selectedSpan) : null
       );
       
+      // Store reference for re-rendering
+      let containerElement = null;
+      
+      /**
+       * Re-render the trace viewer (for state updates)
+       */
+      const rerenderTraceViewer = () => {
+        if (containerElement) {
+          // Re-render the main content
+          const newMainContent = createElement('div', { className: 'trace-main-content' },
+            createElement('div', { 
+              className: 'trace-spans-container' + (detailsPanelVisible ? ' with-details-panel' : '')
+            },
+              createElement('div', { className: 'trace-spans' },
+                renderSpansHierarchy(rootSpans)
+              )
+            ),
+            detailsPanelVisible ? createDetailsPanel(selectedSpan) : null
+          );
+          
+          // Find and replace the main content
+          const oldMainContent = containerElement.querySelector('.trace-main-content');
+          if (oldMainContent) {
+            window.ReactDOM.render(newMainContent, oldMainContent.parentNode);
+          }
+        }
+      };
+      
       // Create the main trace viewer element
-      return createElement('div', { className: 'trace-viewer' },
+      const traceViewer = createElement('div', { 
+        className: 'trace-viewer',
+        ref: (el) => { containerElement = el; }
+      },
         headerElement,
-        spansElement
+        mainContent
       );
+      
+      return traceViewer;
     }
     
     // Export functions to global scope
