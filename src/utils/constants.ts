@@ -136,6 +136,7 @@ export const MESSAGES = {
   SCHEMA_VISUALIZER_NO_TYPES_DESCRIPTION: "The schema visualizer could not find any GraphQL types to display. This might happen if your schema files are empty or contain only directives.",
   SCHEMA_VISUALIZER_LOADING: "Loading schema data...",
   SCHEMA_VISUALIZER_ERROR_TITLE: "Schema Visualization Error",
+  EXPLORER_LOADING: "Loading...",
 } as const;
 
 // Type definitions for better type safety

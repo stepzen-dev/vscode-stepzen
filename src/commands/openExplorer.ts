@@ -6,7 +6,6 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
-import { execSync } from "child_process";
 import { StepZenError, handleError } from "../errors";
 import { StepZenConfig } from "../types";
 import { services } from "../services";
@@ -19,16 +18,19 @@ import { FILE_PATTERNS, MESSAGES, UI } from "../utils/constants";
  * @param workspaceFolderPath Path to the workspace folder containing StepZen config
  * @returns Object with StepZen account, domain, API key, and endpoint
  */
-function getStepZenInfo(workspaceFolderPath: string): {
+async function getStepZenInfo(workspaceFolderPath: string): Promise<{
   account: string;
   domain: string;
   apiKey: string;
   endpoint: string;
-} {
+}> {
   try {
-    const account = execSync("stepzen whoami --account").toString().trim();
-    const domain = execSync("stepzen whoami --domain").toString().trim();
-    const apiKey = execSync("stepzen whoami --apikey").toString().trim();
+    // Use CLI service instead of execSync calls
+    const [account, domain, apiKey] = await Promise.all([
+      services.cli.getAccount(),
+      services.cli.getDomain(),
+      services.cli.getApiKey()
+    ]);
     
     const configPath = path.join(workspaceFolderPath, FILE_PATTERNS.CONFIG_FILE);
     if (!fs.existsSync(configPath)) {
@@ -69,7 +71,7 @@ function getStepZenInfo(workspaceFolderPath: string): {
  * 
  * @param context The VS Code extension context
  */
-export function openQueryExplorer(context: vscode.ExtensionContext) {
+export async function openQueryExplorer(context: vscode.ExtensionContext) {
   try {
     services.logger.info("Starting Open Query Explorer command");
     
@@ -97,7 +99,7 @@ export function openQueryExplorer(context: vscode.ExtensionContext) {
 
     let stepzenInfo;
     try {
-      stepzenInfo = getStepZenInfo(workspaceFolderPath);
+      stepzenInfo = await getStepZenInfo(workspaceFolderPath);
       services.logger.info(`Retrieved StepZen info for endpoint: ${stepzenInfo.endpoint}`);
     } catch (err) {
       handleError(err);
@@ -176,7 +178,7 @@ export function openQueryExplorer(context: vscode.ExtensionContext) {
         </style>
       </head>
       <body>
-        <div id="graphiql">Loading...</div>
+        <div id="graphiql">${MESSAGES.EXPLORER_LOADING}</div>
         <script src="${reactUri}"></script>
         <script src="${reactDomUri}"></script>
         <script src="${graphiqlUri}"></script>
