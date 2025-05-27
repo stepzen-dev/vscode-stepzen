@@ -25,7 +25,13 @@ suite("Results Panel Tests", () => {
         webview: {
           html: "",
           cspSource: "vscode-webview://test-source",
-          asWebviewUri: (uri: Uri) => Uri.parse(`vscode-webview://test/${uri.path}`)
+          asWebviewUri: (uri: Uri) => Uri.parse(`vscode-webview://test/${uri.path}`),
+          // Assisted by CursorAI ; inserted onDidReceiveMessage
+          onDidReceiveMessage: (callback: (message: any) => void) => { 
+            // Store the callback for potential use in tests
+            (mockPanel.webview as any)._messageCallback = callback;
+            return { dispose: () => {} };
+          }
         },
         onDidDispose: (_callback: () => void) => ({ dispose: () => {} }),
         dispose: () => {},
