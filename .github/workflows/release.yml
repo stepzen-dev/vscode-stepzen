@@ -50,6 +50,16 @@ jobs:
           path: "*.vsix"
           retention-days: 30
 
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "*.vsix"
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       # Optional: Uncomment and add VSCE_PAT secret to enable marketplace publishing
       # - name: Publish to Marketplace (optional)
       #   if: ${{ secrets.VSCE_PAT }}
