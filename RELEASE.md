@@ -37,9 +37,10 @@ git push origin release/v0.1.3
 # 5. After PR is merged, create and push the tag:
 git checkout main
 git pull origin main
-git tag v0.1.3
-git push origin v0.1.3
+./scripts/release.sh --tag 0.1.3
 ```
+
+**💡 Pro tip**: The `--tag` flag automates the tag creation and push, ensuring the release workflow triggers correctly.
 
 ### For Direct Main Access
 
@@ -135,10 +136,12 @@ When you push a tag matching `v*`, the GitHub Actions workflow will:
 The extension requires a `publisher` field in `package.json` for packaging. Currently set to `stepzen-dev` for development builds.
 
 ### For Development/Internal Releases
+
 - Keep `"publisher": "stepzen-dev"` for internal testing and development
 - VSIX files can be installed manually via "Install from VSIX..." in VS Code
 
 ### For Official IBM Publishing
+
 When ready for official IBM marketplace publishing:
 
 1. Update `package.json` publisher to the official IBM publisher ID
@@ -163,6 +166,21 @@ Follow [Semantic Versioning](https://semver.org/):
 - **Major** (0.2.0 → 1.0.0): Breaking changes
 
 ## Troubleshooting
+
+### Release Workflow Not Triggering
+
+If you merged a version bump PR but the release workflow didn't run:
+
+```bash
+# Check if the tag exists
+git tag --list | grep v0.1.3
+
+# If no tag exists, create it (ensure you're on main with latest changes)
+git checkout main && git pull origin main
+./scripts/release.sh --tag 0.1.3
+```
+
+**Root cause**: The release workflow only triggers on tag pushes (`v*`), not on regular commits or PR merges.
 
 ### Version Mismatch Error
 
