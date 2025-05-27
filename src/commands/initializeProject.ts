@@ -6,56 +6,92 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
-import { execSync } from "child_process";
-import { StepZenError, handleError } from "../errors";
+import { handleError } from "../errors";
 import { FILE_PATTERNS, URLS, MESSAGES } from "../utils/constants";
 import { services } from "../services";
+import { createProjectScaffold } from "../utils/projectScaffold";
+
+// NLS Messages for Initialize Project
+const NLS = {
+  CLI_NOT_INSTALLED: "StepZen CLI is not installed. You need to install it to create a StepZen project.",
+  INSTALL_INSTRUCTIONS: "Install Instructions",
+  CANCEL: "Cancel",
+  LOGIN_REQUIRED: "You need to log in to StepZen before creating a project.",
+  LOG_IN: "Log In",
+  PROJECT_EXISTS_PROMPT: "A StepZen project already exists at this location. What would you like to do?",
+  OPEN_CONFIG: "Open Config",
+  OPEN_CONFIG_DESC: "Open the existing StepZen config file",
+  REINITIALIZE: "Reinitialize",
+  REINITIALIZE_DESC: "Replace the existing project with a new one",
+  CREATE_NEW: "Create New",
+  CREATE_NEW_DESC: "Create a new project in a different location",
+  PROJECT_NAME_PROMPT: "Enter name for the new StepZen project folder",
+  PROJECT_NAME_PLACEHOLDER: "my-stepzen-project",
+  PROJECT_NAME_EMPTY: "Project name cannot be empty",
+  PROJECT_NAME_INVALID: "Project name can only contain letters, numbers, hyphens, and underscores",
+  PROJECT_NAME_EXISTS: "A file or folder named \"{0}\" already exists",
+  SELECT_LOCATION_TITLE: "Select Location for StepZen Project",
+  SELECT_LOCATION_LABEL: "Select Location",
+  WHERE_CREATE_PROJECT: "Where would you like to create the StepZen project?",
+  INITIALIZE_HERE: "Initialize Here",
+  INITIALIZE_HERE_DESC: "Create at {0}",
+  CREATE_SUBFOLDER: "Create in Subfolder",
+  CREATE_SUBFOLDER_DESC: "Create in a new subfolder",
+  FOLDER_NOT_EMPTY: "This folder contains files. What would you like to do?",
+  FOLDER_NOT_EMPTY_INIT: "Create project in this folder",
+  ENDPOINT_FORMAT_INFO: "StepZen endpoints must be in the format \"folder/name\" (e.g., dev/myapi)",
+  ENDPOINT_PROMPT: "Enter a folder/name for your StepZen endpoint (e.g., dev/myapi)",
+  ENDPOINT_PLACEHOLDER: "folder/endpoint-name",
+  ENDPOINT_EMPTY: "Endpoint must not be empty",
+  ENDPOINT_MISSING_SLASH: "Endpoint must be in the format folder/name",
+  ENDPOINT_MISSING_PARTS: "Both folder and name must be provided",
+  ENDPOINT_INVALID_CHARS: "Folder and name can only contain letters, numbers, hyphens, and underscores",
+  PROJECT_CREATED: "StepZen project created successfully at {0}",
+  OPEN_PROJECT_FOLDER: "Open Project Folder",
+  INITIALIZATION_CANCELLED: "Project initialization cancelled."
+} as const;
 
 /**
  * Checks if the StepZen CLI is installed and properly configured
- *
  * @returns Boolean indicating if CLI is available
  */
 async function checkStepZenCLI(): Promise<boolean> {
   try {
     services.logger.info("Checking StepZen CLI installation...");
 
+    // Check CLI version using services.cli
     try {
-      const version = execSync("stepzen --version").toString().trim();
-      services.logger.info(`Found StepZen CLI version: ${version}`);
+      await services.cli.spawnProcessWithOutput(["--version"]);
+      services.logger.info("StepZen CLI is installed");
     } catch (err) {
       const installOption = await vscode.window.showErrorMessage(
-        "StepZen CLI is not installed. You need to install it to create a StepZen project.",
-        "Install Instructions",
-        "Cancel",
+        NLS.CLI_NOT_INSTALLED,
+        NLS.INSTALL_INSTRUCTIONS,
+        NLS.CANCEL,
       );
 
-      if (installOption === "Install Instructions") {
-        vscode.env.openExternal(
-          vscode.Uri.parse(URLS.STEPZEN_CLI_INSTALL),
-        );
+      if (installOption === NLS.INSTALL_INSTRUCTIONS) {
+        vscode.env.openExternal(vscode.Uri.parse(URLS.STEPZEN_CLI_INSTALL));
       }
-
       return false;
     }
 
-    // Verify that user is logged in
+    // Verify that user is logged in using services.cli
     try {
-      execSync("stepzen whoami");
+      await services.cli.spawnProcessWithOutput(["whoami"]);
       services.logger.info("StepZen CLI is properly configured.");
     } catch (err) {
       const loginOption = await vscode.window.showErrorMessage(
-        "You need to log in to StepZen before creating a project.",
-        "Log In",
-        "Cancel",
+        NLS.LOGIN_REQUIRED,
+        NLS.LOG_IN,
+        NLS.CANCEL,
       );
 
-      if (loginOption === "Log In") {
+      if (loginOption === NLS.LOG_IN) {
         const terminal = vscode.window.createTerminal("StepZen Login");
         terminal.show();
         terminal.sendText("stepzen login");
       }
-
       return false;
     }
 
@@ -68,7 +104,6 @@ async function checkStepZenCLI(): Promise<boolean> {
 
 /**
  * Checks if a StepZen project already exists at the specified location
- *
  * @param dirPath Directory to check for existing StepZen project
  * @returns Boolean indicating if a project exists
  */
@@ -79,35 +114,30 @@ function projectExistsAt(dirPath: string): boolean {
 
 /**
  * Handles scenario where a StepZen project already exists
- * Offers options to open config, reinitialize, or create new
- *
  * @param existingPath Path to existing StepZen project
- * @returns Promise resolving to string action ('open', 'reinit', 'new') or undefined if cancelled
+ * @returns Promise resolving to string action or undefined if cancelled
  */
-async function handleExistingProject(
-  existingPath: string,
-): Promise<string | undefined> {
+async function handleExistingProject(existingPath: string): Promise<string | undefined> {
   const options = [
     {
-      label: "Open Config",
+      label: NLS.OPEN_CONFIG,
       id: "open",
-      description: "Open the existing StepZen config file",
+      description: NLS.OPEN_CONFIG_DESC,
     },
     {
-      label: "Reinitialize",
+      label: NLS.REINITIALIZE,
       id: "reinit",
-      description: "Replace the existing project with a new one",
+      description: NLS.REINITIALIZE_DESC,
     },
     {
-      label: "Create New",
+      label: NLS.CREATE_NEW,
       id: "new",
-      description: "Create a new project in a different location",
+      description: NLS.CREATE_NEW_DESC,
     },
   ];
 
   const choice = await vscode.window.showQuickPick(options, {
-    placeHolder:
-      "A StepZen project already exists at this location. What would you like to do?",
+    placeHolder: NLS.PROJECT_EXISTS_PROMPT,
   });
 
   if (!choice) {
@@ -125,28 +155,25 @@ async function handleExistingProject(
 
 /**
  * Prompts for a new subfolder name to create under a parent directory
- *
  * @param parentDir Parent directory where subfolder will be created
  * @returns Promise resolving to the full path of the new subfolder or undefined if cancelled
  */
-async function promptForSubfolder(
-  parentDir: string,
-): Promise<string | undefined> {
+async function promptForSubfolder(parentDir: string): Promise<string | undefined> {
   const projectName = await vscode.window.showInputBox({
-    prompt: "Enter name for the new StepZen project folder",
-    placeHolder: "my-stepzen-project",
+    prompt: NLS.PROJECT_NAME_PROMPT,
+    placeHolder: NLS.PROJECT_NAME_PLACEHOLDER,
     validateInput: (input) => {
       if (!input || input.trim() === "") {
-        return "Project name cannot be empty";
+        return NLS.PROJECT_NAME_EMPTY;
       }
 
       if (!/^[a-zA-Z0-9-_]+$/.test(input)) {
-        return "Project name can only contain letters, numbers, hyphens, and underscores";
+        return NLS.PROJECT_NAME_INVALID;
       }
 
       const newPath = path.join(parentDir, input);
       if (fs.existsSync(newPath)) {
-        return `A file or folder named "${input}" already exists`;
+        return NLS.PROJECT_NAME_EXISTS.replace("{0}", input);
       }
 
       return null;
@@ -162,22 +189,19 @@ async function promptForSubfolder(
 
 /**
  * Shows UI to select where to create a new StepZen project
- *
  * @param startPath Optional starting path for location selection
  * @returns Promise resolving to the selected path or undefined if cancelled
  */
-async function selectProjectLocation(
-  startPath?: string,
-): Promise<string | undefined> {
+async function selectProjectLocation(startPath?: string): Promise<string | undefined> {
   const initialUri = startPath ? vscode.Uri.file(startPath) : undefined;
 
   const folderUri = await vscode.window.showOpenDialog({
     canSelectFiles: false,
     canSelectFolders: true,
     canSelectMany: false,
-    openLabel: "Select Location",
+    openLabel: NLS.SELECT_LOCATION_LABEL,
     defaultUri: initialUri,
-    title: "Select Location for StepZen Project",
+    title: NLS.SELECT_LOCATION_TITLE,
   });
 
   if (!folderUri || folderUri.length === 0) {
@@ -189,30 +213,29 @@ async function selectProjectLocation(
 
 /**
  * Prompts the user for a StepZen endpoint name with folder/name format
- *
  * @returns Promise resolving to the endpoint or undefined if cancelled
  */
 async function promptForEndpoint(): Promise<string | undefined> {
   return await vscode.window.showInputBox({
-    prompt: "Enter a folder/name for your StepZen endpoint (e.g., dev/myapi)",
-    placeHolder: "folder/endpoint-name",
+    prompt: NLS.ENDPOINT_PROMPT,
+    placeHolder: NLS.ENDPOINT_PLACEHOLDER,
     validateInput: (input) => {
       if (!input || input.trim() === "") {
-        return "Endpoint must not be empty";
+        return NLS.ENDPOINT_EMPTY;
       }
 
       if (!input.includes("/")) {
-        return "Endpoint must be in the format folder/name";
+        return NLS.ENDPOINT_MISSING_SLASH;
       }
 
       const [folder, name] = input.split("/", 2);
 
       if (!folder || !name) {
-        return "Both folder and name must be provided";
+        return NLS.ENDPOINT_MISSING_PARTS;
       }
 
       if (!/^[a-zA-Z0-9-_]+$/.test(folder) || !/^[a-zA-Z0-9-_]+$/.test(name)) {
-        return "Folder and name can only contain letters, numbers, hyphens, and underscores";
+        return NLS.ENDPOINT_INVALID_CHARS;
       }
 
       return null;
@@ -221,79 +244,117 @@ async function promptForEndpoint(): Promise<string | undefined> {
 }
 
 /**
- * Creates a StepZen project at the specified location
- *
- * @param projectDir Directory where to create the project
- * @param endpoint StepZen endpoint in the format folder/name
- * @returns Promise that resolves when the project is created
+ * Determines the target location for the new project
+ * @returns Promise resolving to target location or undefined if cancelled
  */
-async function createProject(
-  projectDir: string,
-  endpoint: string,
-): Promise<void> {
-  try {
-    // Create the directory if it doesn't exist
-    if (!fs.existsSync(projectDir)) {
-      await vscode.workspace.fs.createDirectory(vscode.Uri.file(projectDir));
+async function determineTargetLocation(): Promise<string | undefined> {
+  let targetLocation: string | undefined;
+
+  // Check if we have a workspace folder open
+  if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+    const workspaceFolder = vscode.workspace.workspaceFolders[0];
+
+    // Check if this is a right-click in explorer context menu
+    if (vscode.window.activeTextEditor) {
+      const activeFile = vscode.window.activeTextEditor.document.uri;
+      if (vscode.workspace.getWorkspaceFolder(activeFile)) {
+        const activeDir = path.dirname(activeFile.fsPath);
+        targetLocation = activeDir;
+      }
+    } else {
+      targetLocation = workspaceFolder.uri.fsPath;
     }
 
-    // Create operations directory
-    const operationsDir = path.join(projectDir, FILE_PATTERNS.OPERATIONS_DIR);
-    if (!fs.existsSync(operationsDir)) {
-      await vscode.workspace.fs.createDirectory(vscode.Uri.file(operationsDir));
+    // If StepZen project already exists, handle accordingly
+    if (targetLocation && projectExistsAt(targetLocation)) {
+      const action = await handleExistingProject(targetLocation);
+
+      if (action === "open") {
+        return undefined; // Config file already opened
+      } else if (action === "new") {
+        targetLocation = undefined; // Will prompt for new location
+      } else if (action !== "reinit") {
+        return undefined; // Cancelled
+      }
+      // If 'reinit', continue with existing location
     }
 
-    // Create stepzen.config.json
-    const configPath = path.join(projectDir, FILE_PATTERNS.CONFIG_FILE);
-    const configContent = JSON.stringify({ endpoint }, null, 2);
-    fs.writeFileSync(configPath, configContent);
+    // Prompt: initialize here or create in subfolder?
+    if (targetLocation) {
+      const options = [
+        {
+          label: NLS.INITIALIZE_HERE,
+          id: "here",
+          description: NLS.INITIALIZE_HERE_DESC.replace("{0}", vscode.workspace.asRelativePath(targetLocation)),
+        },
+        {
+          label: NLS.CREATE_SUBFOLDER,
+          id: "subfolder",
+          description: NLS.CREATE_SUBFOLDER_DESC,
+        },
+      ];
 
-    // Create index.graphql
-    const indexPath = path.join(projectDir, FILE_PATTERNS.MAIN_SCHEMA_FILE);
-    const indexContent = `schema
-  @sdl(
-    files: [
-    ]
-    executables: [
-      { document: "operations/example.graphql", persist: false }
-    ]
-  ) {
-  query: Query
-}
+      const choice = await vscode.window.showQuickPick(options, {
+        placeHolder: NLS.WHERE_CREATE_PROJECT,
+      });
 
-# Ths query field is only here to support the sample executable document
-# Remove this when you build your API
-extend type Query {
-  hello: String @value(const: "Hello from StepZen!")
-}`;
-    fs.writeFileSync(indexPath, indexContent);
+      if (!choice) {
+        return undefined; // Cancelled
+      }
 
-    // Create operations/example.graphql
-    const sampleOperationPath = path.join(
-      projectDir,
-      FILE_PATTERNS.OPERATIONS_DIR,
-      FILE_PATTERNS.EXAMPLE_GRAPHQL_FILE,
-    );
-    const sampleOperationContent = `# Example GraphQL operations for your StepZen API
-# This query works with the default schema
-
-query HelloWorld {
-  hello
-}
-
-`;
-    fs.writeFileSync(sampleOperationPath, sampleOperationContent);
-
-    services.logger.info(
-      `Created StepZen project at: ${projectDir} with endpoint ${endpoint}`,
-    );
-  } catch (err) {
-    throw new StepZenError(
-      `Failed to create project: ${err}`,
-      "FILESYSTEM_ERROR",
-      err
-    );
+      if (choice.id === "subfolder") {
+        targetLocation = await promptForSubfolder(targetLocation);
+        if (!targetLocation) {
+          return undefined; // Cancelled
+        }
+      }
+    }
   }
+
+  // If no target location determined yet, show folder selector
+  if (!targetLocation) {
+    targetLocation = await selectProjectLocation();
+    if (!targetLocation) {
+      return undefined; // Cancelled
+    }
+
+    // If directory exists but isn't empty, confirm or prompt for subfolder
+    if (fs.existsSync(targetLocation)) {
+      const dirContents = fs.readdirSync(targetLocation);
+      if (dirContents.length > 0) {
+        const choice = await vscode.window.showQuickPick(
+          [
+            {
+              label: NLS.INITIALIZE_HERE,
+              id: "here",
+              description: NLS.FOLDER_NOT_EMPTY_INIT,
+            },
+            {
+              label: NLS.CREATE_SUBFOLDER,
+              id: "subfolder",
+              description: NLS.CREATE_SUBFOLDER_DESC,
+            },
+          ],
+          {
+            placeHolder: NLS.FOLDER_NOT_EMPTY,
+          },
+        );
+
+        if (!choice) {
+          return undefined; // Cancelled
+        }
+
+        if (choice.id === "subfolder") {
+          targetLocation = await promptForSubfolder(targetLocation);
+          if (!targetLocation) {
+            return undefined; // Cancelled
+          }
+        }
+      }
+    }
+  }
+
+  return targetLocation;
 }
 
 /**
@@ -308,136 +369,29 @@ export async function initializeProject() {
       return;
     }
 
-    // Step 2: Determine target location based on workspace state
-    let targetLocation: string | undefined;
-
-    // Check if we have a workspace folder open
-    if (
-      vscode.workspace.workspaceFolders &&
-      vscode.workspace.workspaceFolders.length > 0
-    ) {
-      const workspaceFolder = vscode.workspace.workspaceFolders[0];
-
-      // Check if this is a right-click in explorer context menu
-      if (vscode.window.activeTextEditor) {
-        const activeFile = vscode.window.activeTextEditor.document.uri;
-        if (vscode.workspace.getWorkspaceFolder(activeFile)) {
-          const activeDir = path.dirname(activeFile.fsPath);
-          targetLocation = activeDir;
-        }
-      } else {
-        targetLocation = workspaceFolder.uri.fsPath;
-      }
-
-      // If StepZen project already exists, handle accordingly
-      if (targetLocation && projectExistsAt(targetLocation)) {
-        const action = await handleExistingProject(targetLocation);
-
-        if (action === "open") {
-          return; // Config file already opened
-        } else if (action === "new") {
-          targetLocation = undefined; // Will prompt for new location
-        } else if (action !== "reinit") {
-          return; // Cancelled
-        }
-        // If 'reinit', continue with existing location
-      }
-
-      // Prompt: initialize here or create in subfolder?
-      if (targetLocation) {
-        const options = [
-          {
-            label: "Initialize Here",
-            id: "here",
-            description: `Create at ${vscode.workspace.asRelativePath(targetLocation)}`,
-          },
-          {
-            label: "Create in Subfolder",
-            id: "subfolder",
-            description: "Create in a new subfolder",
-          },
-        ];
-
-        const choice = await vscode.window.showQuickPick(options, {
-          placeHolder: "Where would you like to create the StepZen project?",
-        });
-
-        if (!choice) {
-          return; // Cancelled
-        }
-
-        if (choice.id === "subfolder") {
-          targetLocation = await promptForSubfolder(targetLocation);
-          if (!targetLocation) {
-            return; // Cancelled
-          }
-        }
-      }
-    }
-
-    // If no target location determined yet, show folder selector
+    // Step 2: Determine target location
+    const targetLocation = await determineTargetLocation();
     if (!targetLocation) {
-      targetLocation = await selectProjectLocation();
-      if (!targetLocation) {
-        return; // Cancelled
-      }
-
-      // If directory exists but isn't empty, confirm or prompt for subfolder
-      if (fs.existsSync(targetLocation)) {
-        const dirContents = fs.readdirSync(targetLocation);
-        if (dirContents.length > 0) {
-          const choice = await vscode.window.showQuickPick(
-            [
-              {
-                label: "Initialize Here",
-                id: "here",
-                description: "Create project in this folder",
-              },
-              {
-                label: "Create in Subfolder",
-                id: "subfolder",
-                description: "Create a new subfolder",
-              },
-            ],
-            {
-              placeHolder:
-                "This folder contains files. What would you like to do?",
-            },
-          );
-
-          if (!choice) {
-            return; // Cancelled
-          }
-
-          if (choice.id === "subfolder") {
-            targetLocation = await promptForSubfolder(targetLocation);
-            if (!targetLocation) {
-              return; // Cancelled
-            }
-          }
-        }
-      }
-    }
-
-    // Step 3: Get endpoint name (format: folder/name)
-    vscode.window.showInformationMessage(
-      'StepZen endpoints must be in the format "folder/name" (e.g., dev/myapi)',
-    );
-
-    const endpoint = await promptForEndpoint();
-    if (!endpoint) {
-      services.logger.info("Project initialization cancelled.");
       return;
     }
 
-    // Step 4: Create project
-    await createProject(targetLocation, endpoint);
+    // Step 3: Get endpoint name (format: folder/name)
+    vscode.window.showInformationMessage(NLS.ENDPOINT_FORMAT_INFO);
+
+    const endpoint = await promptForEndpoint();
+    if (!endpoint) {
+      services.logger.info(NLS.INITIALIZATION_CANCELLED);
+      return;
+    }
+
+    // Step 4: Create project using utility
+    await createProjectScaffold(targetLocation, endpoint);
 
     // Step 5: Open project in editor
     const openOption = await vscode.window.showInformationMessage(
-      `StepZen project created successfully at ${targetLocation}`,
+      NLS.PROJECT_CREATED.replace("{0}", targetLocation),
       MESSAGES.OPEN_INDEX_GRAPHQL,
-      "Open Project Folder",
+      NLS.OPEN_PROJECT_FOLDER,
     );
 
     if (openOption === MESSAGES.OPEN_INDEX_GRAPHQL) {
@@ -446,7 +400,7 @@ export async function initializeProject() {
         const document = await vscode.workspace.openTextDocument(indexPath);
         await vscode.window.showTextDocument(document);
       }
-    } else if (openOption === "Open Project Folder") {
+    } else if (openOption === NLS.OPEN_PROJECT_FOLDER) {
       // If we created a subfolder, open that as a new workspace folder
       const currentWorkspaceFolders = vscode.workspace.workspaceFolders || [];
       const isNewFolder = !currentWorkspaceFolders.some(
@@ -458,8 +412,8 @@ export async function initializeProject() {
           currentWorkspaceFolders.length,
           0,
           {
-            uri: vscode.Uri.file(targetLocation as string),
-            name: path.basename(targetLocation as string),
+            uri: vscode.Uri.file(targetLocation),
+            name: path.basename(targetLocation),
           },
         );
       }
