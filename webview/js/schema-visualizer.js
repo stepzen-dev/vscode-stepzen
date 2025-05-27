@@ -1,8 +1,13 @@
+/**
+ * Copyright IBM Corp. 2025
+ * Assisted by CursorAI
+ */
+
 (function() {
-  const vscode = acquireVsCodeApi();
+  // vscode is now available globally from the HTML script
   
   function debugLog(message) {
-    console.log(message);
+    // Only send to VS Code output channel, not console
     vscode.postMessage({
       command: 'debug-log',
       message: message
@@ -38,20 +43,41 @@
     debugLog(`JointJS version: ${joint.version || "unknown"}`);
     
     // Check if we have schema data
-    if (!schemaModel || !schemaModel.types) {
-      debugLog("Error: Schema model not available");
-      displayErrorMessage("Schema model not available. Please try again later.");
+    if (!schemaModel) {
+      debugLog("Error: Schema model is undefined");
+      displayErrorMessage("Schema model not available. The extension may not have loaded the schema data correctly. Please try refreshing the visualizer.");
+      return;
+    }
+    
+    if (!schemaModel.types) {
+      debugLog("Error: Schema model types property is missing");
+      displayErrorMessage("Schema model is malformed (missing types property). Please try refreshing the visualizer.");
       return;
     }
     
     // Check if schema model is empty
-    if (Object.keys(schemaModel.types).length === 0) {
+    const schemaTypeCount = Object.keys(schemaModel.types).length;
+    if (schemaTypeCount === 0) {
       debugLog("Warning: Schema model is empty");
-      displayErrorMessage("No schema types were found. Please make sure you have a valid StepZen schema defined in your project.");
+      displayErrorMessage("No schema types were found. Please make sure you have a valid StepZen schema defined in your project with type definitions.");
       return;
     }
     
-    debugLog(`Schema has ${Object.keys(schemaModel.types).length} types`);
+    debugLog(`Schema model loaded successfully with ${schemaTypeCount} types`);
+    
+    // Debug the actual schema model structure
+    debugLog(`Schema model structure:`);
+    debugLog(`- types: ${JSON.stringify(Object.keys(schemaModel.types))}`);
+    debugLog(`- fields: ${JSON.stringify(Object.keys(schemaModel.fields))}`);
+    debugLog(`- relationships: ${schemaModel.relationships.length}`);
+    
+    // Debug a sample type
+    const firstTypeName = Object.keys(schemaModel.types)[0];
+    if (firstTypeName) {
+      debugLog(`Sample type ${firstTypeName}:`);
+      debugLog(`- type info: ${JSON.stringify(schemaModel.types[firstTypeName])}`);
+      debugLog(`- fields: ${JSON.stringify(schemaModel.fields[firstTypeName])}`);
+    }
     
     // Get VSCode theme information
     const isDarkTheme = document.body.classList.contains('vscode-dark');
@@ -59,97 +85,36 @@
     // Initialize JointJS graph
     const graph = new joint.dia.Graph();
     
-    // Create the paper (canvas) with theme-aware settings
+    // Create the paper (canvas) with better settings
     const paper = new joint.dia.Paper({
       el: document.getElementById('diagram'),
       model: graph,
       width: '100%',
       height: '100%',
-      gridSize: 10,
+      gridSize: 20,
       drawGrid: true,
       background: {
-        color: isDarkTheme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)'
+        color: isDarkTheme ? '#1e1e1e' : '#fafafa'
       },
-      interactive: { linkMove: false }
+      interactive: function(cellView) {
+        // Allow interaction only for type boxes (not field labels)
+        return cellView.model.prop('typeData') ? true : false;
+      },
+      defaultRouter: { name: 'orthogonal' },
+      defaultConnector: { name: 'rounded' }
     });
     
     debugLog("Graph and paper created");
     
-    // Define a standard type box
-    joint.shapes.custom = {};
-    joint.shapes.custom.TypeBox = joint.dia.Element.define('custom.TypeBox', {
-      attrs: {
-        root: {
-          refWidth: '100%',
-          refHeight: '100%',
-        },
-        body: {
-          refWidth: '100%',
-          refHeight: '100%',
-          fill: isDarkTheme ? '#2d2d2d' : '#ffffff',
-          stroke: isDarkTheme ? '#6b6b6b' : '#000000',
-          strokeWidth: 1,
-          rx: 5,
-          ry: 5
-        },
-        header: {
-          refWidth: '100%',
-          height: 30,
-          fill: isDarkTheme ? '#3d3d3d' : '#f5f5f5',
-          stroke: isDarkTheme ? '#6b6b6b' : '#000000',
-          strokeWidth: 1
-        },
-        typeName: {
-          refX: '50%',
-          refY: 15,
-          fontSize: 16,
-          fontWeight: 'bold',
-          textAnchor: 'middle',
-          textVerticalAnchor: 'middle',
-          fill: isDarkTheme ? '#ffffff' : '#000000'
-        },
-        divider: {
-          refX: 0,
-          refY: 30,
-          refWidth: '100%',
-          stroke: '#000000',
-          strokeWidth: 1
-        },
-        '.field': {
-          fontSize: 12,
-          fontFamily: 'monospace',
-          fill: '#333',
-          textAnchor: 'start',
-          textVerticalAnchor: 'middle',
-          pointerEvents: 'none'
-        }
-      },
-      markup: [
-        {
-          tagName: 'rect',
-          selector: 'body'
-        },
-        {
-          tagName: 'rect',
-          selector: 'header'
-        },
-        {
-          tagName: 'text',
-          selector: 'typeName'
-        },
-        {
-          tagName: 'path',
-          selector: 'divider'
-        },
-        {
-          tagName: 'foreignObject',
-          selector: 'fields',
-          attributes: {
-            'class': 'fields-container'
-          }
-        }
-      ]
-    });
+    // Constants for layout
+    const TYPE_WIDTH = 280;
+    const FIELD_HEIGHT = 18;
+    const HEADER_HEIGHT = 35;
+    const PADDING = 15;
+    const MIN_TYPE_HEIGHT = 120;
+    const BASE_SPACING_X = 350;
+    const BASE_SPACING_Y = 200;
+    const MIN_SPACING_BUFFER = 50;  // Minimum buffer between boxes
     
     // Sort types: root types first, then alphabetically
     const typeNames = Object.keys(schemaModel.types);
@@ -161,214 +126,182 @@
     
     const sortedTypeNames = [...rootTypeNames, ...otherTypeNames];
     
-    // Calculate layout
-    const PADDING = 100;  // Even more padding between elements
-    const HEADER_HEIGHT = 30;
-    const FIELD_HEIGHT = 20;
-    const TYPE_WIDTH = 220;  // Slightly wider boxes for better readability
-    const TYPE_HEIGHT_MIN = 150;
-    const MIN_BOX_SPACING = 180; // Even larger spacing between type boxes
+    // Calculate grid layout
+    const GRID_COLS = Math.min(4, Math.max(2, Math.ceil(Math.sqrt(sortedTypeNames.length))));
     
-    // Adjust grid columns based on number of types (fewer columns for more types)
-    let GRID_COLS = 4;
-    const typeCount = sortedTypeNames.length;
-    if (typeCount > 20) {
-      GRID_COLS = 6;  // Use 6 columns for many types
-    } else if (typeCount > 15) {
-      GRID_COLS = 5;  // Use 5 columns for many types
-    } else if (typeCount <= 8) {
-      GRID_COLS = 3;  // Use 3 columns for fewer types
-    } else if (typeCount <= 4) {
-      GRID_COLS = 2;  // Use 2 columns for very few types
+    debugLog(`Processing ${sortedTypeNames.length} types in ${GRID_COLS} columns`);
+    
+    // First pass: calculate all type heights for better layout
+    const typeHeights = new Map();
+    sortedTypeNames.forEach(typeName => {
+      const fields = schemaModel.fields[typeName] || [];
+      const fieldsHeight = Math.max(fields.length * FIELD_HEIGHT, 60);
+      const totalHeight = Math.max(MIN_TYPE_HEIGHT, HEADER_HEIGHT + fieldsHeight + PADDING * 2);
+      typeHeights.set(typeName, totalHeight);
+    });
+    
+    // Calculate dynamic row heights for better spacing
+    const rowHeights = [];
+    for (let row = 0; row < Math.ceil(sortedTypeNames.length / GRID_COLS); row++) {
+      let maxHeightInRow = MIN_TYPE_HEIGHT;
+      for (let col = 0; col < GRID_COLS; col++) {
+        const index = row * GRID_COLS + col;
+        if (index < sortedTypeNames.length) {
+          const typeName = sortedTypeNames[index];
+          maxHeightInRow = Math.max(maxHeightInRow, typeHeights.get(typeName));
+        }
+      }
+      rowHeights.push(maxHeightInRow);
     }
     
-    debugLog(`Processing ${sortedTypeNames.length} types`);
-    
     // Create elements for each type
+    const typeElements = new Map();
+    
     sortedTypeNames.forEach((typeName, index) => {
       const typeInfo = schemaModel.types[typeName];
       const fields = schemaModel.fields[typeName] || [];
       
       debugLog(`Processing type ${typeName} with ${fields.length} fields`);
       
-      // Calculate height based on number of fields (with minimum height)
-      const height = Math.max(TYPE_HEIGHT_MIN, HEADER_HEIGHT + (fields.length * FIELD_HEIGHT) + PADDING/2);
-      
-      // Calculate type's position using a force-directed approach
+      // Calculate position with dynamic spacing
       const col = index % GRID_COLS;
       const row = Math.floor(index / GRID_COLS);
+      const x = col * (TYPE_WIDTH + BASE_SPACING_X) + 50;
       
-      // Create a more organic layout with variable spacing
-      // Add more pronounced staggering to rows to create better visual separation
-      const staggerX = (row % 2) * (TYPE_WIDTH / 3);
-      // Use a much wider horizontal spacing for better readability
-      const x = col * (TYPE_WIDTH + PADDING * 2) + PADDING + staggerX;
-      
-      // Use the actual height of each type to prevent vertical overlaps
-      // Calculate the maximum height of all types in previous row
-      let prevRowMaxHeight = TYPE_HEIGHT_MIN;
-      if (row > 0) {
-        // Look at all items in the previous row to find the tallest one
-        const prevRowStart = (row - 1) * GRID_COLS;
-        const prevRowEnd = Math.min(prevRowStart + GRID_COLS, sortedTypeNames.length);
-        
-        for (let i = prevRowStart; i < prevRowEnd; i++) {
-          if (i >= sortedTypeNames.length) break;
-          const prevTypeName = sortedTypeNames[i];
-          const prevFields = schemaModel.fields[prevTypeName] || [];
-          const prevHeight = Math.max(TYPE_HEIGHT_MIN, HEADER_HEIGHT + (prevFields.length * FIELD_HEIGHT) + PADDING/2);
-          prevRowMaxHeight = Math.max(prevRowMaxHeight, prevHeight);
-        }
-      }
-      
-      // Accumulate y-position based on heights of previous rows
-      let y = PADDING;
+      // Calculate y position based on previous row heights
+      let y = 50;
       for (let r = 0; r < row; r++) {
-        // Find max height in this row
-        let rowMaxHeight = TYPE_HEIGHT_MIN;
-        const rowStart = r * GRID_COLS;
-        const rowEnd = Math.min(rowStart + GRID_COLS, index);
-        
-        for (let i = rowStart; i < rowEnd; i++) {
-          if (i >= sortedTypeNames.length) break;
-          const rowTypeInfo = schemaModel.types[sortedTypeNames[i]];
-          const rowFields = schemaModel.fields[sortedTypeNames[i]] || [];
-          const rowHeight = Math.max(TYPE_HEIGHT_MIN, HEADER_HEIGHT + (rowFields.length * FIELD_HEIGHT) + PADDING/2);
-          rowMaxHeight = Math.max(rowMaxHeight, rowHeight);
-        }
-        
-        y += rowMaxHeight + MIN_BOX_SPACING;
+        y += rowHeights[r] + MIN_SPACING_BUFFER;
       }
       
-      // Create the type element
-      const typeElement = new joint.shapes.custom.TypeBox({
+      // Get the calculated height for this type
+      const totalHeight = typeHeights.get(typeName);
+      
+      // Create type element using standard rectangle
+      const typeElement = new joint.shapes.standard.Rectangle({
         position: { x, y },
-        size: { width: TYPE_WIDTH, height },
+        size: { width: TYPE_WIDTH, height: totalHeight },
         attrs: {
-          typeName: { text: typeName },
-          divider: { d: `M 0 ${HEADER_HEIGHT} L ${TYPE_WIDTH} ${HEADER_HEIGHT}` }
+          root: {
+            title: typeName
+          },
+          body: {
+            fill: isDarkTheme ? '#2d2d2d' : '#ffffff',
+            stroke: isDarkTheme ? '#6b6b6b' : '#333333',
+            strokeWidth: 2,
+            rx: 8,
+            ry: 8
+          },
+          label: {
+            text: typeName,
+            fontSize: 16,
+            fontWeight: 'bold',
+            fill: isDarkTheme ? '#ffffff' : '#000000',
+            textAnchor: 'middle',
+            textVerticalAnchor: 'top',
+            y: 10
+          }
         }
       });
       
-      // Store type data for navigation
-      typeElement.prop('typeData', {
-        typeName: typeName,
-        location: typeInfo.location
-      });
-      
-      // Create a fields container element
-      const fieldsDiv = document.createElement('div');
-      fieldsDiv.style.width = '100%';
-      fieldsDiv.style.height = '100%';
-      fieldsDiv.style.paddingTop = '40px';
-      fieldsDiv.style.paddingLeft = '15px';
-      fieldsDiv.style.paddingRight = '15px';
-      fieldsDiv.style.paddingBottom = '15px';
-      fieldsDiv.style.overflow = 'hidden';
-      fieldsDiv.style.boxSizing = 'border-box';
-      fieldsDiv.style.color = isDarkTheme ? '#e4e4e4' : '#333333';
-      
-      // Add field elements
-      fields.forEach((field, fieldIndex) => {
-        const fieldText = `${field.name}: ${field.isList ? '[' : ''}${field.type}${field.isList ? ']' : ''}`;
-        
-        const fieldElem = document.createElement('div');
-        fieldElem.textContent = fieldText;
-        fieldElem.style.font = '12px monospace';
-        fieldElem.style.color = isDarkTheme ? '#e4e4e4' : '#333333';
-        fieldElem.style.cursor = 'pointer';
-        fieldElem.style.marginBottom = '10px';
-        fieldElem.style.whiteSpace = 'nowrap';
-        fieldElem.style.overflow = 'hidden';
-        fieldElem.style.textOverflow = 'ellipsis';
-        fieldElem.style.padding = '2px 0';
-        fieldElem.dataset.fieldIndex = fieldIndex;
-        
-        fieldsDiv.appendChild(fieldElem);
-        
-        // Store field location for navigation
-        typeElement.prop(`field${fieldIndex}Data`, {
-          fieldName: field.name,
-          location: field.location
+              // Store type data for navigation
+        typeElement.prop('typeData', {
+          typeName: typeName,
+          location: typeInfo.location,
+          fields: fields
         });
-      });
+        
+        // Add to graph
+        graph.addCell(typeElement);
+        typeElements.set(typeName, typeElement);
       
-      // Set the fields content
-      typeElement.attr('fields', {
-        refWidth: '100%',
-        refHeight: '100%',
-        html: fieldsDiv.outerHTML
-      });
-      
-      graph.addCell(typeElement);
+                      // Store field elements for this type
+        const fieldElements = [];
+        
+        // Create field labels as separate text elements
+        fields.forEach((field, fieldIndex) => {
+          const fieldText = `${field.name}: ${field.isList ? '[' : ''}${field.type}${field.isList ? ']' : ''}`;
+          const fieldY = y + HEADER_HEIGHT + (fieldIndex * FIELD_HEIGHT) + 10;
+          
+          const fieldElement = new joint.shapes.standard.TextBlock({
+            position: { x: x + 10, y: fieldY },
+            size: { width: TYPE_WIDTH - 20, height: FIELD_HEIGHT },
+            attrs: {
+              body: {
+                fill: 'transparent',
+                stroke: 'none'
+              },
+              label: {
+                text: fieldText,
+                fontSize: 12,
+                fontFamily: 'Monaco, Menlo, monospace',
+                fill: isDarkTheme ? '#e4e4e4' : '#333333',
+                textAnchor: 'start',
+                textVerticalAnchor: 'middle'
+              }
+            }
+          });
+          
+          // Store field data for navigation
+          fieldElement.prop('fieldData', {
+            fieldName: field.name,
+            location: field.location,
+            parentType: typeName,
+            parentTypeElement: typeElement,
+            relativePosition: { x: 10, y: HEADER_HEIGHT + (fieldIndex * FIELD_HEIGHT) + 10 }
+          });
+          
+          fieldElements.push(fieldElement);
+          graph.addCell(fieldElement);
+        });
+        
+        // Store field elements in the type element for easy access
+        typeElement.prop('fieldElements', fieldElements);
     });
     
     debugLog("Creating relationship links");
     
     // Create links for relationships
     schemaModel.relationships.forEach(rel => {
-      // Find the source and target elements
-      const sourceElement = graph.getElements().find(el => el.prop('typeData')?.typeName === rel.fromType);
-      const targetElement = graph.getElements().find(el => el.prop('typeData')?.typeName === rel.toType);
+      const sourceElement = typeElements.get(rel.fromType);
+      const targetElement = typeElements.get(rel.toType);
       
       if (sourceElement && targetElement) {
-        // Use standard.Link with simpler configuration
         const link = new joint.shapes.standard.Link({
           source: { id: sourceElement.id },
           target: { id: targetElement.id },
-          router: { 
-                name: 'manhattan', 
-                args: {
-                  padding: 70,  // Very large padding to prevent line overlap with boxes
-                  startDirections: ['right', 'bottom', 'top', 'left'],
-                  endDirections: ['left', 'top', 'bottom', 'right'],
-                  step: 30,     // Even larger step size for cleaner routing
-                  maximumLoops: 4000,  // Allow even more attempts to find a valid path
-                  excludeTypes: ['element'], // Don't route through other elements
-                  excludeEnds: ['source', 'target'], // Don't route through source/target elements
-                  fallbackRoute: function(vertices) {
-                    // Add some fallback vertices if routing fails
-                    return vertices.concat([
-                      { x: vertices[0].x + 100, y: vertices[0].y + 100 },
-                      { x: vertices[vertices.length-1].x - 100, y: vertices[vertices.length-1].y - 100 }
-                    ]);
-                  }
-                }
-              },
+          router: { name: 'orthogonal' },
           connector: { name: 'rounded' },
           attrs: {
             line: {
-              stroke: '#555555',
+              stroke: isDarkTheme ? '#888888' : '#666666',
               strokeWidth: 2,
-              strokeDasharray: '5 3',  // More visible dashed line
+              strokeDasharray: '5,5',
               targetMarker: {
                 'type': 'path',
                 'd': 'M 10 -5 0 0 10 5 z',
-                'fill': '#555555'      // Match arrow color to line
+                'fill': isDarkTheme ? '#888888' : '#666666'
               }
             }
           },
-          labels: [
-            {
-              position: 0.5,
-              attrs: {
-                text: {
-                  text: rel.fieldName,
-                  fill: isDarkTheme ? '#ffffff' : '#333333',
-                  fontSize: 11,
-                  fontWeight: 'bold'
-                },
-                rect: {
-                  fill: isDarkTheme ? '#3d3d3d' : 'white',
-                  stroke: isDarkTheme ? '#6b6b6b' : '#999999',
-                  strokeWidth: 1,
-                  rx: 3,
-                  ry: 3,
-                  padding: 5
-                }
+          labels: [{
+            position: 0.5,
+            attrs: {
+              text: {
+                text: rel.fieldName,
+                fill: isDarkTheme ? '#ffffff' : '#333333',
+                fontSize: 11,
+                fontWeight: 'bold'
+              },
+              rect: {
+                fill: isDarkTheme ? '#3d3d3d' : 'white',
+                stroke: isDarkTheme ? '#6b6b6b' : '#999999',
+                strokeWidth: 1,
+                rx: 3,
+                ry: 3
               }
             }
-          ]
+          }]
         });
         
         graph.addCell(link);
@@ -376,6 +309,27 @@
     });
     
     debugLog("All relationships created");
+    
+    // Handle type box movement - move field elements with their parent
+    graph.on('change:position', function(element) {
+      const typeData = element.prop('typeData');
+      if (typeData) {
+        // This is a type element that moved
+        const fieldElements = element.prop('fieldElements') || [];
+        const newPosition = element.position();
+        
+        fieldElements.forEach(fieldElement => {
+          const fieldData = fieldElement.prop('fieldData');
+          if (fieldData && fieldData.relativePosition) {
+            const newFieldPosition = {
+              x: newPosition.x + fieldData.relativePosition.x,
+              y: newPosition.y + fieldData.relativePosition.y
+            };
+            fieldElement.position(newFieldPosition.x, newFieldPosition.y);
+          }
+        });
+      }
+    });
     
     // Function to navigate to a file location
     function navigateToLocation(location) {
@@ -391,294 +345,323 @@
     paper.on('element:pointerclick', function(elementView, evt) {
       const element = elementView.model;
       
-      // Check if the click was on a type header (for type navigation)
-      const typeData = element.prop('typeData');
-      if (!typeData) return;
-      
-      // Find the target element that was clicked
-      const target = evt.target;
-      
-      // Check if it's a field (matches data-field-index attribute)
-      if (target.hasAttribute && target.hasAttribute('data-field-index')) {
-        const fieldIndex = target.getAttribute('data-field-index');
-        const fieldData = element.prop(`field${fieldIndex}Data`);
-        
-        if (fieldData && fieldData.location) {
-          navigateToLocation(fieldData.location);
-        }
+      // Check for field data first
+      const fieldData = element.prop('fieldData');
+      if (fieldData && fieldData.location) {
+        navigateToLocation(fieldData.location);
         return;
       }
       
-      // Check if click was on header by position
-      const position = paper.clientToLocalPoint({ x: evt.clientX, y: evt.clientY });
-      const elementPosition = element.position();
-      const relativeY = position.y - elementPosition.y;
-      
-      if (relativeY <= HEADER_HEIGHT && typeData.location) {
+      // Check for type data
+      const typeData = element.prop('typeData');
+      if (typeData && typeData.location) {
         navigateToLocation(typeData.location);
+        return;
       }
     });
     
     // Zoom controls
     document.getElementById('zoom-in').addEventListener('click', () => {
-      const zoom = paper.scale();
-      paper.scale(zoom.sx * 1.2, zoom.sy * 1.2);
+      const currentScale = paper.scale();
+      paper.scale(currentScale.sx * 1.2, currentScale.sy * 1.2);
     });
     
     document.getElementById('zoom-out').addEventListener('click', () => {
-      const zoom = paper.scale();
-      paper.scale(zoom.sx / 1.2, zoom.sy / 1.2);
+      const currentScale = paper.scale();
+      paper.scale(currentScale.sx / 1.2, currentScale.sy / 1.2);
     });
     
     document.getElementById('reset').addEventListener('click', () => {
-      paper.scale(0.8, 0.8);
-      paper.translate(50, 30);
+      paper.scale(1, 1);
+      paper.translate(0, 0);
+      
+      // Clear search
+      searchInput.value = '';
+      searchResults = [];
+      currentSearchIndex = 0;
+      const searchCount = document.getElementById('search-count');
+      if (searchCount) {
+        searchCount.style.display = 'none';
+      }
+      
+      // Reset all element styles
+      graph.getElements().forEach(element => {
+        element.attr('body/stroke', isDarkTheme ? '#6b6b6b' : '#333333');
+        element.attr('body/strokeWidth', 2);
+        element.attr('body/fillOpacity', 1);
+        element.attr('body/filter', null);
+      });
+    });
+    
+    // Refresh functionality
+    document.getElementById('refresh').addEventListener('click', () => {
+      debugLog('Refresh button clicked');
+      vscode.postMessage({
+        command: 'refresh-schema',
+        message: 'User requested schema refresh'
+      });
+    });
+    
+    // Simple panning implementation
+    let isPanning = false;
+    let startPoint = { x: 0, y: 0 };
+    let startTranslate = { tx: 0, ty: 0 };
+    
+    paper.on('blank:pointerdown', function(evt) {
+      isPanning = true;
+      startPoint = { x: evt.clientX, y: evt.clientY };
+      startTranslate = paper.translate();
+      paper.el.style.cursor = 'grabbing';
+    });
+    
+    document.addEventListener('pointermove', function(evt) {
+      if (!isPanning) return;
+      
+      const dx = evt.clientX - startPoint.x;
+      const dy = evt.clientY - startPoint.y;
+      
+      paper.translate(startTranslate.tx + dx, startTranslate.ty + dy);
+    });
+    
+    document.addEventListener('pointerup', function() {
+      if (isPanning) {
+        isPanning = false;
+        paper.el.style.cursor = 'default';
+      }
+    });
+    
+    // Mouse wheel zoom
+    paper.el.addEventListener('wheel', function(evt) {
+      evt.preventDefault();
+      
+      const currentScale = paper.scale();
+      const delta = evt.deltaY > 0 ? 0.9 : 1.1; // Zoom out or in
+      const newScale = Math.max(0.1, Math.min(3, currentScale.sx * delta)); // Limit zoom range
+      
+      // Get mouse position relative to paper
+      const rect = paper.el.getBoundingClientRect();
+      const mouseX = evt.clientX - rect.left;
+      const mouseY = evt.clientY - rect.top;
+      
+      // Calculate zoom center point
+      const currentTranslate = paper.translate();
+      const zoomCenterX = (mouseX - currentTranslate.tx) / currentScale.sx;
+      const zoomCenterY = (mouseY - currentTranslate.ty) / currentScale.sy;
+      
+      // Apply zoom
+      paper.scale(newScale, newScale);
+      
+      // Adjust translation to keep zoom centered on mouse
+      const newTranslateX = mouseX - zoomCenterX * newScale;
+      const newTranslateY = mouseY - zoomCenterY * newScale;
+      paper.translate(newTranslateX, newTranslateY);
     });
     
     // Search functionality
     const searchInput = document.getElementById('search');
-    let lastHighlightedElements = [];
-    let currentHighlightIndex = 0;
-    let debounceTimer;
+    let searchResults = [];
+    let currentSearchIndex = 0;
     
-    // Execute search with debouncing
-    searchInput.addEventListener('input', () => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => performSearch(), 150);
-    });
-    
-    // Add next/prev buttons next to search box if they don't exist
+    // Add search navigation buttons
     if (!document.getElementById('search-next')) {
       const toolbar = document.getElementById('toolbar');
-      const searchInput = document.getElementById('search');
+      const searchContainer = searchInput.parentElement;
       
       const nextButton = document.createElement('button');
       nextButton.id = 'search-next';
       nextButton.textContent = '↓';
       nextButton.title = 'Next match';
-      nextButton.addEventListener('click', () => navigateSearch(1));
       
       const prevButton = document.createElement('button');
       prevButton.id = 'search-prev';
       prevButton.textContent = '↑';
       prevButton.title = 'Previous match';
-      prevButton.addEventListener('click', () => navigateSearch(-1));
       
-      // Insert buttons after search input
-      searchInput.insertAdjacentElement('afterend', nextButton);
-      searchInput.insertAdjacentElement('afterend', prevButton);
-      
-      // Add search count display
       const searchCount = document.createElement('span');
       searchCount.id = 'search-count';
-      searchCount.style.padding = '0 8px';
-      searchCount.style.fontSize = '12px';
-      searchCount.style.minWidth = '80px';
       searchCount.style.display = 'none';
-      toolbar.appendChild(searchCount);
+      
+      searchContainer.appendChild(prevButton);
+      searchContainer.appendChild(nextButton);
+      searchContainer.appendChild(searchCount);
+      
+      nextButton.addEventListener('click', () => navigateSearch(1));
+      prevButton.addEventListener('click', () => navigateSearch(-1));
     }
     
-    // Function to perform the search
     function performSearch() {
       const searchTerm = searchInput.value.trim().toLowerCase();
       const searchCount = document.getElementById('search-count');
       
       // Reset previous highlights
-      lastHighlightedElements.forEach(element => {
-        element.attr('body/stroke', isDarkTheme ? '#6b6b6b' : '#000000');
-        element.attr('body/strokeWidth', 1);
-      });
-      lastHighlightedElements = [];
-      currentHighlightIndex = 0;
-      
-      // Reset all elements to normal appearance
       graph.getElements().forEach(element => {
-        element.attr('body/stroke', isDarkTheme ? '#6b6b6b' : '#000000');
-        element.attr('body/strokeWidth', 1);
+        element.attr('body/stroke', isDarkTheme ? '#6b6b6b' : '#333333');
+        element.attr('body/strokeWidth', 2);
         element.attr('body/fillOpacity', 1);
+        element.attr('body/filter', null); // Remove any glow effects
       });
       
-      // Hide search count if no search term
       if (!searchTerm) {
+        searchResults = [];
         searchCount.style.display = 'none';
         return;
       }
       
       // Find matching elements
-      const matchingElements = graph.getElements().filter(element => {
+      searchResults = graph.getElements().filter(element => {
         const typeData = element.prop('typeData');
-        if (!typeData) return false;
+        const fieldData = element.prop('fieldData');
         
-        // Check if type name matches
-        const typeName = typeData.typeName.toLowerCase();
-        if (typeName.includes(searchTerm)) return true;
+        if (typeData) {
+          const typeName = typeData.typeName.toLowerCase();
+          if (typeName.includes(searchTerm)) return true;
+          
+          const fields = typeData.fields || [];
+          return fields.some(field => 
+            field.name.toLowerCase().includes(searchTerm) || 
+            field.type.toLowerCase().includes(searchTerm)
+          );
+        }
         
-        // Check if any field names match
-        const fields = schemaModel.fields[typeData.typeName] || [];
-        return fields.some(field => 
-          field.name.toLowerCase().includes(searchTerm) || 
-          field.type.toLowerCase().includes(searchTerm)
-        );
+        if (fieldData) {
+          return fieldData.fieldName.toLowerCase().includes(searchTerm);
+        }
+        
+        return false;
       });
       
-      // Highlight matching elements and dim others
-      if (matchingElements.length > 0) {
-        // Update search count
-        searchCount.textContent = `${matchingElements.length} match${matchingElements.length === 1 ? '' : 'es'}`;
+      if (searchResults.length > 0) {
+        searchCount.textContent = `${searchResults.length} match${searchResults.length === 1 ? '' : 'es'}`;
         searchCount.style.display = 'inline';
-        
-        // Dim non-matching elements
-        graph.getElements().forEach(element => {
-          if (!matchingElements.includes(element)) {
-            element.attr('body/fillOpacity', 0.3);
-          }
-        });
-        
-        // Save all matches
-        lastHighlightedElements = matchingElements;
-        
-        // Highlight and focus on the first match
-        highlightAndFocusElement(matchingElements[0]);
+        currentSearchIndex = 0;
+        highlightSearchResult(0);
       } else {
-        // No matches found
         searchCount.textContent = 'No matches';
         searchCount.style.display = 'inline';
       }
     }
     
-    // Function to navigate between search results
     function navigateSearch(direction) {
-      if (lastHighlightedElements.length === 0) return;
+      if (searchResults.length === 0) return;
       
-      // Update current index
-      currentHighlightIndex = (currentHighlightIndex + direction + lastHighlightedElements.length) % lastHighlightedElements.length;
+      currentSearchIndex = (currentSearchIndex + direction + searchResults.length) % searchResults.length;
+      highlightSearchResult(currentSearchIndex);
+    }
+    
+    function highlightSearchResult(index) {
+      if (index < 0 || index >= searchResults.length) return;
       
-      // Reset all highlights
-      lastHighlightedElements.forEach(element => {
-        element.attr('body/stroke', isDarkTheme ? '#6b6b6b' : '#000000');
-        element.attr('body/strokeWidth', 1);
+      // Reset all highlights and filters
+      graph.getElements().forEach(element => {
+        element.attr('body/stroke', isDarkTheme ? '#6b6b6b' : '#333333');
+        element.attr('body/strokeWidth', 2);
+        element.attr('body/fillOpacity', 1);
+        element.attr('body/filter', null);
       });
       
-      // Highlight and focus the current element
-      highlightAndFocusElement(lastHighlightedElements[currentHighlightIndex]);
-    }
-    
-    // Function to highlight and focus on an element
-    function highlightAndFocusElement(element) {
-      // Highlight the element
-      const highlightColor = isDarkTheme ? '#4d9fff' : '#ff5722';
-      element.attr('body/stroke', highlightColor);
-      element.attr('body/strokeWidth', 3);
-      
-      // Scroll to the element
-      const position = element.position();
-      const size = element.size();
-      
-      paper.translate(
-        (paper.el.clientWidth / 2) - (position.x + size.width / 2),
-        (paper.el.clientHeight / 2) - (position.y + size.height / 2)
-      );
-    }
-    
-    // Add keyboard shortcuts for search navigation
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' && document.activeElement === searchInput) {
-        if (event.shiftKey) {
-          navigateSearch(-1); // Previous match
-        } else {
-          navigateSearch(1);  // Next match
+      // Dim all non-matching elements
+      graph.getElements().forEach(element => {
+        if (!searchResults.includes(element)) {
+          element.attr('body/fillOpacity', 0.3);
         }
+      });
+      
+      // Only highlight the current result (not all matches)
+      const currentElement = searchResults[index];
+      currentElement.attr('body/stroke', '#ff5722');
+      currentElement.attr('body/strokeWidth', 4);
+      currentElement.attr('body/fillOpacity', 1);
+      
+      // Add a subtle glow effect to current result
+      currentElement.attr('body/filter', 'drop-shadow(0 0 8px rgba(255, 87, 34, 0.6))');
+      
+      // Center on current element
+      const bbox = currentElement.getBBox();
+      const paperSize = paper.getComputedSize();
+      const scale = paper.scale();
+      
+      const tx = (paperSize.width / 2) - (bbox.x + bbox.width / 2) * scale.sx;
+      const ty = (paperSize.height / 2) - (bbox.y + bbox.height / 2) * scale.sy;
+      
+      paper.translate(tx, ty);
+      
+      // Update search count to show current position
+      const searchCount = document.getElementById('search-count');
+      if (searchCount) {
+        searchCount.textContent = `${index + 1} of ${searchResults.length}`;
       }
-    });
-    
-    // Wait a moment for the graph to render before calculating dimensions
-  setTimeout(() => {
-    // Calculate the total graph dimensions
-    const graphSize = graph.getBBox();
-    
-    // Get viewport dimensions
-    const viewportWidth = paper.el.clientWidth;
-    const viewportHeight = paper.el.clientHeight;
-      
-    // Add margins around the graph
-    const marginX = viewportWidth * 0.15;
-    const marginY = viewportHeight * 0.15;
-      
-    // Choose a scale that ensures most content is visible
-    const scaleX = Math.min(0.9, (viewportWidth - marginX) / graphSize.width);
-    const scaleY = Math.min(0.9, (viewportHeight - marginY) / graphSize.height);
-      
-    // Use a scale that ensures the entire graph fits, but don't make it too small
-    // For very large graphs, we'll allow some scrolling rather than making everything tiny
-    const scale = Math.max(0.35, Math.min(scaleX, scaleY, 0.85));
-      
-    // Check if we have lots of types that need more spacing
-    const typeCount = sortedTypeNames.length;
-    if (typeCount > 15) {
-      // For very large schemas, scale a bit more aggressively
-      paper.scale(Math.max(0.3, scale * 0.9), Math.max(0.3, scale * 0.9));
-    } else {
-      paper.scale(scale, scale);
     }
-      
-    // Center the graph in the view
-    // Calculate centering translations with padding
-    const initialTranslateX = (viewportWidth - graphSize.width * scale) / 2;
-    const initialTranslateY = (viewportHeight - graphSize.height * scale) / 2;
-      
-    // Ensure we have a minimum offset from the top-left
-    paper.translate(Math.max(80, initialTranslateX), Math.max(60, initialTranslateY));
-      
-    debugLog(`Graph scaled to ${scale.toFixed(2)} and centered`);
-  }, 300); // Even longer delay to ensure all elements are rendered
     
-    // Make the graph draggable
-    let dragStartPosition = null;
-    
-    paper.on('blank:pointerdown', function(evt, x, y) {
-      dragStartPosition = { x, y };
+    // Search input event
+    let searchTimeout;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(performSearch, 300);
     });
     
-    paper.on('blank:pointermove', function(evt, x, y) {
-      if (dragStartPosition) {
-        const tx = paper.translate();
-        paper.translate(
-          tx.tx + (x - dragStartPosition.x),
-          tx.ty + (y - dragStartPosition.y)
-        );
-        dragStartPosition = { x, y };
+    // Keyboard shortcuts
+    searchInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        if (event.shiftKey) {
+          navigateSearch(-1);
+        } else {
+          navigateSearch(1);
+        }
+        event.preventDefault();
       }
     });
     
-    paper.on('blank:pointerup', function() {
-      dragStartPosition = null;
-    });
+    // Initial layout and scaling
+    setTimeout(() => {
+      const bbox = graph.getBBox();
+      if (bbox.width > 0 && bbox.height > 0) {
+        const paperSize = paper.getComputedSize();
+        const padding = 100;
+        
+        const scaleX = (paperSize.width - padding) / bbox.width;
+        const scaleY = (paperSize.height - padding) / bbox.height;
+        const scale = Math.min(scaleX, scaleY, 1); // Don't scale up
+        
+        paper.scale(scale, scale);
+        
+        const scaledBBox = {
+          width: bbox.width * scale,
+          height: bbox.height * scale
+        };
+        
+        const tx = (paperSize.width - scaledBBox.width) / 2 - bbox.x * scale;
+        const ty = (paperSize.height - scaledBBox.height) / 2 - bbox.y * scale;
+        
+        paper.translate(tx, ty);
+        
+        debugLog(`Initial layout: scale=${scale.toFixed(2)}, translate=(${tx.toFixed(0)}, ${ty.toFixed(0)})`);
+      }
+    }, 100);
     
     // Focus on selected type if provided
     if (focusedType) {
-      const focusedElement = graph.getElements().find(el => 
-        el.prop('typeData')?.typeName === focusedType
-      );
-      
-      if (focusedElement) {
-        // Highlight and center on the focused element
-        focusedElement.attr('body/stroke', '#ff0000');
-        focusedElement.attr('body/strokeWidth', 2);
-        
-        const position = focusedElement.position();
-        const size = focusedElement.size();
-        
-        paper.translate(
-          (paper.el.clientWidth / 2) - (position.x + size.width / 2),
-          (paper.el.clientHeight / 2) - (position.y + size.height / 2)
-        );
-      }
+      setTimeout(() => {
+        const focusedElement = typeElements.get(focusedType);
+        if (focusedElement) {
+          focusedElement.attr('body/stroke', '#ff0000');
+          focusedElement.attr('body/strokeWidth', 4);
+          
+          const bbox = focusedElement.getBBox();
+          const paperSize = paper.getComputedSize();
+          const scale = paper.scale();
+          
+          const tx = (paperSize.width / 2) - (bbox.x + bbox.width / 2) * scale.sx;
+          const ty = (paperSize.height / 2) - (bbox.y + bbox.height / 2) * scale.sy;
+          
+          paper.translate(tx, ty);
+        }
+      }, 200);
     }
     
     debugLog("Schema visualization completed successfully");
     
-  } catch (error) {
-    debugLog(`Error in schema visualization: ${error.message}`);
-    console.error(error);
-  }
+      } catch (error) {
+      debugLog(`Error in schema visualization: ${error.message}`);
+      displayErrorMessage(`Visualization error: ${error.message}`);
+    }
 })();

@@ -8,6 +8,7 @@ import { openSchemaVisualizerPanel } from "../panels/schemaVisualizerPanel";
 import { EXTENSION_URI } from "../extension";
 import { services } from "../services";
 import { handleError } from "../errors";
+import { MESSAGES } from "../utils/constants";
 
 /**
  * Opens the schema visualizer panel.
@@ -20,9 +21,21 @@ export async function openSchemaVisualizer(
   context: vscode.ExtensionContext,
   focusedType?: string,
 ) {
+  // Check workspace trust
+  if (!vscode.workspace.isTrusted) {
+    vscode.window.showWarningMessage(MESSAGES.FEATURE_NOT_AVAILABLE_UNTRUSTED);
+    return;
+  }
+
+  // Check if workspace is open
+  if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length === 0) {
+    vscode.window.showErrorMessage(MESSAGES.NO_WORKSPACE_OPEN);
+    return;
+  }
+
   try {
     services.logger.info(
-      `Opening Schema Visualizer command${focusedType ? ` focused on type: ${focusedType}` : ""}`,
+      `Opening Schema Visualizer${focusedType ? ` focused on type: ${focusedType}` : ""}`,
     );
     
     const extensionUri = EXTENSION_URI || context.extensionUri;

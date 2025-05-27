@@ -132,6 +132,10 @@ export const MESSAGES = {
   FOUND_SDL_WITHOUT_EXECUTABLES: "Found SDL directive without executables in index.graphql. Adding executables array.",
   COULD_NOT_FIND_SDL_DIRECTIVE: "Could not find @sdl directive in index.graphql. Please add the generated operations manually.",
   STEPZEN_PROJECT_DESCRIPTION: "A StepZen project should contain a <code>stepzen.config.json</code> file and an <code>index.graphql</code> file.",
+  SCHEMA_VISUALIZER_NO_TYPES_FOUND: "No Schema Types Found",
+  SCHEMA_VISUALIZER_NO_TYPES_DESCRIPTION: "The schema visualizer could not find any GraphQL types to display. This might happen if your schema files are empty or contain only directives.",
+  SCHEMA_VISUALIZER_LOADING: "Loading schema data...",
+  SCHEMA_VISUALIZER_ERROR_TITLE: "Schema Visualization Error",
 } as const;
 
 // Type definitions for better type safety
