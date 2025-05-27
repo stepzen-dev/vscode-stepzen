@@ -2,7 +2,6 @@
  * Test utilities for the StepZen extension tests
  */
 
-
 /**
  * Creates a mock object with the specified properties and methods
  * 
