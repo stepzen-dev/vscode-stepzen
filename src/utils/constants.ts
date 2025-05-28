@@ -17,6 +17,7 @@ export const COMMANDS = {
   ADD_DIRECTIVE: "stepzen.addDirective",
   ADD_MATERIALIZER: "stepzen.addMaterializer",
   ADD_VALUE: "stepzen.addValue",
+  ADD_TOOL: "stepzen.addTool",
   RUN_OPERATION: "stepzen.runOperation",
   RUN_PERSISTED: "stepzen.runPersisted",
   CLEAR_RESULTS: "stepzen.clearResults",

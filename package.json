@@ -66,6 +66,11 @@
         "category": "StepZen"
       },
       {
+        "command": "stepzen.addTool",
+        "title": "Add Tool Directive",
+        "category": "StepZen"
+      },
+      {
         "command": "stepzen.openSchemaVisualizer",
         "title": "Open Schema Visualizer",
         "category": "StepZen"

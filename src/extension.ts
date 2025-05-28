@@ -220,6 +220,10 @@ export async function activate(context: vscode.ExtensionContext) {
       const { addValue } = await import("./commands/addValue.js");
       return addValue();
     }),
+    safeRegisterCommand(COMMANDS.ADD_TOOL, async () => {
+      const { addTool } = await import("./commands/addTool.js");
+      return addTool();
+    }),
     safeRegisterCommand(COMMANDS.RUN_OPERATION, async (...args: unknown[]) => {
       const { runOperation } = await import("./commands/runRequest.js");
       return runOperation(args[0] as any);
