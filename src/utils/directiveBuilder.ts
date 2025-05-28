@@ -8,6 +8,7 @@ import * as vscode from 'vscode';
 /**
  * Represents a directive argument with its name and value
  */
+// ts-prune-ignore-next
 export interface DirectiveArgument {
   name: string;
   value: string | number | boolean | object | DirectiveArgument[];
@@ -17,6 +18,7 @@ export interface DirectiveArgument {
 /**
  * Configuration for building a directive
  */
+// ts-prune-ignore-next
 export interface DirectiveConfig {
   name: string; // Directive name (without @)
   arguments: DirectiveArgument[];
@@ -26,6 +28,7 @@ export interface DirectiveConfig {
 /**
  * Options for directive insertion
  */
+// ts-prune-ignore-next
 export interface DirectiveInsertOptions {
   position?: vscode.Position; // Where to insert (defaults to line after cursor)
   baseIndent?: string; // Base indentation (auto-detected if not provided)

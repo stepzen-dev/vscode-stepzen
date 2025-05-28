@@ -165,6 +165,4 @@ export const MESSAGES = {
 // Type definitions for better type safety
 export type GraphQLOperationType = typeof GRAPHQL.ROOT_OPERATION_TYPES[number];
 export type GraphQLScalarType = typeof GRAPHQL.SCALAR_TYPES[number];
-export type StepZenScalarType = typeof GRAPHQL.STEPZEN_SCALAR_TYPES[number];
-export type AllScalarType = typeof GRAPHQL.ALL_SCALAR_TYPES[number];
 
