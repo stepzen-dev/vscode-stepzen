@@ -14,7 +14,9 @@ export const COMMANDS = {
   RUN_REQUEST: "stepzen.runRequest",
   OPEN_EXPLORER: "stepzen.openExplorer",
   GO_TO_DEFINITION: "stepzen.goToDefinition",
+  ADD_DIRECTIVE: "stepzen.addDirective",
   ADD_MATERIALIZER: "stepzen.addMaterializer",
+  ADD_VALUE: "stepzen.addValue",
   RUN_OPERATION: "stepzen.runOperation",
   RUN_PERSISTED: "stepzen.runPersisted",
   CLEAR_RESULTS: "stepzen.clearResults",
@@ -92,8 +94,12 @@ export const TIMEOUTS = {
 export const GRAPHQL = {
   /** Root GraphQL operation types */
   ROOT_OPERATION_TYPES: ["Query", "Mutation", "Subscription"] as const,
-  /** Built-in scalar types */
+  /** Built-in GraphQL scalar types */
   SCALAR_TYPES: ["String", "Int", "Float", "Boolean", "ID"] as const,
+  /** StepZen-specific scalar types */
+  STEPZEN_SCALAR_TYPES: ["Date", "DateTime", "JSON", "Secret"] as const,
+  /** All scalar types (built-in + StepZen) */
+  ALL_SCALAR_TYPES: ["String", "Int", "Float", "Boolean", "ID", "Date", "DateTime", "JSON", "Secret"] as const,
   /** Operation type patterns for regex matching */
   OPERATION_TYPE_PATTERN: /(query|mutation|subscription)\s+(\w+)/g,
 } as const;

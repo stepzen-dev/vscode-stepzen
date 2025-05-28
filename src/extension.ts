@@ -208,9 +208,17 @@ export async function activate(context: vscode.ExtensionContext) {
       const { goToDefinition } = await import("./commands/goToDefinition.js");
       return goToDefinition();
     }),
+    safeRegisterCommand(COMMANDS.ADD_DIRECTIVE, async () => {
+      const { addDirective } = await import("./commands/addDirective.js");
+      return addDirective();
+    }),
     safeRegisterCommand(COMMANDS.ADD_MATERIALIZER, async () => {
       const { addMaterializer } = await import("./commands/addMaterializer.js");
       return addMaterializer();
+    }),
+    safeRegisterCommand(COMMANDS.ADD_VALUE, async () => {
+      const { addValue } = await import("./commands/addValue.js");
+      return addValue();
     }),
     safeRegisterCommand(COMMANDS.RUN_OPERATION, async (...args: unknown[]) => {
       const { runOperation } = await import("./commands/runRequest.js");

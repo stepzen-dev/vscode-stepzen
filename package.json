@@ -51,8 +51,18 @@
         "category": "StepZen"
       },
       {
+        "command": "stepzen.addDirective",
+        "title": "Add Directive",
+        "category": "StepZen"
+      },
+      {
         "command": "stepzen.addMaterializer",
         "title": "Add Materializer",
+        "category": "StepZen"
+      },
+      {
+        "command": "stepzen.addValue",
+        "title": "Add Value Directive",
         "category": "StepZen"
       },
       {
@@ -101,7 +111,7 @@
           "group": "0_stepzen@1"
         },
         {
-          "command": "stepzen.addMaterializer",
+          "command": "stepzen.addDirective",
           "when": "editorLangId == graphql && editorTextFocus",
           "group": "0_stepzen@2"
         },
