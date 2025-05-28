@@ -8,6 +8,7 @@ import { services } from '../services';
 import { handleError } from '../errors';
 import { addMaterializer } from './addMaterializer';
 import { addValue } from './addValue';
+import { addTool } from './addTool';
 
 /**
  * Directive option for the quick pick menu
@@ -57,6 +58,13 @@ export async function addDirective() {
         detail: "Returns a constant value or the result of a script expression",
         icon: "symbol-constant", 
         command: addValue
+      },
+      {
+        label: "$(tools) @tool",
+        description: "Define LLM function tools",
+        detail: "Creates tools for LLM integration with GraphQL or prescribed operations",
+        icon: "tools",
+        command: addTool
       }
       // Future directives can be added here:
       // {

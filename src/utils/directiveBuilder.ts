@@ -91,11 +91,29 @@ export class DirectiveBuilder {
       
       value.forEach((item, _index) => {
         let formattedItem: string;
-        if (typeof item === 'object' && 'name' in item && 'field' in item) {
+        if (typeof item === 'string') {
+          // Handle string array items (like graphql visibility patterns)
+          formattedItem = `"${item}"`;
+        } else if (typeof item === 'object' && item !== null && 'expose' in item && 'types' in item && 'fields' in item) {
+          // Handle StepZen_VisibilityPattern objects like { expose: true, types: "Query", fields: ".*" }
+          const expose = item.expose !== undefined ? String(item.expose) : 'true';
+          formattedItem = `{ expose: ${expose}, types: "${item.types}", fields: "${item.fields}" }`;
+        } else if (typeof item === 'object' && item !== null && 'name' in item && 'description' in item) {
+          // Handle description objects like { name: "query", description: "..." }
+          formattedItem = `{ name: "${item.name}", description: "${item.description}" }`;
+        } else if (typeof item === 'object' && item !== null && 'name' in item && 'field' in item) {
           // Handle argument mapping objects like { name: "arg", field: "field" }
           formattedItem = `{ name: "${item.name}", field: "${item.field}" }`;
+        } else if (typeof item === 'object' && item !== null) {
+          // Handle other object types
+          const objArgs = Object.entries(item).map(([key, val]) => {
+            const stringVal = typeof val === 'string' ? `"${val}"` : String(val);
+            return `${key}: ${stringVal}`;
+          });
+          formattedItem = `{ ${objArgs.join(', ')} }`;
         } else {
-          formattedItem = this.formatArgument(item as DirectiveArgument, '', indentUnit);
+          // Handle primitive values
+          formattedItem = typeof item === 'string' ? `"${item}"` : String(item);
         }
         lines.push(`${innerIndent}${indentUnit}${formattedItem}`);
       });
@@ -214,6 +232,53 @@ export class DirectiveBuilder {
       name: 'value',
       arguments: args,
       multiline: args.length > 1
+    };
+  }
+
+  /**
+   * Creates a tool directive configuration
+   */
+  static createToolConfig(options: {
+    name: string;
+    description?: string;
+    graphql?: Array<{expose: boolean, types: string, fields: string}>;
+    visibilityPatterns?: Array<{expose: boolean, types: string, fields: string}>;
+    descriptions?: Array<{name: string, description: string}>;
+  }): DirectiveConfig {
+    const args: DirectiveArgument[] = [
+      { name: 'name', value: options.name, isString: true }
+    ];
+
+    if (options.description) {
+      args.push({
+        name: 'description',
+        value: options.description,
+        isString: true
+      });
+    }
+
+    // Handle both graphql and visibilityPatterns for backward compatibility
+    const patterns = options.visibilityPatterns || options.graphql;
+    if (patterns && patterns.length > 0) {
+      args.push({
+        name: 'graphql',
+        value: patterns,
+        isString: false
+      });
+    }
+
+    if (options.descriptions && options.descriptions.length > 0) {
+      args.push({
+        name: 'descriptions',
+        value: options.descriptions,
+        isString: false
+      });
+    }
+
+    return {
+      name: 'tool',
+      arguments: args,
+      multiline: true
     };
   }
 } 
