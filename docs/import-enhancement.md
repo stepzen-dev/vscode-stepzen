@@ -68,35 +68,39 @@ graph TD
 
 ### 1. REST Directive Improvements
 
-#### Error Handling
-
-- Add proper error response mapping
-- Configure timeout settings
-- Implement retry logic
-
 #### Response Transformation
 
 - Improve `setters` for better field mapping
 - Add `transforms` for data manipulation
 - Optimize `resultroot` configuration
+- Add `cel` for advanced content extraction
+- Configure `ecmascript` for request/response modification
 
 #### Authentication Enhancement
 
 - Move sensitive values to configuration
 - Add proper header management
 - Configure secret handling
+- Set up `forwardheaders` for authentication
 
 #### Pagination Support
 
 - Detect pagination patterns
 - Add connection types
-- Configure cursor-based pagination
+- Configure cursor-based pagination (`NEXT_CURSOR`, `OFFSET`, `PAGE_NUMBER`)
 
 #### Caching Configuration
 
-- Add appropriate cache policies
+- Add appropriate cache policies (`ON`, `OFF`, `DEFAULT`, `FORCE`)
 - Configure cache strategies
 - Optimize performance
+
+#### Request Configuration
+
+- Configure HTTP methods (`GET`, `POST`, `PUT`, `DELETE`, `PATCH`)
+- Set up `postbody` for mutations
+- Configure `contenttype` for proper content handling
+- Add `filter` for JSON row selection
 
 ### 2. Type System Enhancements
 
@@ -221,20 +225,24 @@ export class SchemaEnhancementEngine {
 
 ```typescript
 interface RestEnhancement {
-  // Error handling
-  addErrorHandling: boolean;
-  configureTimeouts: boolean;
-  addRetryLogic: boolean;
-
   // Response transformation
   improveSetters: boolean;
   addTransforms: boolean;
   optimizeResultRoot: boolean;
+  addCelExtraction: boolean;
+  configureEcmascript: boolean;
 
   // Authentication
   moveSecretsToConfig: boolean;
   improveHeaderManagement: boolean;
   addAuthPatterns: boolean;
+  configureForwardHeaders: boolean;
+
+  // Request configuration
+  optimizeHttpMethod: boolean;
+  configurePostBody: boolean;
+  setContentType: boolean;
+  addJsonFiltering: boolean;
 
   // Performance
   addCaching: boolean;
