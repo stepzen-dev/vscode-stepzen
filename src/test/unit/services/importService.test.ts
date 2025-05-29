@@ -7,6 +7,7 @@ import * as assert from "assert";
 import { ImportService } from "../../../services/importService";
 import { Logger } from "../../../services/logger";
 import { StepzenCliService } from "../../../services/cli";
+import { ProjectResolver } from "../../../services/projectResolver";
 import { 
   CurlImportConfig, 
   OpenApiImportConfig, 
@@ -18,6 +19,7 @@ suite("ImportService", () => {
   let importService: ImportService;
   let mockLogger: Logger;
   let mockCli: StepzenCliService;
+  let mockProjectResolver: ProjectResolver;
 
   setup(() => {
     mockLogger = {
@@ -31,7 +33,11 @@ suite("ImportService", () => {
       spawnProcessWithOutput: async () => "Import completed successfully"
     } as any;
 
-    importService = new ImportService(mockLogger, mockCli);
+    mockProjectResolver = {
+      resolveStepZenProjectRoot: async () => "/workspace/stepzen-project"
+    } as any;
+
+    importService = new ImportService(mockLogger, mockCli, mockProjectResolver);
   });
 
   suite("cURL Import", () => {
@@ -82,7 +88,7 @@ suite("ImportService", () => {
       await importService.executeImport(config);
 
       assert.ok(capturedArgs.includes("-H"));
-      assert.ok(capturedArgs.includes("Authorization: Bearer token123"));
+      assert.ok(capturedArgs.includes('"Authorization: Bearer token123"'));
       assert.ok(capturedArgs.includes("--secrets"));
       assert.ok(capturedArgs.includes("Authorization"));
     });
@@ -107,6 +113,52 @@ suite("ImportService", () => {
       assert.ok(capturedArgs.includes("/users/$userId"));
     });
 
+    test("should build CLI arguments with request body data", async () => {
+      const config: CurlImportConfig = {
+        endpoint: "https://api.example.com/create",
+        name: "example_api",
+        queryName: "create",
+        data: '{"message":"Hello,world"}',
+        method: "POST",
+        nonInteractive: true,
+      };
+
+      let capturedArgs: string[] = [];
+      mockCli.spawnProcessWithOutput = async (args: string[]) => {
+        capturedArgs = args;
+        return "Import completed successfully";
+      };
+
+      await importService.executeImport(config);
+
+      assert.ok(capturedArgs.includes("--data"));
+      assert.ok(capturedArgs.includes('"{\\"message\\":\\"Hello,world\\"}"'));
+      assert.ok(capturedArgs.includes("-X"));
+      assert.ok(capturedArgs.includes("POST"));
+    });
+
+    test("should build CLI arguments with HTTP method only", async () => {
+      const config: CurlImportConfig = {
+        endpoint: "https://api.example.com/delete/123",
+        name: "example_api",
+        queryName: "delete",
+        method: "DELETE",
+        nonInteractive: true,
+      };
+
+      let capturedArgs: string[] = [];
+      mockCli.spawnProcessWithOutput = async (args: string[]) => {
+        capturedArgs = args;
+        return "Import completed successfully";
+      };
+
+      await importService.executeImport(config);
+
+      assert.ok(capturedArgs.includes("-X"));
+      assert.ok(capturedArgs.includes("DELETE"));
+      assert.ok(!capturedArgs.includes("--data"));
+    });
+
     test("should validate cURL configuration", async () => {
       const invalidConfig = {
         endpoint: "", // Empty endpoint should fail validation
@@ -120,6 +172,99 @@ suite("ImportService", () => {
       } catch (err: any) {
         assert.ok(err.message.includes("Invalid import configuration"));
       }
+    });
+
+    test("should execute CLI command in resolved project directory", async () => {
+      const config: CurlImportConfig = {
+        endpoint: "https://api.example.com/users",
+        name: "example_api",
+        queryName: "users", // This makes it identifiable as cURL
+        nonInteractive: true,
+      };
+
+      // Mock CLI to capture arguments and options
+      let capturedArgs: string[] = [];
+      let capturedOptions: any = {};
+      mockCli.spawnProcessWithOutput = async (args: string[], options?: any) => {
+        capturedArgs = args;
+        capturedOptions = options || {};
+        return "Import completed successfully";
+      };
+
+      await importService.executeImport(config);
+
+      // Verify that the CLI command was executed with the correct working directory
+      assert.strictEqual(capturedOptions.cwd, "/workspace/stepzen-project");
+      
+      // Verify the command structure
+      assert.ok(capturedArgs.length > 0, "Should have captured CLI arguments");
+      assert.strictEqual(capturedArgs[0], "import", "First argument should be 'import'");
+      assert.strictEqual(capturedArgs[1], "curl", "Second argument should be 'curl'");
+      assert.ok(capturedArgs.includes("https://api.example.com/users"), "Should include the endpoint URL");
+    });
+
+    test("should properly escape JSON data with quotes and spaces", async () => {
+      const config: CurlImportConfig = {
+        endpoint: "https://httpbingo.org/anything",
+        name: "httpbingo_org",
+        queryName: "anything",
+        queryType: "Anything",
+        data: '{"message":"Hello,world"}',
+        method: "POST",
+        headers: [
+          { name: "Content-Type", value: "application/json" }
+        ],
+        nonInteractive: true,
+      };
+
+      let capturedArgs: string[] = [];
+      mockCli.spawnProcessWithOutput = async (args: string[]) => {
+        capturedArgs = args;
+        return "Import completed successfully";
+      };
+
+      await importService.executeImport(config);
+
+      // Verify that JSON data is properly quoted
+      const dataIndex = capturedArgs.indexOf("--data");
+      assert.ok(dataIndex !== -1, "Should include --data flag");
+      assert.ok(dataIndex + 1 < capturedArgs.length, "Should have data value after --data flag");
+      const dataValue = capturedArgs[dataIndex + 1];
+      assert.strictEqual(dataValue, '"{\\"message\\":\\"Hello,world\\"}"', "JSON data should be properly escaped and quoted");
+
+      // Verify that header with spaces is properly quoted
+      const headerIndex = capturedArgs.indexOf("-H");
+      assert.ok(headerIndex !== -1, "Should include -H flag");
+      assert.ok(headerIndex + 1 < capturedArgs.length, "Should have header value after -H flag");
+      const headerValue = capturedArgs[headerIndex + 1];
+      assert.strictEqual(headerValue, '"Content-Type: application/json"', "Header with spaces should be properly quoted");
+    });
+
+    test("should not quote simple values without special characters", async () => {
+      const config: CurlImportConfig = {
+        endpoint: "https://api.example.com/users",
+        name: "example_api",
+        queryName: "users",
+        headers: [
+          { name: "Accept", value: "application/json" }
+        ],
+        nonInteractive: true,
+      };
+
+      let capturedArgs: string[] = [];
+      mockCli.spawnProcessWithOutput = async (args: string[]) => {
+        capturedArgs = args;
+        return "Import completed successfully";
+      };
+
+      await importService.executeImport(config);
+
+      // Verify that header without spaces is properly quoted (because of the colon and space)
+      const headerIndex = capturedArgs.indexOf("-H");
+      assert.ok(headerIndex !== -1, "Should include -H flag");
+      assert.ok(headerIndex + 1 < capturedArgs.length, "Should have header value after -H flag");
+      const headerValue = capturedArgs[headerIndex + 1];
+      assert.strictEqual(headerValue, '"Accept: application/json"', "Header should be quoted due to colon and space");
     });
   });
 
@@ -287,6 +432,26 @@ suite("ImportService", () => {
 
       assert.strictEqual(result.success, false);
       assert.strictEqual(result.error, "Network error");
+    });
+
+    test("should handle project resolution failure", async () => {
+      const config: CurlImportConfig = {
+        endpoint: "https://api.example.com/users",
+        name: "example_api",
+        nonInteractive: true,
+      };
+
+      // Mock project resolver to throw an error
+      mockProjectResolver.resolveStepZenProjectRoot = async () => {
+        throw new Error("No StepZen project found");
+      };
+
+      try {
+        await importService.executeImport(config);
+        assert.fail("Should have thrown validation error");
+      } catch (err: any) {
+        assert.ok(err.message.includes("Import execution failed"));
+      }
     });
 
     test("should handle unknown import type", async () => {

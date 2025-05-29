@@ -168,11 +168,14 @@ function parseSimpleUrl(url: string): Partial<CurlImportConfig> {
  */
 function parseFullCurlCommand(curlCommand: string): Partial<CurlImportConfig> {
   // Basic parsing - extract URL and headers
-  const urlMatch = curlCommand.match(/https?:\/\/[^\s]+/);
-  const url = urlMatch ? urlMatch[0] : '';
+  const urlMatch = curlCommand.match(/https?:\/\/[^\s"']+/);
+  let url = urlMatch ? urlMatch[0] : '';
+  
+  // Remove any trailing quotes that might have been captured
+  url = url.replace(/["']$/, '');
   
   // Extract headers
-  const headerMatches = curlCommand.matchAll(/-H\s+['"]([^'"]+)['"]/g);
+  const headerMatches = curlCommand.matchAll(/(?:-H|--header)\s+['"]([^'"]+)['"]/g);
   const headers: Array<{ name: string; value: string }> = [];
   const secrets: string[] = [];
   
@@ -192,12 +195,33 @@ function parseFullCurlCommand(curlCommand: string): Partial<CurlImportConfig> {
     }
   }
   
+  // Extract data/body for POST requests
+  let data: string | undefined;
+  let method: string | undefined;
+  
+  // Check for --data, -d, --data-raw, --data-ascii, --data-binary flags
+  // Use a more robust regex that handles nested quotes and complex JSON
+  const dataPattern = /(?:--data|--data-raw|--data-ascii|--data-binary|-d)\s+(['"])((?:(?!\1)[^\\]|\\.)*)(\1)/g;
+  const dataMatch = dataPattern.exec(curlCommand);
+  if (dataMatch) {
+    data = dataMatch[2]; // The content between the quotes
+    method = 'POST'; // Default to POST when data is present
+  }
+  
+  // Check for explicit method specification (-X or --request)
+  const methodMatch = curlCommand.match(/(?:-X|--request)\s+([A-Z]+)/);
+  if (methodMatch) {
+    method = methodMatch[1];
+  }
+  
   const baseConfig = parseSimpleUrl(url);
   
   return {
     ...baseConfig,
     headers: headers.length > 0 ? headers : undefined,
     secrets: secrets.length > 0 ? secrets : undefined,
+    data,
+    method,
   };
 }
 

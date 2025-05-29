@@ -5,6 +5,7 @@
 
 import { Logger } from "./logger";
 import { StepzenCliService } from "./cli";
+import { ProjectResolver } from "./projectResolver";
 import { 
   ImportConfig, 
   ImportResult, 
@@ -18,6 +19,18 @@ import {
 import { ValidationError } from "../errors";
 
 /**
+ * Helper function to escape shell arguments that contain spaces or special characters
+ */
+function escapeShellArg(arg: string): string {
+  // If the argument contains spaces, quotes, or other special characters, wrap it in quotes
+  if (/[\s"'$`\\|&;()<>]/.test(arg)) {
+    // Escape any existing quotes and wrap in double quotes
+    return `"${arg.replace(/"/g, '\\"')}"`;
+  }
+  return arg;
+}
+
+/**
  * Generalized import service that handles all StepZen import types
  */
 export class ImportService {
@@ -25,7 +38,8 @@ export class ImportService {
 
   constructor(
     private logger: Logger,
-    private cli: StepzenCliService
+    private cli: StepzenCliService,
+    private projectResolver: ProjectResolver
   ) {
     this.registerBuilders();
   }
@@ -58,13 +72,20 @@ export class ImportService {
     }
 
     try {
+      // Resolve the StepZen project root directory
+      this.logger.debug("Resolving StepZen project root...");
+      const projectRoot = await this.projectResolver.resolveStepZenProjectRoot();
+      this.logger.debug(`Resolved project root: ${projectRoot}`);
+
       // Build CLI arguments
       const args = builder.buildArgs(config);
       this.logger.debug(`CLI args: ${args.join(' ')}`);
 
       // Execute the CLI command and handle the response
       try {
-        const output = await this.cli.spawnProcessWithOutput(args);
+        const output = await this.cli.spawnProcessWithOutput(args, {
+          cwd: projectRoot
+        });
         this.logger.debug(`CLI output: ${output}`);
         
         this.logger.info(`${this.getImportType(config)} import completed successfully`);
@@ -164,6 +185,16 @@ class CurlCommandBuilder implements ImportCommandBuilder {
     // Add endpoint (required)
     args.push(curlConfig.endpoint);
 
+    // Add HTTP method if specified
+    if (curlConfig.method) {
+      args.push('-X', curlConfig.method);
+    }
+
+    // Add request body data if present
+    if (curlConfig.data) {
+      args.push('--data', escapeShellArg(curlConfig.data));
+    }
+
     // Add common flags
     this.addCommonFlags(args, curlConfig);
 
@@ -196,19 +227,19 @@ class CurlCommandBuilder implements ImportCommandBuilder {
   private addAuthFlags(args: string[], config: CurlImportConfig): void {
     if (config.headers) {
       config.headers.forEach(header => {
-        args.push('-H', `${header.name}: ${header.value}`);
+        args.push('-H', escapeShellArg(`${header.name}: ${header.value}`));
       });
     }
 
     if (config.headerParams) {
       config.headerParams.forEach(param => {
-        args.push('--header-param', `${param.name}: ${param.value}`);
+        args.push('--header-param', escapeShellArg(`${param.name}: ${param.value}`));
       });
     }
 
     if (config.secrets) {
       config.secrets.forEach(secret => {
-        args.push('--secrets', secret);
+        args.push('--secrets', escapeShellArg(secret));
       });
     }
   }
@@ -295,19 +326,19 @@ class GraphQLCommandBuilder implements ImportCommandBuilder {
     // Add authentication flags (same as cURL)
     if (graphqlConfig.headers) {
       graphqlConfig.headers.forEach(header => {
-        args.push('-H', `${header.name}: ${header.value}`);
+        args.push('-H', escapeShellArg(`${header.name}: ${header.value}`));
       });
     }
 
     if (graphqlConfig.headerParams) {
       graphqlConfig.headerParams.forEach(param => {
-        args.push('--header-param', `${param.name}: ${param.value}`);
+        args.push('--header-param', escapeShellArg(`${param.name}: ${param.value}`));
       });
     }
 
     if (graphqlConfig.secrets) {
       graphqlConfig.secrets.forEach(secret => {
-        args.push('--secrets', secret);
+        args.push('--secrets', escapeShellArg(secret));
       });
     }
 

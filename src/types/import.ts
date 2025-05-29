@@ -71,6 +71,10 @@ export interface CurlImportConfig extends BaseImportConfig, AuthConfig, SchemaCu
   endpoint: string;
   /** Path parameters configuration */
   pathParams?: string;
+  /** Request body data for POST/PUT/PATCH requests */
+  data?: string;
+  /** HTTP method (GET, POST, PUT, PATCH, DELETE) */
+  method?: string;
   /** Suggested schema name (for UI) */
   suggestedName?: string;
   /** Suggested query name (for UI) */

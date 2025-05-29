@@ -25,7 +25,7 @@ const cli = new StepzenCliService();
 const projectResolver = new ProjectResolver(logger);
 const schemaIndex = new SchemaIndexService();
 const request = new RequestService(logger);
-const importService = new ImportService(logger, cli);
+const importService = new ImportService(logger, cli, projectResolver);
 
 export const services: ServiceRegistry = {
   cli,

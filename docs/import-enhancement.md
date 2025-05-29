@@ -45,6 +45,9 @@ ImportService (Orchestrator)
   - Auto-detection of secret headers
   - Path parameter configuration
   - Schema and query name generation
+  - **Request body support** - Handles `--data`, `-d`, `--data-raw`, `--data-ascii`, `--data-binary` flags
+  - **HTTP method detection** - Supports GET, POST, PUT, PATCH, DELETE methods
+  - **Header parsing** - Supports both `-H` and `--header` flags
 
 #### 2. OpenAPI Import (`stepzen import openapi`)
 
@@ -78,11 +81,12 @@ ImportService (Orchestrator)
 - ✅ **Type Definitions** - Complete TypeScript interfaces (`src/types/import.ts`)
 - ✅ **Import Service** - Generalized service with command builders (`src/services/importService.ts`)
 - ✅ **Command Implementations** - All four import commands implemented
-- ✅ **Unit Tests** - Comprehensive test coverage (213 passing tests)
+- ✅ **Unit Tests** - Comprehensive test coverage (226 passing tests)
 - ✅ **Service Registry Integration** - ImportService registered and available
 - ✅ **Command Registration** - All commands registered in `extension.ts`
 - ✅ **Error Handling** - Robust validation and error reporting
 - ✅ **Architecture Compliance** - Follows established extension patterns
+- ✅ **Project Resolution** - Automatic StepZen project directory detection with multi-project support
 - ⏳ **UI Implementation** - Need to create VS Code command interfaces
 - ⏳ **cURL Parsing Logic** - Need to implement actual cURL command parsing
 - ⏳ **Integration Testing** - End-to-end testing with CLI
@@ -121,6 +125,32 @@ The implementation follows the extension's established patterns:
 - **Logging** - Integrated with `services.logger`
 - **Command Structure** - Follows established command patterns
 - **TypeScript Strict Mode** - Full type safety
+- **Project Resolution** - Uses `ProjectResolver` service for automatic directory detection
+
+### Project Resolution
+
+The import system automatically resolves the correct StepZen project directory using the established `ProjectResolver` service:
+
+#### Single Project Workspace
+
+- Automatically detects the StepZen project directory
+- Searches upward from the active file or workspace root
+- Executes import commands in the correct project directory
+
+#### Multi-Project Workspace
+
+- Scans all workspace folders for StepZen projects
+- Prompts user to select the target project when multiple are found
+- Caches the selection for subsequent operations
+- Supports multi-root VS Code workspaces
+
+#### Error Handling
+
+- Clear error messages when no StepZen project is found
+- Graceful handling of user cancellation during project selection
+- Automatic fallback to workspace scanning when active file context is unavailable
+
+This ensures that import commands always execute in the correct directory, regardless of workspace complexity.
 
 ## Current Implementation Details
 
@@ -246,7 +276,7 @@ EnhancementService
 - ✅ All four import command implementations (cURL, OpenAPI, GraphQL, Database)
 - ✅ Robust validation and error handling
 - ✅ Service registry integration
-- ✅ 213 passing unit tests with 95%+ coverage
+- ✅ 226 passing unit tests with 95%+ coverage
 - ✅ Architecture compliance with extension patterns
 
 ### Immediate Next Steps (Phase 1 Completion)
@@ -338,7 +368,7 @@ EnhancementService
   - Dependency injection working correctly
   - Error handling integration with extension patterns
 
-**Total Test Count**: 213 passing tests
+**Total Test Count**: 226 passing tests
 **Coverage**: 95%+ across all import functionality
 
 ### Planned Test Coverage

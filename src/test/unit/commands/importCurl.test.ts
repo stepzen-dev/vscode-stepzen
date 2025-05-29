@@ -37,10 +37,22 @@ suite("Import cURL Command", () => {
   suite("cURL Command Parsing", () => {
     test("should extract URL from cURL command", () => {
       const curlCommand = `curl -H "Authorization: Bearer token" https://api.example.com/users`;
-      const urlMatch = curlCommand.match(/https?:\/\/[^\s]+/);
+      const urlMatch = curlCommand.match(/https?:\/\/[^\s"']+/);
       
       assert.ok(urlMatch);
       assert.strictEqual(urlMatch[0], "https://api.example.com/users");
+    });
+
+    test("should extract quoted URL from cURL command", () => {
+      const curlCommand = `curl -H "Authorization: Bearer token" "https://httpbingo.org/anything"`;
+      const urlMatch = curlCommand.match(/https?:\/\/[^\s"']+/);
+      let url = urlMatch ? urlMatch[0] : '';
+      
+      // Remove any trailing quotes that might have been captured
+      url = url.replace(/["']$/, '');
+      
+      assert.ok(urlMatch);
+      assert.strictEqual(url, "https://httpbingo.org/anything");
     });
 
     test("should extract headers from cURL command", () => {
@@ -60,6 +72,78 @@ suite("Import cURL Command", () => {
       
       assert.strictEqual(name, "Authorization");
       assert.strictEqual(value, "Bearer token123");
+    });
+
+    test("should handle quoted URLs without extra quotes in CLI command", () => {
+      // This tests the specific issue where quoted URLs would result in 
+      // commands like: stepzen import curl https://httpbingo.org/anything" --name ...
+      const curlCommand = `curl "https://httpbingo.org/anything"`;
+      const urlMatch = curlCommand.match(/https?:\/\/[^\s"']+/);
+      let url = urlMatch ? urlMatch[0] : '';
+      
+      // Remove any trailing quotes that might have been captured
+      url = url.replace(/["']$/, '');
+      
+      assert.ok(urlMatch);
+      assert.strictEqual(url, "https://httpbingo.org/anything");
+      
+      // Verify that the URL doesn't end with a quote
+      assert.ok(!url.endsWith('"'));
+      assert.ok(!url.endsWith("'"));
+    });
+
+    test("should extract --data flag from cURL command", () => {
+      const curlCommand = `curl "https://httpbingo.org/anything" --header 'Content-Type: application/json' --data '{"message":"Hello,world"}'`;
+      
+      // Extract data/body for POST requests
+      let data: string | undefined;
+      let method: string | undefined;
+      
+      // Check for --data, -d, --data-raw, --data-ascii, --data-binary flags
+      // Use a more robust regex that handles nested quotes and complex JSON
+      const dataPattern = /(?:--data|--data-raw|--data-ascii|--data-binary|-d)\s+(['"])((?:(?!\1)[^\\]|\\.)*)(\1)/g;
+      const dataMatch = dataPattern.exec(curlCommand);
+      if (dataMatch) {
+        data = dataMatch[2]; // The content between the quotes
+        method = 'POST'; // Default to POST when data is present
+      }
+      
+      assert.strictEqual(data, '{"message":"Hello,world"}');
+      assert.strictEqual(method, 'POST');
+    });
+
+    test("should extract -d flag from cURL command", () => {
+      const curlCommand = `curl -d '{"key":"value"}' https://api.example.com/create`;
+      
+      // Extract data/body for POST requests
+      let data: string | undefined;
+      let method: string | undefined;
+      
+      // Check for --data, -d, --data-raw, --data-ascii, --data-binary flags
+      // Use a more robust regex that handles nested quotes and complex JSON
+      const dataPattern = /(?:--data|--data-raw|--data-ascii|--data-binary|-d)\s+(['"])((?:(?!\1)[^\\]|\\.)*)(\1)/g;
+      const dataMatch = dataPattern.exec(curlCommand);
+      if (dataMatch) {
+        data = dataMatch[2]; // The content between the quotes
+        method = 'POST'; // Default to POST when data is present
+      }
+      
+      assert.strictEqual(data, '{"key":"value"}');
+      assert.strictEqual(method, 'POST');
+    });
+
+    test("should extract explicit HTTP method from cURL command", () => {
+      const curlCommand = `curl -X PUT -d '{"key":"value"}' https://api.example.com/update`;
+      
+      let method: string | undefined;
+      
+      // Check for explicit method specification (-X or --request)
+      const methodMatch = curlCommand.match(/(?:-X|--request)\s+([A-Z]+)/);
+      if (methodMatch) {
+        method = methodMatch[1];
+      }
+      
+      assert.strictEqual(method, 'PUT');
     });
 
     test("should detect secret headers", () => {
