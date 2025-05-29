@@ -73,7 +73,6 @@ graph TD
 - Optimize `resultroot` configuration for simple JSON path extraction
 - Improve `setters` for small field mapping changes
 - Add `transforms` with JSONata or jq for significant data manipulation
-- Configure `cel` for advanced content extraction (legacy approach)
 - Configure `ecmascript` only when JSONata/jq transforms are insufficient
 
 #### Authentication Enhancement
@@ -89,18 +88,12 @@ graph TD
 - Add connection types
 - Configure cursor-based pagination (`NEXT_CURSOR`, `OFFSET`, `PAGE_NUMBER`)
 
-#### Caching Configuration
-
-- Add appropriate cache policies (`ON`, `OFF`, `DEFAULT`, `FORCE`)
-- Configure cache strategies
-- Optimize performance
-
 #### Request Configuration
 
 - Configure HTTP methods (`GET`, `POST`, `PUT`, `DELETE`, `PATCH`)
 - Set up `postbody` for mutations
 - Configure `contenttype` for proper content handling
-- Add `filter` for JSON row selection
+- Optionally configure `cachepolicy` when default behavior needs adjustment
 
 ### 2. Type System Enhancements
 
@@ -122,11 +115,12 @@ graph TD
 - Optimize nullable types
 - Improve type safety
 
-#### Custom Scalars
+#### Built-in Scalar Usage
 
-- Add Date/DateTime scalars
-- Include JSON scalar types
-- Configure custom validation
+- Use appropriate built-in scalars (Date, DateTime, JSON, Secret)
+- Convert string dates to Date/DateTime types
+- Use JSON scalar for complex nested data
+- Use Secret scalar for sensitive argument types
 
 ### 3. Schema Organization
 
@@ -230,7 +224,6 @@ interface RestEnhancement {
   improveSetters: boolean; // Small field mapping changes
   addJsonataTransforms: boolean; // Preferred for significant data manipulation
   addJqTransforms: boolean; // Alternative to JSONata for complex transforms
-  addCelExtraction: boolean; // Legacy approach, avoid for new implementations
   configureEcmascript: boolean; // Last resort when JSONata/jq insufficient
 
   // Authentication
@@ -243,12 +236,13 @@ interface RestEnhancement {
   optimizeHttpMethod: boolean;
   configurePostBody: boolean;
   setContentType: boolean;
-  addJsonFiltering: boolean;
 
-  // Performance
-  addCaching: boolean;
+  // Pagination and performance
   configurePagination: boolean;
   optimizeQueries: boolean;
+
+  // Advanced options (rarely needed)
+  adjustCachePolicy: boolean; // Only when default caching needs modification
 }
 ```
 
@@ -268,8 +262,8 @@ interface TypeEnhancement {
 
   // Type safety
   optimizeNullability: boolean;
-  addCustomScalars: boolean;
-  improveValidation: boolean;
+  useBuiltinScalars: boolean;
+  improveTypeDefinitions: boolean;
 }
 ```
 
@@ -763,9 +757,8 @@ transforms: [{
 }]
 ```
 
-#### 4. Legacy/Advanced Cases → `cel` or `ecmascript`
+#### 4. Advanced Cases → `ecmascript`
 
-**Use `cel` only for:** Existing implementations (legacy)
 **Use `ecmascript` only when:** JSONata and jq cannot accomplish the required transformation
 
 ### Enhancement Strategy
@@ -775,7 +768,7 @@ The extension should:
 1. **Analyze the transformation complexity** needed
 2. **Recommend the simplest approach** that meets the requirements
 3. **Provide examples** for the recommended approach
-4. **Warn against** using `ecmascript` unless absolutely necessary
+4. **Avoid complex solutions** unless absolutely necessary
 5. **Suggest JSONata over jq** for new implementations (better performance/safety)
 
 ---
