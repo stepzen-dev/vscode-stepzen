@@ -414,6 +414,47 @@ suite("ImportService", () => {
       assert.ok(capturedArgs.includes("--snowflake-warehouse"));
       assert.ok(capturedArgs.includes("COMPUTE_WH"));
     });
+
+    test("should properly escape database passwords with special characters", async () => {
+      const config: DatabaseImportConfig = {
+        type: "postgresql",
+        host: "postgresqlaws.introspection.stepzen.net",
+        user: "testUserIntrospection",
+        password: 'P@ssw0rd!#$%^&*(){}[]|\\:";\'<>?,./`~',
+        database: "introspection",
+        name: "postgresql_introspection",
+        nonInteractive: true,
+      };
+
+      let capturedArgs: string[] = [];
+      mockCli.spawnProcessWithOutput = async (args: string[]) => {
+        capturedArgs = args;
+        return "Import completed successfully";
+      };
+
+      await importService.executeImport(config);
+
+      // Verify that password is properly quoted
+      const passwordIndex = capturedArgs.indexOf("--db-password");
+      assert.ok(passwordIndex !== -1, "Should include --db-password flag");
+      assert.ok(passwordIndex + 1 < capturedArgs.length, "Should have password value after --db-password flag");
+      const passwordValue = capturedArgs[passwordIndex + 1];
+      
+      // Password should be wrapped in quotes due to special characters
+      assert.ok(passwordValue.startsWith('"') && passwordValue.endsWith('"'), 
+        `Password should be quoted, got: ${passwordValue}`);
+      
+      // Verify other connection parameters are also properly escaped
+      const hostIndex = capturedArgs.indexOf("--db-host");
+      assert.ok(hostIndex !== -1, "Should include --db-host flag");
+      const hostValue = capturedArgs[hostIndex + 1];
+      assert.strictEqual(hostValue, "postgresqlaws.introspection.stepzen.net", "Host should not be quoted if no special chars");
+      
+      const userIndex = capturedArgs.indexOf("--db-user");
+      assert.ok(userIndex !== -1, "Should include --db-user flag");
+      const userValue = capturedArgs[userIndex + 1];
+      assert.strictEqual(userValue, "testUserIntrospection", "User should not be quoted if no special chars");
+    });
   });
 
   suite("Error Handling", () => {

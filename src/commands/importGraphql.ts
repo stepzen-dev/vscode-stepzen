@@ -113,19 +113,12 @@ async function collectGraphQLConfiguration(): Promise<GraphQLImportConfig | unde
     authConfig = await collectAuthConfiguration();
   }
 
-  // Step 4: Advanced options (optional)
-  const showAdvanced = await vscode.window.showQuickPick(
-    ["No", "Yes"],
-    {
-      placeHolder: "Configure advanced options?",
-      ignoreFocusOut: true,
-    }
-  );
-
-  let advancedConfig = {};
-  if (showAdvanced === "Yes") {
-    advancedConfig = await collectAdvancedOptions();
-  }
+  // Step 4: Type prefix (optional)
+  const prefix = await vscode.window.showInputBox({
+    prompt: "Type prefix (leave blank for none)",
+    placeHolder: "GitHub (will create GitHubUser, GitHubRepository, etc.)",
+    ignoreFocusOut: true,
+  });
 
   // Step 5: Build final configuration
   const config: GraphQLImportConfig = {
@@ -133,7 +126,7 @@ async function collectGraphQLConfiguration(): Promise<GraphQLImportConfig | unde
     name,
     nonInteractive: true, // Always use non-interactive mode
     ...authConfig,
-    ...advancedConfig,
+    ...(prefix ? { prefix } : {}),
   };
 
   return config;
@@ -267,35 +260,4 @@ async function collectAuthConfiguration(): Promise<Partial<GraphQLImportConfig>>
     headers: headers.length > 0 ? headers : undefined,
     secrets: secrets.length > 0 ? secrets : undefined,
   };
-}
-
-/**
- * Collect advanced configuration options
- */
-async function collectAdvancedOptions(): Promise<Partial<GraphQLImportConfig>> {
-  const options: Partial<GraphQLImportConfig> = {};
-  
-  // Type prefix
-  const prefix = await vscode.window.showInputBox({
-    prompt: "Type prefix (optional)",
-    placeHolder: "GitHub",
-    ignoreFocusOut: true,
-  });
-  
-  if (prefix) {
-    options.prefix = prefix;
-  }
-  
-  // Working directory
-  const dir = await vscode.window.showInputBox({
-    prompt: "Working directory (optional)",
-    placeHolder: "./stepzen",
-    ignoreFocusOut: true,
-  });
-  
-  if (dir) {
-    options.dir = dir;
-  }
-  
-  return options;
 } 

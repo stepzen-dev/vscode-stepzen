@@ -6,6 +6,7 @@
 /**
  * Base configuration common to all import types
  */
+// ts-prune-ignore-next
 export interface BaseImportConfig {
   /** Working directory for the import */
   dir?: string;
@@ -18,6 +19,7 @@ export interface BaseImportConfig {
 /**
  * Authentication configuration for REST/GraphQL imports
  */
+// ts-prune-ignore-next
 export interface AuthConfig {
   /** Request headers */
   headers?: Array<{ name: string; value: string }>;
@@ -30,6 +32,7 @@ export interface AuthConfig {
 /**
  * Schema customization options
  */
+// ts-prune-ignore-next
 export interface SchemaCustomization {
   /** Prefix for generated types */
   prefix?: string;
@@ -42,6 +45,7 @@ export interface SchemaCustomization {
 /**
  * Database connection configuration
  */
+// ts-prune-ignore-next
 export interface DatabaseConfig {
   /** Connection string/DSN */
   connectionString?: string;
@@ -98,23 +102,24 @@ export interface GraphQLImportConfig extends BaseImportConfig, AuthConfig, Schem
 }
 
 /**
+ * Snowflake-specific additional options
+ */
+// ts-prune-ignore-next
+export interface SnowflakeConfig {
+  /** Snowflake account identifier */
+  accountId?: string;
+  /** Snowflake warehouse */
+  warehouse?: string;
+}
+
+/**
  * Database-specific configuration with database type
  */
 export interface DatabaseImportConfig extends BaseImportConfig, DatabaseConfig {
   /** Database type */
   type: DatabaseType;
   /** Database-specific options */
-  specificOptions?: Record<string, any>;
-}
-
-/**
- * Snowflake-specific additional options
- */
-export interface SnowflakeConfig extends DatabaseConfig {
-  /** Snowflake account identifier */
-  accountId?: string;
-  /** Snowflake warehouse */
-  warehouse?: string;
+  specificOptions?: SnowflakeConfig; // Only Snowflake has specific options currently
 }
 
 /**

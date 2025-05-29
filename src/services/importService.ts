@@ -370,7 +370,7 @@ class DatabaseCommandBuilder implements ImportCommandBuilder {
 
     // Add connection string if provided
     if (dbConfig.connectionString) {
-      args.push(dbConfig.connectionString);
+      args.push(escapeShellArg(dbConfig.connectionString));
     }
 
     // Add common flags
@@ -386,19 +386,19 @@ class DatabaseCommandBuilder implements ImportCommandBuilder {
 
     // Add database connection flags
     if (dbConfig.host) {
-      args.push('--db-host', dbConfig.host);
+      args.push('--db-host', escapeShellArg(dbConfig.host));
     }
     if (dbConfig.user) {
-      args.push('--db-user', dbConfig.user);
+      args.push('--db-user', escapeShellArg(dbConfig.user));
     }
     if (dbConfig.password) {
-      args.push('--db-password', dbConfig.password);
+      args.push('--db-password', escapeShellArg(dbConfig.password));
     }
     if (dbConfig.database) {
-      args.push('--db-database', dbConfig.database);
+      args.push('--db-database', escapeShellArg(dbConfig.database));
     }
     if (dbConfig.schema) {
-      args.push('--db-schema', dbConfig.schema);
+      args.push('--db-schema', escapeShellArg(dbConfig.schema));
     }
 
     // Add database-specific flags
@@ -416,10 +416,10 @@ class DatabaseCommandBuilder implements ImportCommandBuilder {
     if (dbConfig.type === 'snowflake' && dbConfig.specificOptions) {
       const snowflakeOptions = dbConfig.specificOptions;
       if (snowflakeOptions.accountId) {
-        args.push('--snowflake-account-id', snowflakeOptions.accountId);
+        args.push('--snowflake-account-id', escapeShellArg(snowflakeOptions.accountId));
       }
       if (snowflakeOptions.warehouse) {
-        args.push('--snowflake-warehouse', snowflakeOptions.warehouse);
+        args.push('--snowflake-warehouse', escapeShellArg(snowflakeOptions.warehouse));
       }
     }
 
