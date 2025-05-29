@@ -124,40 +124,78 @@ graph TD
 
 ### 3. Schema Organization
 
-#### File Structure
-
-- Split large schemas into modules
-- Organize by domain/feature
-- Create logical groupings
+_Note: These enhancements apply to all StepZen directives (@rest, @dbquery, @graphql, etc.)_
 
 #### Relationship Mapping
 
-- Add `@materializer` directives
-- Create field connections
-- Establish data relationships
+- Add `@materializer` directives to connect related data
+- Create field connections between types
+- Establish data relationships across different data sources
 
 #### Connection Patterns
 
-- Add GraphQL connection types
-- Implement pagination
-- Configure filtering
+- Add GraphQL connection types for pagination
+- Implement cursor-based pagination (works with @rest and @dbquery)
+- Configure filtering patterns (@dbquery has built-in filtering, @rest could use schema-based filtering)
 
 #### Tool Integration
 
-- Add `@tool` directives for LLM
+- Add `@tool` directives for LLM integration
 - Configure AI-friendly schemas
-- Enable intelligent querying
+- Enable intelligent querying across all data sources
+
+#### File Structure (Future Enhancement)
+
+_This could become a standalone "Organize Schema" command_
+
+- Analyze entire schema structure
+- Split large schemas into logical modules
+- Organize by domain/feature across all directive types
+- Create logical groupings for better maintainability
 
 ## Implementation Details
+
+### Architecture Alignment
+
+The Import Enhancement System follows the established [extension architecture](./architecture.md) with proper service registry integration and layered design.
 
 ### New Commands
 
 ```typescript
-// Command constants
-IMPORT_CURL: "stepzen.importCurl";
-IMPORT_OPENAPI: "stepzen.importOpenapi";
-ENHANCE_IMPORT: "stepzen.enhanceImport";
-ANALYZE_SCHEMA: "stepzen.analyzeSchema";
+// src/utils/constants.ts - Command constants
+export const COMMANDS = {
+  // ... existing commands
+  IMPORT_CURL: "stepzen.importCurl";
+  IMPORT_OPENAPI: "stepzen.importOpenapi";
+  ENHANCE_IMPORT: "stepzen.enhanceImport";
+  ANALYZE_SCHEMA: "stepzen.analyzeSchema";
+} as const;
+```
+
+### Service Registry Integration
+
+Following the established dependency injection pattern, new services will be added to the service registry:
+
+```typescript
+// src/services/index.ts
+export interface ServiceRegistry {
+  // Existing services
+  cli: StepzenCliService;
+  logger: Logger;
+  projectResolver: ProjectResolver;
+  schemaIndex: SchemaIndexService;
+  request: RequestService;
+
+  // New import enhancement services
+  importDetection: ImportDetectionService;
+  schemaEnhancement: SchemaEnhancementEngine;
+}
+
+export const services: ServiceRegistry = {
+  // ... existing services
+  importDetection: new ImportDetectionService(logger),
+  schemaEnhancement: new SchemaEnhancementEngine(logger),
+};
 ```
 
 ### Core Services
@@ -165,60 +203,273 @@ ANALYZE_SCHEMA: "stepzen.analyzeSchema";
 #### ImportDetectionService
 
 ```typescript
+// src/services/importDetection.ts
 export class ImportDetectionService {
+  constructor(private logger: Logger) {}
+
   /**
    * Monitors file system for CLI-generated schemas
+   * Uses VS Code file watcher API for real-time detection
    */
-  async detectImportedSchemas(): Promise<ImportedSchema[]>;
+  async detectImportedSchemas(): Promise<ImportedSchema[]> {
+    this.logger.debug("Scanning for imported schemas");
+    try {
+      // Implementation using vscode.workspace.findFiles
+      // Detect CLI-generated patterns and metadata
+    } catch (err) {
+      this.logger.error("Failed to detect imported schemas", err);
+      throw new ValidationError(
+        "Schema detection failed",
+        "DETECTION_FAILED",
+        err
+      );
+    }
+  }
 
   /**
    * Analyzes schema for enhancement opportunities
+   * Integrates with existing SchemaIndexService
    */
-  async analyzeSchema(schema: ImportedSchema): Promise<Enhancement[]>;
+  async analyzeSchema(schema: ImportedSchema): Promise<Enhancement[]> {
+    this.logger.info(`Analyzing schema: ${schema.name}`);
+    try {
+      // Use services.schemaIndex for schema parsing
+      // Apply enhancement detection logic
+    } catch (err) {
+      this.logger.error("Schema analysis failed", err);
+      throw new ValidationError(
+        "Schema analysis failed",
+        "ANALYSIS_FAILED",
+        err
+      );
+    }
+  }
 
   /**
    * Identifies CLI-generated patterns
+   * Recognizes stepzen import curl/openapi output
    */
-  async identifyImportSource(file: string): Promise<ImportSource>;
+  async identifyImportSource(file: string): Promise<ImportSource> {
+    this.logger.debug(`Identifying import source for: ${file}`);
+    // Pattern matching for CLI-generated schemas
+  }
 }
 ```
 
 #### SchemaEnhancementEngine
 
 ```typescript
+// src/services/schemaEnhancement.ts
 export class SchemaEnhancementEngine {
+  constructor(private logger: Logger) {}
+
   /**
    * Applies REST directive improvements
+   * Uses existing DirectiveBuilder for consistent formatting
    */
   async enhanceRestDirective(
     directive: RestDirective,
     enhancements: RestEnhancement[]
-  ): Promise<void>;
+  ): Promise<void> {
+    this.logger.info("Enhancing @rest directive");
+    try {
+      // Use DirectiveBuilder.createRestConfig() pattern
+      // Apply enhancements using established patterns
+    } catch (err) {
+      this.logger.error("REST directive enhancement failed", err);
+      throw new ValidationError(
+        "Enhancement failed",
+        "ENHANCEMENT_FAILED",
+        err
+      );
+    }
+  }
 
   /**
    * Improves type definitions
+   * Integrates with SchemaIndexService for type analysis
    */
   async enhanceTypes(
     types: GraphQLType[],
     enhancements: TypeEnhancement[]
-  ): Promise<void>;
+  ): Promise<void> {
+    this.logger.info(`Enhancing ${types.length} type definitions`);
+    try {
+      // Use services.schemaIndex for type information
+      // Apply built-in scalar conversions
+    } catch (err) {
+      this.logger.error("Type enhancement failed", err);
+      throw new ValidationError(
+        "Type enhancement failed",
+        "TYPE_ENHANCEMENT_FAILED",
+        err
+      );
+    }
+  }
 
   /**
    * Organizes schema structure
+   * Works across all directive types (@rest, @dbquery, @graphql)
    */
   async organizeSchema(
     schema: GraphQLSchema,
     organization: SchemaOrganization
-  ): Promise<void>;
+  ): Promise<void> {
+    this.logger.info("Organizing schema structure");
+    try {
+      // Cross-directive analysis and organization
+      // Use existing schema processing patterns
+    } catch (err) {
+      this.logger.error("Schema organization failed", err);
+      throw new ValidationError(
+        "Schema organization failed",
+        "ORGANIZATION_FAILED",
+        err
+      );
+    }
+  }
 }
 ```
 
-### Enhancement Configuration
+### Command Implementation Pattern
+
+Following the established command pattern from architecture.md:
+
+```typescript
+// src/commands/importCurl.ts
+export async function importCurl() {
+  try {
+    services.logger.info("Starting cURL import with enhancement");
+
+    // 1. Check workspace trust
+    if (!vscode.workspace.isTrusted) {
+      vscode.window.showWarningMessage(
+        "Import features not available in untrusted workspaces"
+      );
+      return;
+    }
+
+    // 2. Collect parameters through VS Code UI
+    const importConfig = await collectCurlParameters();
+    if (!importConfig) {
+      services.logger.info("cURL import cancelled by user");
+      return;
+    }
+
+    // 3. Execute CLI import using existing CLI service
+    const cliArgs = buildCurlImportArgs(importConfig);
+    await services.cli.spawnProcessWithOutput(["import", "curl", ...cliArgs]);
+
+    // 4. Offer enhancement
+    await offerEnhancement();
+
+    services.logger.info("cURL import with enhancement completed");
+  } catch (err) {
+    handleError(err); // Use established error handling
+  }
+}
+```
+
+### Error Handling Integration
+
+Following the established error hierarchy:
+
+```typescript
+// src/errors/index.ts - Extend existing error types
+export class ImportError extends StepZenError {
+  constructor(message: string, code: string, cause?: unknown) {
+    super(message, code, cause);
+    this.name = "ImportError";
+  }
+}
+
+export class EnhancementError extends StepZenError {
+  constructor(message: string, code: string, cause?: unknown) {
+    super(message, code, cause);
+    this.name = "EnhancementError";
+  }
+}
+```
+
+### CLI Integration
+
+Leveraging the existing CLI service patterns:
+
+```typescript
+// Execute CLI import with extension parameters
+await services.cli.spawnProcessWithOutput([
+  "import",
+  "curl",
+  endpoint,
+  ...headers,
+  ...authConfig,
+  "--name",
+  schemaName,
+  "--dir",
+  targetDirectory,
+]);
+```
+
+### Schema Processing Integration
+
+Using existing schema processing layer:
+
+```typescript
+// Leverage existing SchemaIndexService
+const fieldIndex = services.schemaIndex.getFieldIndex();
+const typeDefinitions = services.schemaIndex.getTypeDefinitions();
+
+// Use existing DirectiveBuilder for consistent formatting
+const enhancedDirective = DirectiveBuilder.createRestConfig({
+  endpoint: improvedEndpoint,
+  headers: enhancedHeaders,
+  setters: optimizedSetters,
+});
+```
+
+### Testing Strategy Alignment
+
+Following established testing patterns:
+
+```typescript
+// src/test/unit/services/importDetection.test.ts
+suite("ImportDetectionService", () => {
+  let service: ImportDetectionService;
+  let mockLogger: Logger;
+
+  setup(() => {
+    mockLogger = createMock<Logger>();
+    service = new ImportDetectionService(mockLogger);
+  });
+
+  test("should detect CLI-generated schemas", async () => {
+    // Test implementation following established patterns
+  });
+});
+```
+
+### WebView Integration (Future)
+
+When adding enhancement UI, follow established WebView patterns:
+
+```typescript
+// Future: Enhancement selection UI
+// src/panels/enhancementPanel.ts
+export class EnhancementPanel {
+  // Follow existing panel patterns from resultsPanel.ts
+  // Use established WebView communication patterns
+}
+```
+
+### Enhancement Configuration Types
+
+Following TypeScript strict typing patterns established in the architecture:
 
 #### RestEnhancement Interface
 
 ```typescript
-interface RestEnhancement {
+// src/types/enhancement.ts
+export interface RestEnhancement {
   // Response transformation (in order of preference)
   optimizeResultRoot: boolean; // Simple JSON path extraction
   improveSetters: boolean; // Small field mapping changes
@@ -249,7 +500,7 @@ interface RestEnhancement {
 #### TypeEnhancement Interface
 
 ```typescript
-interface TypeEnhancement {
+export interface TypeEnhancement {
   // Naming improvements
   convertFieldNames: boolean;
   improveSemanticNaming: boolean;
@@ -270,21 +521,26 @@ interface TypeEnhancement {
 #### SchemaOrganization Interface
 
 ```typescript
-interface SchemaOrganization {
-  // File structure
-  splitIntoModules: boolean;
-  organizeByDomain: boolean;
-  createLogicalGroups: boolean;
-
-  // Relationships
+export interface SchemaOrganization {
+  // Cross-directive relationship mapping
   addMaterializers: boolean;
   createConnections: boolean;
   establishRelationships: boolean;
 
-  // Advanced features
+  // Pagination and filtering (works with @rest, @dbquery, etc.)
+  addConnectionTypes: boolean;
+  configurePagination: boolean;
+  addFilteringPatterns: boolean;
+
+  // AI and tooling integration
   addToolDirectives: boolean;
   configureAIIntegration: boolean;
   enableIntelligentQuerying: boolean;
+
+  // Future: File structure organization (potential standalone command)
+  // splitIntoModules: boolean;
+  // organizeByDomain: boolean;
+  // createLogicalGroups: boolean;
 }
 ```
 
