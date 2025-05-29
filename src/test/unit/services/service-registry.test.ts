@@ -6,6 +6,7 @@ import { Logger } from '../../../services/logger';
 import { ProjectResolver } from '../../../services/projectResolver';
 import { SchemaIndexService } from '../../../services/SchemaIndexService';
 import { RequestService } from '../../../services/request';
+import { ImportService } from '../../../services/importService';
 
 suite('Service Registry', () => {
   let originalServices: ServiceRegistry;
@@ -25,12 +26,13 @@ suite('Service Registry', () => {
     setMockServices(originalServices);
   });
 
-  test('services should contain cli, logger, projectResolver, schemaIndex, and request by default', () => {
+  test('services should contain cli, logger, projectResolver, schemaIndex, request, and import by default', () => {
     assert.ok(services.cli instanceof StepzenCliService, 'CLI service should be an instance of StepzenCliService');
     assert.ok(services.logger instanceof Logger, 'Logger should be an instance of Logger');
     assert.ok(services.projectResolver instanceof ProjectResolver, 'ProjectResolver should be an instance of ProjectResolver');
     assert.ok(services.schemaIndex instanceof SchemaIndexService, 'SchemaIndex service should be an instance of SchemaIndexService');
     assert.ok(services.request instanceof RequestService, 'Request service should be an instance of RequestService');
+    assert.ok(services.import instanceof ImportService, 'Import service should be an instance of ImportService');
   });
 
   test('overrideServices should replace individual services', () => {
@@ -106,6 +108,9 @@ suite('Service Registry', () => {
         executePersistedDocumentRequest: async () => ({ data: {} }),
         validateRequestOptions: () => { /* mock implementation */ },
         calculateDocumentHash: () => 'sha256:mockhash'
+      }),
+      import: createMock<ImportService>({
+        executeImport: async () => ({ success: true, targetDir: './stepzen', schemaName: 'test' })
       })
     };
 
@@ -118,6 +123,7 @@ suite('Service Registry', () => {
     assert.strictEqual(services.projectResolver, mockServices.projectResolver, 'ProjectResolver service should be replaced with mock');
     assert.strictEqual(services.schemaIndex, mockServices.schemaIndex, 'SchemaIndex service should be replaced with mock');
     assert.strictEqual(services.request, mockServices.request, 'Request service should be replaced with mock');
+    assert.strictEqual(services.import, mockServices.import, 'Import service should be replaced with mock');
     
     // Verify that previous contains all original services
     assert.strictEqual(previous.cli, originalServices.cli, 'previous should contain original CLI service');
@@ -125,6 +131,7 @@ suite('Service Registry', () => {
     assert.strictEqual(previous.projectResolver, originalServices.projectResolver, 'previous should contain original ProjectResolver service');
     assert.strictEqual(previous.schemaIndex, originalServices.schemaIndex, 'previous should contain original SchemaIndex service');
     assert.strictEqual(previous.request, originalServices.request, 'previous should contain original Request service');
+    assert.strictEqual(previous.import, originalServices.import, 'previous should contain original Import service');
     
     // Reset to original services
     setMockServices(previous);
@@ -135,6 +142,7 @@ suite('Service Registry', () => {
     assert.strictEqual(services.projectResolver, originalServices.projectResolver, 'ProjectResolver service should be restored');
     assert.strictEqual(services.schemaIndex, originalServices.schemaIndex, 'SchemaIndex service should be restored');
     assert.strictEqual(services.request, originalServices.request, 'Request service should be restored');
+    assert.strictEqual(services.import, originalServices.import, 'Import service should be restored');
   });
 
   test('mocked service should be usable in place of real service', async () => {

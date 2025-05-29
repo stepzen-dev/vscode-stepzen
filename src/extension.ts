@@ -224,6 +224,23 @@ export async function activate(context: vscode.ExtensionContext) {
       const { addTool } = await import("./commands/addTool.js");
       return addTool();
     }),
+    // Import commands
+    safeRegisterCommand(COMMANDS.IMPORT_CURL, async () => {
+      const { importCurl } = await import("./commands/importCurl.js");
+      return importCurl();
+    }),
+    safeRegisterCommand(COMMANDS.IMPORT_OPENAPI, async () => {
+      const { importOpenapi } = await import("./commands/importOpenapi.js");
+      return importOpenapi();
+    }),
+    safeRegisterCommand(COMMANDS.IMPORT_GRAPHQL, async () => {
+      const { importGraphql } = await import("./commands/importGraphql.js");
+      return importGraphql();
+    }),
+    safeRegisterCommand(COMMANDS.IMPORT_DATABASE, async () => {
+      const { importDatabase } = await import("./commands/importDatabase.js");
+      return importDatabase();
+    }),
     safeRegisterCommand(COMMANDS.RUN_OPERATION, async (...args: unknown[]) => {
       const { runOperation } = await import("./commands/runRequest.js");
       return runOperation(args[0] as any);
