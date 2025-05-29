@@ -23,6 +23,10 @@ export const COMMANDS = {
   CLEAR_RESULTS: "stepzen.clearResults",
   OPEN_SCHEMA_VISUALIZER: "stepzen.openSchemaVisualizer",
   GENERATE_OPERATIONS: "stepzen.generateOperations",
+  IMPORT_CURL: "stepzen.importCurl",
+  IMPORT_OPENAPI: "stepzen.importOpenapi",
+  IMPORT_GRAPHQL: "stepzen.importGraphql",
+  IMPORT_DATABASE: "stepzen.importDatabase",
 } as const;
 
 // Configuration keys

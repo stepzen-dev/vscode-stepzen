@@ -108,7 +108,7 @@ async function collectCurlConfiguration(): Promise<CurlImportConfig | undefined>
 
   // Step 5: Build final configuration
   const config: CurlImportConfig = {
-    endpoint: parsedConfig.endpoint,
+    endpoint: parsedConfig.endpoint || curlInput, // Fallback to original input
     name,
     queryName,
     nonInteractive: true, // Always use non-interactive mode
@@ -277,12 +277,4 @@ async function collectAdvancedOptions(): Promise<Partial<CurlImportConfig>> {
   }
   
   return options;
-}
-
-// Add to module exports for use in extension.ts
-declare global {
-  interface CurlImportConfig {
-    suggestedName?: string;
-    suggestedQueryName?: string;
-  }
 } 

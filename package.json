@@ -71,6 +71,26 @@
         "category": "StepZen"
       },
       {
+        "command": "stepzen.importCurl",
+        "title": "Import cURL",
+        "category": "StepZen"
+      },
+      {
+        "command": "stepzen.importOpenapi",
+        "title": "Import OpenAPI",
+        "category": "StepZen"
+      },
+      {
+        "command": "stepzen.importGraphql",
+        "title": "Import GraphQL",
+        "category": "StepZen"
+      },
+      {
+        "command": "stepzen.importDatabase",
+        "title": "Import Database",
+        "category": "StepZen"
+      },
+      {
         "command": "stepzen.openSchemaVisualizer",
         "title": "Open Schema Visualizer",
         "category": "StepZen"

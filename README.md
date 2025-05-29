@@ -1,262 +1,236 @@
-# StepZen Tools for VSCode
+# StepZen VS Code Extension
 
-This extension adds tools for working with StepZen projects inside Visual Studio Code.
+A comprehensive VS Code extension for developing GraphQL APIs with StepZen, featuring intelligent schema management, import capabilities, and development tools.
 
 ## Features
 
-- **Initialize StepZen Projects**
-  Start a new StepZen project with `stepzen.config.json`, sample schema, and operations files.
+### 🚀 Import & Integration
 
-- **Deploy StepZen Projects**
-  Run `stepzen deploy` directly from the Command Palette.
+- **cURL Import** - Convert REST endpoints to GraphQL with smart cURL parsing
+- **OpenAPI Import** - Generate schemas from OpenAPI specifications
+- **GraphQL Import** - Import existing GraphQL endpoints with authentication
+- **Database Import** - Connect PostgreSQL, MySQL, Oracle, Snowflake, and more
+- **Smart Configuration** - Auto-detect secrets, generate names, validate inputs
 
-- **Run GraphQL Requests**
-  Select a query (or run the entire editor content) and send it via `stepzen request`. Supports multiple operations with a quick operation picker.
+### 📊 Schema Management
 
-- **Code Lens for GraphQL Operations**
-  Run GraphQL operations directly from your `.graphql` files with code lens buttons. Supports both regular and persisted operations.
+- **Schema Indexing** - Real-time analysis of GraphQL schemas and directives
+- **Type Definitions** - Navigate and explore your schema structure
+- **Directive Support** - Full support for StepZen directives (@rest, @dbquery, @graphql, etc.)
+- **File Watching** - Automatic updates when schema files change
 
-- **Results Panel with Trace View**
-  View GraphQL results in a panel with tabs for data, errors, debug information, and a waterfall visualization of operation timing.
+### 🛠️ Development Tools
 
-- **Open Query Explorer**
-  Launch an embedded GraphiQL interface inside VSCode, connected to your deployed StepZen endpoint.
+- **CLI Integration** - Seamless StepZen CLI command execution
+- **Project Management** - Initialize and manage StepZen projects
+- **Request Testing** - Execute GraphQL operations directly from VS Code
+- **Error Handling** - Comprehensive error reporting and validation
 
-- **Schema Visualizer**
-  Visualize your GraphQL schema structure with an interactive diagram showing relationships between types.
+### 🎯 Smart Features
 
-- **Go to Definition for Types and Fields**
-  Navigate to types or query fields in your StepZen project. Works across multiple included schema files.
+- **Auto-completion** - Intelligent suggestions for StepZen directives
+- **Syntax Highlighting** - Enhanced GraphQL syntax support
+- **Schema Validation** - Real-time validation of schema files
+- **Quick Actions** - Context-aware commands and shortcuts
 
-- **Add Materializer**
-  Quickly add materializer directives to your GraphQL types.
+## Quick Start
 
-- **Generate Operations**
-  Automatically generate GraphQL operations for your schema with correctly typed variables, including proper nullability handling.
+### Installation
 
-## Installation
+1. Install the extension from the VS Code Marketplace
+2. Ensure you have the [StepZen CLI](https://stepzen.com/docs/quick-start) installed
+3. Open a workspace and start building GraphQL APIs
 
-Choose one of the following installation methods:
+### Import Your First API
 
-### Download Latest Release
+#### Import a REST API
 
-1. Download the `.vsix` file from the [Releases page](https://github.com/stepzen-dev/vscode-stepzen/releases/latest)
+```bash
+# Command Palette: "StepZen: Import cURL"
+# Paste your cURL command or endpoint URL
+curl -H "Authorization: Bearer token" https://api.github.com/user
+```
 
-2. Install the extension into VS Code:
-   - Open the Command Palette (`Ctrl+Shift+P`)
-   - Choose **Extensions: Install from VSIX...**
-   - Select the downloaded `.vsix` file
+#### Import a Database
 
-### Install from Source
+```bash
+# Command Palette: "StepZen: Import Database"
+# Select database type and provide connection details
+postgresql://user:pass@localhost:5432/mydb
+```
 
-1. Build the extension:
+#### Import GraphQL Endpoint
 
-   ```bash
-   npm install
-   npm run compile
-   npx @vscode/vsce package
-   ```
+```bash
+# Command Palette: "StepZen: Import GraphQL"
+# Provide endpoint and authentication
+https://api.github.com/graphql
+```
 
-2. Install the extension into VS Code:
-   - Open the Command Palette (`Ctrl+Shift+P`)
-   - Choose **Extensions: Install from VSIX...**
-   - Select the generated `.vsix` file
+#### Import OpenAPI Specification
 
-## Usage
+```bash
+# Command Palette: "StepZen: Import OpenAPI"
+# Select local file or provide URL
+https://petstore.swagger.io/v2/swagger.json
+```
 
-- **StepZen: Initialize Project**
-  Create a new StepZen project with sample files.
-  - Choose where to create your project (current folder, subfolder, or new location)
-  - Define your endpoint in the format "folder/name" (e.g., dev/myapi)
-  - Access created files immediately after initialization
+## Commands
 
-- **StepZen: Deploy Project**
-  Deploy the current StepZen project to your StepZen endpoint.
+### Import Commands
 
-- **StepZen: Run GraphQL Request**
-  Run a GraphQL operation via the StepZen CLI.
-  - If multiple operations are present, a picker will prompt you.
-  - If nothing is selected, the entire editor contents will be sent.
+- `StepZen: Import cURL` - Import REST endpoints using cURL syntax
+- `StepZen: Import OpenAPI` - Import from OpenAPI/Swagger specifications
+- `StepZen: Import GraphQL` - Import existing GraphQL endpoints
+- `StepZen: Import Database` - Import database schemas (PostgreSQL, MySQL, etc.)
 
-- **CodeLens: Run and Run (persisted)**
-  Click the CodeLens buttons above GraphQL operations in files declared in `@sdl(executables: [])` to execute them directly.
+### Development Commands
 
-- **StepZen: Open Query Explorer**
-  Opens an interactive GraphiQL editor directly inside VSCode.
-  - Uses your deployed StepZen endpoint and credentials automatically.
-  - Live schema introspection is enabled.
+- `StepZen: Initialize Project` - Create a new StepZen project
+- `StepZen: Deploy Schema` - Deploy your schema to StepZen
+- `StepZen: Run GraphQL Request` - Execute GraphQL operations
+- `StepZen: Open Schema Visualizer` - Visualize your schema structure
 
-- **StepZen: Open Schema Visualizer**
-  Opens an interactive visualization of your GraphQL schema.
-  - Shows relationships between types in your schema.
-  - Click on types to focus and explore their connections.
-  - Access via command palette or through CodeLens buttons on type definitions.
+### Utility Commands
 
-- **StepZen: Go to Definition**
-  Right-click a type or field inside a `.graphql` file to jump to its definition.
+- `StepZen: Generate Operations` - Create sample GraphQL operations
+- `StepZen: Validate Schema` - Check schema for errors
+- `StepZen: Show Logs` - View extension logs and debugging info
 
-- **StepZen: Add Materializer**
-  Right-click on a field in a GraphQL type to add a materializer directive.
+## Import Features
 
-- **StepZen: Generate Operations from Schema**
-  Creates GraphQL operation files for each query field in the schema and adds them to the executable documents section of the SDL directive.
-  - Files are created in an 'operations' directory
-  - Each operation includes all available fields (up to 4 levels deep)
-  - Query variables are correctly typed with proper nullability (e.g., String, String!, [Int]!, etc.)
-  - Arguments match schema definitions exactly, preventing type mismatch errors
-  - Existing operations are preserved with timestamped versions
-  - Great for creating schema snapshots for testing and validation
+### Smart cURL Parsing
 
-## Requirements
+- **Auto-detection** of authentication headers and secrets
+- **Path parameter** extraction and configuration
+- **Query name generation** from URL paths
+- **Schema naming** from hostnames
 
-- [StepZen CLI](https://stepzen.com/docs/stepzen-cli/install) must be installed and configured.
-  (`stepzen whoami` should succeed.)
+### Database Integration
 
-- Your workspace must contain a `stepzen.config.json` at the root.
+- **Multiple database types**: PostgreSQL, MySQL, IBM Db2, Oracle, Snowflake, Presto
+- **Flexible connection**: Connection strings or individual parameters
+- **Auto-linking**: Automatic `@materializer` relationships
+- **Advanced options**: Schema selection, table filtering, custom naming
 
-## Known Limitations
+### Authentication Support
 
-- Only `.graphql` files are recognized for Go to Definition.
-- The extension expects your project to define included schemas via the `@sdl` directive.
-- Advanced GraphQL language server features (e.g., full IntelliSense) are not yet implemented.
+- **Bearer tokens** for API authentication
+- **API key headers** with custom header names
+- **Basic authentication** with username/password
+- **Custom headers** for proprietary auth schemes
+- **Secret management** with automatic detection and secure storage
+
+### Configuration Options
+
+- **Working directories** for organized project structure
+- **Schema naming** with validation and suggestions
+- **Type prefixes** to avoid naming conflicts
+- **Advanced settings** for fine-tuned control
+
+## Architecture
+
+The extension follows a layered architecture with clear separation of concerns:
+
+```
+Extension Layer (Commands, Panels, Utils)
+    ↓
+Service Registry (CLI, Logger, Import, SchemaIndex, Request)
+    ↓
+Schema Processing Layer (Indexer, Linker, Parser)
+    ↓
+Types (Pure data structures)
+```
+
+### Key Services
+
+- **ImportService** - Handles all import operations with type-specific builders
+- **SchemaIndexService** - Real-time schema analysis and indexing
+- **StepzenCliService** - CLI integration and command execution
+- **Logger** - Comprehensive logging and debugging
+- **RequestService** - GraphQL request execution
+
+## Configuration
+
+### Extension Settings
+
+```json
+{
+  "stepzen.cliPath": "/path/to/stepzen",
+  "stepzen.logLevel": "info",
+  "stepzen.autoValidate": true,
+  "stepzen.defaultWorkingDir": "./stepzen"
+}
+```
+
+### Project Configuration
+
+The extension automatically detects StepZen projects and provides context-aware features based on your `stepzen.config.json` and schema files.
 
 ## Development
 
-### Building
+### Prerequisites
+
+- Node.js 16+
+- VS Code 1.74+
+- StepZen CLI
+
+### Building from Source
 
 ```bash
-# Install dependencies
+git clone https://github.com/stepzen-dev/vscode-stepzen
+cd vscode-stepzen
 npm install
-
-# Build the extension
 npm run compile
-
-# Watch for changes during development
-npm run watch
 ```
 
-### Code Quality & Linting
-
-This project uses multiple linting tools to ensure code quality:
+### Running Tests
 
 ```bash
-# Run ESLint for code style and best practices
-npm run lint
-
-# Check for unused TypeScript exports
-npm run lint:prune
-
-# Check for unused dependencies
-npm run lint:deps
-
-# Run type checking
-npm run check-types
-
-# Run all linting tools (used in CI)
-npm run ci:lint
+npm test                    # Run all tests
+npm run test:unit          # Unit tests only
+npm run test:integration   # Integration tests only
 ```
 
-**CI Integration**: All linting tools run automatically in GitHub Actions on every push and pull request. The CI will fail if any of these tools report issues:
+### Contributing
 
-- **ESLint** - Enforces code style, prevents console statements, ensures proper imports
-- **ts-prune** - Finds unused exports to keep the codebase clean
-- **depcheck** - Identifies unused dependencies and missing dependencies
+1. Fork the repository
+2. Create a feature branch
+3. Add tests for new functionality
+4. Ensure all tests pass
+5. Submit a pull request
 
-Configuration files:
-- ESLint: `eslint.config.mjs`
-- depcheck: `.depcheckrc`
-- TypeScript: `tsconfig.json`
+## Troubleshooting
 
-### Testing
+### Common Issues
 
-The extension uses the standard VS Code testing framework with Mocha. The tests are located in the `src/test` directory. View the README.md file in that directory for more details.
+**CLI Not Found**
 
-#### Running Tests
+- Ensure StepZen CLI is installed and in your PATH
+- Set `stepzen.cliPath` in VS Code settings if needed
 
-To run tests, use the following commands:
+**Import Failures**
 
-```bash
-# Compile the tests and run them
-npm run test
+- Check network connectivity for remote resources
+- Verify authentication credentials
+- Review VS Code output panel for detailed error messages
 
-# Just compile the tests
-npm run compile-tests
+**Schema Validation Errors**
 
-# Watch for changes in tests
-npm run watch-tests
-```
+- Ensure GraphQL syntax is correct
+- Check StepZen directive usage
+- Validate file paths and references
 
-The recommended approach for testing during development:
+### Getting Help
 
-1. Make changes to the extension code
-2. Run `npm run compile-tests` to compile the tests
-3. Use VS Code's built-in Test Explorer to run and debug tests
-4. For CI/CD pipelines, use `npm run test` to run all tests
+- Check the [StepZen Documentation](https://stepzen.com/docs)
+- Review extension logs in VS Code Output panel
+- Report issues on [GitHub](https://github.com/stepzen-dev/vscode-stepzen/issues)
 
-#### Writing Tests
+## License
 
-Tests are written using Mocha's test suite format in TypeScript. Examples of tests include:
+This extension is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
-1. **Unit tests** - Test individual functions or components
-2. **Integration tests** - Test how components work together
-3. **Extension tests** - Test extension commands and functionality
+---
 
-A simple test follows this pattern:
-
-```typescript
-import * as assert from "assert";
-import * as vscode from "vscode";
-
-suite("Your Test Suite Name", () => {
-  test("Your Test Name", () => {
-    // Your test code here
-    assert.strictEqual(actual, expected);
-  });
-});
-```
-
-All tests will be automatically compiled to the `out/test` directory and run by the VS Code test runner.
-
-For more detailed information about testing, including how to mock services in tests, please refer to the [test directory README](src/test/README.md).
-
-## Contributing
-
-We welcome contributions to the StepZen VS Code extension! Before getting started, please review our architecture documentation to understand the codebase structure and development patterns.
-
-### Quick Start
-
-1. **Read the Architecture Guide**: [docs/architecture.md](docs/architecture.md) - Essential reading for understanding the extension's structure, service patterns, and coding conventions.
-
-2. **Development Setup**:
-   ```bash
-   git clone https://github.com/stepzen-dev/vscode-stepzen.git
-   cd vscode-stepzen
-   npm install
-   npm run compile
-   ```
-
-3. **Code Quality**: Run linting and tests before submitting:
-   ```bash
-   npm run ci:lint    # All linting checks
-   npm run test       # Run all tests
-   ```
-
-### Key Resources
-
-- **[Architecture Documentation](docs/architecture.md)** - Complete guide to the extension's structure
-- **[Test Documentation](src/test/README.md)** - Testing patterns and service mocking
-- **[Enhancement Roadmap](enhancements.md)** - Planned features and improvements
-
-### Development Guidelines
-
-- Follow the service-oriented architecture patterns
-- Use the dependency injection system for testability
-- Include tests for new features and bug fixes
-- Update documentation for significant changes
-- All code must pass linting and type checking
-
-For questions or discussions, please use GitHub Issues or Discussions.
-
-## Feedback
-
-Feel free to open issues or suggest improvements!
+_Portions of the Content may be generated with the assistance of CursorAI_

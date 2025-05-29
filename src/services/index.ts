@@ -21,9 +21,9 @@ export interface ServiceRegistry {
 /**
  * Default service implementations
  */
-const cli = new StepzenCliService(logger);
+const cli = new StepzenCliService();
 const projectResolver = new ProjectResolver(logger);
-const schemaIndex = new SchemaIndexService(logger);
+const schemaIndex = new SchemaIndexService();
 const request = new RequestService(logger);
 const importService = new ImportService(logger, cli);
 

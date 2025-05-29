@@ -3,7 +3,6 @@
  * Assisted by CursorAI
  */
 
-import * as vscode from "vscode";
 import { Logger } from "./logger";
 import { StepzenCliService } from "./cli";
 import { 
@@ -47,26 +46,27 @@ export class ImportService {
   async executeImport(config: ImportConfig): Promise<ImportResult> {
     this.logger.info(`Starting ${this.getImportType(config)} import`);
 
-    try {
-      // Get the appropriate command builder
-      const builder = this.getBuilder(config);
-      
-      // Validate configuration
-      if (!builder.validate(config)) {
-        throw new ValidationError(
-          "Invalid import configuration",
-          "INVALID_CONFIG"
-        );
-      }
+    // Get the appropriate command builder
+    const builder = this.getBuilder(config);
+    
+    // Validate configuration - let validation errors bubble up
+    if (!builder.validate(config)) {
+      throw new ValidationError(
+        "Invalid import configuration",
+        "INVALID_CONFIG"
+      );
+    }
 
+    try {
       // Build CLI arguments
       const args = builder.buildArgs(config);
       this.logger.debug(`CLI args: ${args.join(' ')}`);
 
-      // Execute the CLI command
-      const result = await this.cli.spawnProcessWithOutput(args);
-
-      if (result.success) {
+      // Execute the CLI command and handle the response
+      try {
+        const output = await this.cli.spawnProcessWithOutput(args);
+        this.logger.debug(`CLI output: ${output}`);
+        
         this.logger.info(`${this.getImportType(config)} import completed successfully`);
         return {
           success: true,
@@ -74,11 +74,11 @@ export class ImportService {
           schemaName: config.name,
           files: [] // TODO: Parse CLI output to get generated files
         };
-      } else {
-        this.logger.error(`Import failed: ${result.error}`);
+      } catch (cliError: any) {
+        this.logger.error(`Import failed: ${cliError.message}`);
         return {
           success: false,
-          error: result.error
+          error: cliError.message
         };
       }
     } catch (err) {
@@ -112,14 +112,29 @@ export class ImportService {
    * Determine the import type from the configuration
    */
   private getImportType(config: ImportConfig): ImportType {
-    if ('endpoint' in config && 'pathParams' in config) {
-      return 'curl';
-    } else if ('spec' in config) {
-      return 'openapi';
-    } else if ('endpoint' in config && !('pathParams' in config)) {
-      return 'graphql';
-    } else if ('type' in config) {
+    // Check for database import first (has 'type' property)
+    if ('type' in config) {
       return 'database';
+    }
+    
+    // Check for OpenAPI import (has 'spec' property)
+    if ('spec' in config) {
+      return 'openapi';
+    }
+    
+    // Both cURL and GraphQL have 'endpoint', so we need to distinguish them
+    if ('endpoint' in config) {
+      // Check for cURL-specific properties
+      const curlConfig = config as CurlImportConfig;
+      if (curlConfig.pathParams || 
+          curlConfig.suggestedName || 
+          curlConfig.suggestedQueryName ||
+          curlConfig.queryName) {
+        return 'curl';
+      }
+      
+      // If it has endpoint but no cURL-specific properties, assume GraphQL
+      return 'graphql';
     }
     
     throw new ValidationError(
@@ -139,7 +154,7 @@ class CurlCommandBuilder implements ImportCommandBuilder {
 
   validate(config: ImportConfig): boolean {
     const curlConfig = config as CurlImportConfig;
-    return !!curlConfig.endpoint;
+    return !!curlConfig.endpoint && curlConfig.endpoint.trim().length > 0;
   }
 
   buildArgs(config: ImportConfig): string[] {
@@ -221,7 +236,7 @@ class OpenApiCommandBuilder implements ImportCommandBuilder {
 
   validate(config: ImportConfig): boolean {
     const openApiConfig = config as OpenApiImportConfig;
-    return !!openApiConfig.spec;
+    return !!openApiConfig.spec && openApiConfig.spec.trim().length > 0;
   }
 
   buildArgs(config: ImportConfig): string[] {
@@ -256,7 +271,7 @@ class GraphQLCommandBuilder implements ImportCommandBuilder {
 
   validate(config: ImportConfig): boolean {
     const graphqlConfig = config as GraphQLImportConfig;
-    return !!graphqlConfig.endpoint;
+    return !!graphqlConfig.endpoint && graphqlConfig.endpoint.trim().length > 0;
   }
 
   buildArgs(config: ImportConfig): string[] {
