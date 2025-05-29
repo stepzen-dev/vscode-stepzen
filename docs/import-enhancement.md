@@ -777,16 +777,19 @@ configurationset:
 #### After: Enhanced Configuration
 
 ```yaml
+# TODO: Research actual supported configuration values
+# Need to understand:
+# - What configuration keys are actually supported?
+# - Which values affect StepZen behavior vs. just variable substitution?
+# - What do timeout, retry, caching, batching settings actually do?
+# - Which settings apply to @rest vs @graphql vs @dbquery?
+
 configurationset:
   - configuration:
       name: api_config
       endpoint: https://api.example.com
       apiKey: $API_KEY
-      timeout: 30s
-      retries: 3
-      cache.ttl: 300s
-      batch.maxsize: 10
-      batch.timeout: 50ms
+      # Additional configuration values TBD based on research
 ```
 
 ## Integration Points
