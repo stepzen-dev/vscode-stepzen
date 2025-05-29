@@ -70,11 +70,11 @@ graph TD
 
 #### Response Transformation
 
-- Improve `setters` for better field mapping
-- Add `transforms` for data manipulation
-- Optimize `resultroot` configuration
-- Add `cel` for advanced content extraction
-- Configure `ecmascript` for request/response modification
+- Optimize `resultroot` configuration for simple JSON path extraction
+- Improve `setters` for small field mapping changes
+- Add `transforms` with JSONata or jq for significant data manipulation
+- Configure `cel` for advanced content extraction (legacy approach)
+- Configure `ecmascript` only when JSONata/jq transforms are insufficient
 
 #### Authentication Enhancement
 
@@ -225,12 +225,13 @@ export class SchemaEnhancementEngine {
 
 ```typescript
 interface RestEnhancement {
-  // Response transformation
-  improveSetters: boolean;
-  addTransforms: boolean;
-  optimizeResultRoot: boolean;
-  addCelExtraction: boolean;
-  configureEcmascript: boolean;
+  // Response transformation (in order of preference)
+  optimizeResultRoot: boolean; // Simple JSON path extraction
+  improveSetters: boolean; // Small field mapping changes
+  addJsonataTransforms: boolean; // Preferred for significant data manipulation
+  addJqTransforms: boolean; // Alternative to JSONata for complex transforms
+  addCelExtraction: boolean; // Legacy approach, avoid for new implementations
+  configureEcmascript: boolean; // Last resort when JSONata/jq insufficient
 
   // Authentication
   moveSecretsToConfig: boolean;
@@ -708,6 +709,74 @@ const cliArgs = buildCliArguments(importConfig);
 - Respect workspace trust
 - Validate file permissions
 - Secure temporary files
+
+### Response Transformation Decision Tree
+
+The extension should guide users to the most appropriate transformation approach based on their needs:
+
+#### 1. Simple JSON Path Extraction → `resultroot`
+
+**Use when:** The API response has the data nested in a predictable location
+
+```graphql
+# API returns: {"data": {"users": [...]}}
+# Use: resultroot: "data.users"
+```
+
+#### 2. Small Field Mapping → `setters`
+
+**Use when:** Only a few fields need renaming or simple path changes
+
+```graphql
+# API returns: {"first_name": "John", "email_addr": "john@example.com"}
+# Use: setters: [
+#   {field: "firstName", path: "first_name"}
+#   {field: "email", path: "email_addr"}
+# ]
+```
+
+#### 3. Significant Data Manipulation → `transforms` with JSONata/jq
+
+**Use when:** Complex data restructuring, filtering, or computation is needed
+
+**JSONata (Preferred):**
+
+```graphql
+# Complex object transformation, filtering, aggregation
+transforms: [{
+  pathpattern: ["data"]
+  editor: "jsonata:$map(users, function($user) {
+    'fullName': $user.firstName & ' ' & $user.lastName,
+    'email': $user.email,
+    'isActive': $user.status = 'active'
+  })"
+}]
+```
+
+**jq (Alternative):**
+
+```graphql
+# For users familiar with jq syntax
+transforms: [{
+  pathpattern: ["data"]
+  editor: "jq:.users | map({fullName: (.firstName + \" \" + .lastName), email, isActive: (.status == \"active\")})"
+}]
+```
+
+#### 4. Legacy/Advanced Cases → `cel` or `ecmascript`
+
+**Use `cel` only for:** Existing implementations (legacy)
+**Use `ecmascript` only when:** JSONata and jq cannot accomplish the required transformation
+
+### Enhancement Strategy
+
+The extension should:
+
+1. **Analyze the transformation complexity** needed
+2. **Recommend the simplest approach** that meets the requirements
+3. **Provide examples** for the recommended approach
+4. **Warn against** using `ecmascript` unless absolutely necessary
+5. **Suggest JSONata over jq** for new implementations (better performance/safety)
 
 ---
 
