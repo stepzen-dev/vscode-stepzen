@@ -186,55 +186,79 @@ export interface ServiceRegistry {
   schemaIndex: SchemaIndexService;
   request: RequestService;
 
-  // New import enhancement services
-  importDetection: ImportDetectionService;
+  // New import enhancement service
   schemaEnhancement: SchemaEnhancementEngine;
 }
 
 export const services: ServiceRegistry = {
   // ... existing services
-  importDetection: new ImportDetectionService(logger),
   schemaEnhancement: new SchemaEnhancementEngine(logger),
 };
 ```
 
 ### Core Services
 
-#### ImportDetectionService
+#### Leveraging Existing SchemaIndexService
+
+The existing `SchemaIndexService` already provides:
+
+- File watching for GraphQL schema changes
+- Automatic indexing of new schema files
+- Type and directive analysis
+- Field relationship tracking
+
+For import enhancement, we'll extend this existing service rather than creating a new detection service:
 
 ```typescript
-// src/services/importDetection.ts
-export class ImportDetectionService {
+// Enhancement detection leverages existing schema indexing
+const enhancementOpportunities = await analyzeSchemaForEnhancements(
+  services.schemaIndex.getFieldIndex(),
+  services.schemaIndex.getTypeDefinitions()
+);
+```
+
+#### SchemaEnhancementEngine
+
+```typescript
+// src/services/schemaEnhancement.ts
+export class SchemaEnhancementEngine {
   constructor(private logger: Logger) {}
 
   /**
-   * Monitors file system for CLI-generated schemas
-   * Uses VS Code file watcher API for real-time detection
-   */
-  async detectImportedSchemas(): Promise<ImportedSchema[]> {
-    this.logger.debug("Scanning for imported schemas");
-    try {
-      // Implementation using vscode.workspace.findFiles
-      // Detect CLI-generated patterns and metadata
-    } catch (err) {
-      this.logger.error("Failed to detect imported schemas", err);
-      throw new ValidationError(
-        "Schema detection failed",
-        "DETECTION_FAILED",
-        err
-      );
-    }
-  }
-
-  /**
    * Analyzes schema for enhancement opportunities
-   * Integrates with existing SchemaIndexService
+   * Uses existing SchemaIndexService data instead of parsing files directly
    */
-  async analyzeSchema(schema: ImportedSchema): Promise<Enhancement[]> {
-    this.logger.info(`Analyzing schema: ${schema.name}`);
+  async analyzeSchema(
+    filePath: string,
+    fieldIndex: FieldIndex,
+    typeDefinitions: TypeDefinitions
+  ): Promise<Enhancement[]> {
+    this.logger.info(`Analyzing schema for enhancements: ${filePath}`);
     try {
-      // Use services.schemaIndex for schema parsing
-      // Apply enhancement detection logic
+      const opportunities: Enhancement[] = [];
+
+      // Analyze REST directives using existing field index
+      const restFields = fieldIndex.getFieldsByDirective("@rest");
+      for (const field of restFields) {
+        const restEnhancements = this.analyzeRestDirective(field);
+        opportunities.push(...restEnhancements);
+      }
+
+      // Analyze type definitions using existing type index
+      const types = typeDefinitions.getTypesInFile(filePath);
+      for (const type of types) {
+        const typeEnhancements = this.analyzeTypeDefinition(type);
+        opportunities.push(...typeEnhancements);
+      }
+
+      // Analyze schema organization opportunities
+      const organizationEnhancements = this.analyzeSchemaOrganization(
+        fieldIndex,
+        typeDefinitions
+      );
+      opportunities.push(...organizationEnhancements);
+
+      return opportunities;
     } catch (err) {
       this.logger.error("Schema analysis failed", err);
       throw new ValidationError(
@@ -244,24 +268,6 @@ export class ImportDetectionService {
       );
     }
   }
-
-  /**
-   * Identifies CLI-generated patterns
-   * Recognizes stepzen import curl/openapi output
-   */
-  async identifyImportSource(file: string): Promise<ImportSource> {
-    this.logger.debug(`Identifying import source for: ${file}`);
-    // Pattern matching for CLI-generated schemas
-  }
-}
-```
-
-#### SchemaEnhancementEngine
-
-```typescript
-// src/services/schemaEnhancement.ts
-export class SchemaEnhancementEngine {
-  constructor(private logger: Logger) {}
 
   /**
    * Applies REST directive improvements
@@ -328,6 +334,25 @@ export class SchemaEnhancementEngine {
       );
     }
   }
+
+  /**
+   * Identifies CLI-generated patterns in schema
+   * Uses existing schema index data to detect import patterns
+   */
+  private identifyImportPatterns(
+    fieldIndex: FieldIndex,
+    typeDefinitions: TypeDefinitions
+  ): ImportPattern[] {
+    this.logger.debug("Identifying CLI import patterns");
+
+    // Look for patterns typical of CLI-generated schemas:
+    // - Basic @rest directives without advanced features
+    // - Snake_case field names
+    // - Missing documentation
+    // - Suboptimal type usage (String instead of Date/DateTime)
+
+    return [];
+  }
 }
 ```
 
@@ -360,12 +385,64 @@ export async function importCurl() {
     const cliArgs = buildCurlImportArgs(importConfig);
     await services.cli.spawnProcessWithOutput(["import", "curl", ...cliArgs]);
 
-    // 4. Offer enhancement
-    await offerEnhancement();
+    // 4. Wait for schema indexing to complete (existing file watcher will trigger)
+    // The SchemaIndexService will automatically detect and index the new schema file
+
+    // 5. Offer enhancement using existing schema index
+    await offerEnhancement(importConfig.targetFile);
 
     services.logger.info("cURL import with enhancement completed");
   } catch (err) {
     handleError(err); // Use established error handling
+  }
+}
+
+// Enhancement command leverages existing schema indexing
+export async function enhanceImport() {
+  try {
+    services.logger.info("Starting schema enhancement");
+
+    // 1. Get current file from active editor
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || !editor.document.fileName.endsWith(".graphql")) {
+      vscode.window.showErrorMessage("Please open a GraphQL schema file");
+      return;
+    }
+
+    // 2. Use existing schema index to analyze the file
+    const fieldIndex = services.schemaIndex.getFieldIndex();
+    const typeDefinitions = services.schemaIndex.getTypeDefinitions();
+
+    // 3. Analyze for enhancement opportunities
+    const opportunities = await services.schemaEnhancement.analyzeSchema(
+      editor.document.fileName,
+      fieldIndex,
+      typeDefinitions
+    );
+
+    // 4. Present enhancement options to user
+    if (opportunities.length === 0) {
+      vscode.window.showInformationMessage(
+        "No enhancement opportunities found"
+      );
+      return;
+    }
+
+    const selectedEnhancements = await presentEnhancementOptions(opportunities);
+    if (!selectedEnhancements) {
+      services.logger.info("Enhancement cancelled by user");
+      return;
+    }
+
+    // 5. Apply enhancements
+    await services.schemaEnhancement.applyEnhancements(
+      editor.document.fileName,
+      selectedEnhancements
+    );
+
+    services.logger.info("Schema enhancement completed");
+  } catch (err) {
+    handleError(err);
   }
 }
 ```
@@ -656,6 +733,19 @@ type SocialLink {
 }
 
 """
+Connection type for paginated users
+"""
+type UserConnection {
+  edges: [UserEdge!]!
+  pageInfo: PageInfo!
+}
+
+type UserEdge {
+  node: User!
+  cursor: String!
+}
+
+"""
 Connection type for paginated posts
 """
 type PostConnection {
@@ -694,20 +784,20 @@ extend type Query {
     )
 
   """
-  List all users with optional filtering
+  List all users with GraphQL Cursor Connections pagination
   """
   listUsers(
     """
     Maximum number of users to return
     """
-    limit: Int = 20
+    first: Int = 20
     """
-    Offset for pagination
+    Cursor for pagination
     """
-    offset: Int = 0
-  ): [User!]!
+    after: String = ""
+  ): UserConnection
     @rest(
-      endpoint: "https://api.example.com/users?limit=$limit&offset=$offset"
+      endpoint: "https://api.example.com/users?limit=$first&after=$after"
       headers: [{ name: "Authorization", value: "$apiKey" }]
       setters: [
         { field: "firstName", path: "first_name" }
@@ -716,6 +806,10 @@ extend type Query {
         { field: "createdAt", path: "created_at" }
       ]
       resultroot: "users"
+      pagination: {
+        type: NEXT_CURSOR
+        setters: [{ field: "nextCursor", path: "pagination.next_cursor" }]
+      }
       cachepolicy: { strategy: ON }
     )
 
