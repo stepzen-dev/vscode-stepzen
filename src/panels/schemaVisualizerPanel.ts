@@ -480,6 +480,7 @@ class SchemaVisualizerPanel extends BaseWebviewPanel {
     const { schemaModel, focusedType } = data;
     // Load resources
     const jointJsUri = this.getWebviewUri(webview, ["libs", "joint.min.js"]);
+    const d3JsUri = this.getWebviewUri(webview, ["libs", "d3.min.js"]);
     const customJsUri = this.getWebviewUri(webview, ["js", "schema-visualizer.js"]);
     const customCssUri = this.getWebviewUri(webview, ["css", "schema-visualizer.css"]);
     const nonce = this.nonce();
@@ -547,6 +548,7 @@ class SchemaVisualizerPanel extends BaseWebviewPanel {
         <button id="zoom-out" title="Zoom out">-</button>
         <button id="reset" title="Reset view">Reset</button>
         <button id="refresh" title="Refresh schema data">🔄</button>
+        
         <div style="position: relative; flex: 1; display: flex; align-items: center;">
           <input type="text" id="search" placeholder="Search for types or fields..." style="width: 100%;">
           <!-- Search navigation buttons will be added by JS -->
@@ -556,6 +558,9 @@ class SchemaVisualizerPanel extends BaseWebviewPanel {
 
         <!-- Load JointJS v4 first -->
         <script nonce="${nonce}" src="${jointJsUri}"></script>
+        
+        <!-- Load D3.js for force simulation -->
+        <script nonce="${nonce}" src="${d3JsUri}"></script>
 
         <!-- Then pass data and create navigator function -->
         <script nonce="${nonce}">
