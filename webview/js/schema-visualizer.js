@@ -4,10 +4,7 @@
  */
 
 (function() {
-  // vscode is now available globally from the HTML script
-  
   function debugLog(message) {
-    // Only send to VS Code output channel, not console
     vscode.postMessage({
       command: 'debug-log',
       message: message
@@ -31,430 +28,666 @@
     }
   }
   
-  debugLog("Starting schema visualization...");
+  debugLog("Starting clean D3-based schema visualization...");
   
   try {
-    // Check if JointJS is loaded
-    if (typeof joint === 'undefined') {
-      debugLog("Error: JointJS library not found");
+    if (typeof schemaModel === 'undefined' || !schemaModel) {
+      displayErrorMessage("Schema data is not available. Please ensure you have a valid StepZen project open.");
       return;
     }
     
-    debugLog(`JointJS version: ${joint.version || "unknown"}`);
-    
-    // Check if we have schema data
-    if (!schemaModel) {
-      debugLog("Error: Schema model is undefined");
-      displayErrorMessage("Schema model not available. The extension may not have loaded the schema data correctly. Please try refreshing the visualizer.");
-      return;
-    }
-    
-    if (!schemaModel.types) {
-      debugLog("Error: Schema model types property is missing");
-      displayErrorMessage("Schema model is malformed (missing types property). Please try refreshing the visualizer.");
-      return;
-    }
-    
-    // Check if schema model is empty
-    const schemaTypeCount = Object.keys(schemaModel.types).length;
-    if (schemaTypeCount === 0) {
-      debugLog("Warning: Schema model is empty");
-      displayErrorMessage("No schema types were found. Please make sure you have a valid StepZen schema defined in your project with type definitions.");
-      return;
-    }
-    
-    debugLog(`Schema model loaded successfully with ${schemaTypeCount} types`);
-    
-    // Debug the actual schema model structure
-    debugLog(`Schema model structure:`);
-    debugLog(`- types: ${JSON.stringify(Object.keys(schemaModel.types))}`);
-    debugLog(`- fields: ${JSON.stringify(Object.keys(schemaModel.fields))}`);
-    debugLog(`- relationships: ${schemaModel.relationships.length}`);
-    
-    // Debug a sample type
-    const firstTypeName = Object.keys(schemaModel.types)[0];
-    if (firstTypeName) {
-      debugLog(`Sample type ${firstTypeName}:`);
-      debugLog(`- type info: ${JSON.stringify(schemaModel.types[firstTypeName])}`);
-      debugLog(`- fields: ${JSON.stringify(schemaModel.fields[firstTypeName])}`);
-    }
-    
-    // Get VSCode theme information
     const isDarkTheme = document.body.classList.contains('vscode-dark');
+    debugLog(`Theme detected: ${isDarkTheme ? 'dark' : 'light'}`);
     
-    // Initialize JointJS graph
-    const graph = new joint.dia.Graph();
+    const container = document.getElementById('diagram');
+    const containerRect = container.getBoundingClientRect();
+    const width = containerRect.width || 1200;
+    const height = containerRect.height || 800;
     
-    // Create the paper (canvas) with better settings
-    const paper = new joint.dia.Paper({
-      el: document.getElementById('diagram'),
-      model: graph,
-      width: '100%',
-      height: '100%',
-      gridSize: 20,
-      drawGrid: true,
-      background: {
-        color: isDarkTheme ? '#1e1e1e' : '#fafafa'
-      },
-      interactive: function(cellView) {
-        // Allow interaction only for type boxes (not field labels)
-        return cellView.model.prop('typeData') ? true : false;
-      },
-      defaultRouter: { name: 'orthogonal' },
-      defaultConnector: { name: 'rounded' }
-    });
+    debugLog(`Container dimensions: ${width}x${height}`);
     
-    debugLog("Graph and paper created");
+    // Clear and create SVG
+    container.innerHTML = '';
+    const svg = d3.select(container)
+      .append('svg')
+      .attr('width', '100%')
+      .attr('height', '100%')
+      .attr('viewBox', `0 0 ${width} ${height}`)
+      .style('background-color', isDarkTheme ? '#1e1e1e' : '#fafafa');
     
-    // Constants for layout
+    const zoom = d3.zoom()
+      .scaleExtent([0.1, 3])
+      .on('zoom', (event) => {
+        g.attr('transform', event.transform);
+      });
+    
+    svg.call(zoom);
+    const g = svg.append('g');
+    
+    // Create groups in proper z-order (bottom to top)
+    const linkGroup = g.append('g').attr('class', 'links');
+    const nodeGroup = g.append('g').attr('class', 'nodes');
+    const linkLabelGroup = g.append('g').attr('class', 'link-labels');
+    
+    // Constants
     const TYPE_WIDTH = 280;
     const FIELD_HEIGHT = 18;
     const HEADER_HEIGHT = 35;
     const PADDING = 15;
     const MIN_TYPE_HEIGHT = 120;
-    const BASE_SPACING_X = 350;
-    const BASE_SPACING_Y = 200;
-    const MIN_SPACING_BUFFER = 50;  // Minimum buffer between boxes
     
-    // Sort types: root types first, then alphabetically
-    const typeNames = Object.keys(schemaModel.types);
-    const rootTypes = ['Query', 'Mutation', 'Subscription'];
-    const rootTypeNames = rootTypes.filter(t => typeNames.includes(t));
-    const otherTypeNames = typeNames
-      .filter(t => !rootTypes.includes(t))
-      .sort();
+    // Connection constants
+    const STRAIGHT_LINE_LENGTH = 15;
+    const CONTROL_OFFSET_RATIO = 0.3;
+    const MIN_CONTROL_OFFSET = 60;
+    const LABEL_POSITION_RATIO = 0.25;
+    const AUTO_FIT_PADDING = 150;
+    const AUTO_FIT_MAX_SCALE = 0.6;
     
-    const sortedTypeNames = [...rootTypeNames, ...otherTypeNames];
+    // Visual constants
+    const FIELD_BOX_PADDING = 2;
+    const CONNECTION_STROKE_WIDTH = 2.5;
+    const CONNECTION_OPACITY = 0.8;
+    const HOVER_TRANSITION_DURATION = 150;
     
-    // Calculate grid layout
-    const GRID_COLS = Math.min(4, Math.max(2, Math.ceil(Math.sqrt(sortedTypeNames.length))));
-    
-    debugLog(`Processing ${sortedTypeNames.length} types in ${GRID_COLS} columns`);
-    
-    // First pass: calculate all type heights for better layout
-    const typeHeights = new Map();
-    sortedTypeNames.forEach(typeName => {
-      const fields = schemaModel.fields[typeName] || [];
-      const fieldsHeight = Math.max(fields.length * FIELD_HEIGHT, 60);
-      const totalHeight = Math.max(MIN_TYPE_HEIGHT, HEADER_HEIGHT + fieldsHeight + PADDING * 2);
-      typeHeights.set(typeName, totalHeight);
+    // Process data - exclude scalar types to reduce clutter
+    const typeNames = Object.keys(schemaModel.types || {});
+    const referencedTypes = new Set();
+    (schemaModel.relationships || []).forEach(rel => {
+      referencedTypes.add(rel.fromType);
+      referencedTypes.add(rel.toType);
     });
     
-    // Calculate dynamic row heights for better spacing
-    const rowHeights = [];
-    for (let row = 0; row < Math.ceil(sortedTypeNames.length / GRID_COLS); row++) {
-      let maxHeightInRow = MIN_TYPE_HEIGHT;
-      for (let col = 0; col < GRID_COLS; col++) {
-        const index = row * GRID_COLS + col;
-        if (index < sortedTypeNames.length) {
-          const typeName = sortedTypeNames[index];
-          maxHeightInRow = Math.max(maxHeightInRow, typeHeights.get(typeName));
-        }
-      }
-      rowHeights.push(maxHeightInRow);
+    // Filter out scalar types to reduce visual clutter
+    const allTypeNames = Array.from(new Set([...typeNames, ...referencedTypes]))
+      .filter(typeName => {
+        const fields = schemaModel.fields[typeName] || [];
+        const isRootType = ['Query', 'Mutation', 'Subscription'].includes(typeName);
+        // Keep root types and types with fields (exclude scalars)
+        return isRootType || fields.length > 0;
+      });
+    
+    if (allTypeNames.length === 0) {
+      displayErrorMessage("No types found in schema.");
+      return;
     }
     
-    // Create elements for each type
-    const typeElements = new Map();
+    debugLog(`Processing ${allTypeNames.length} types (scalars filtered out)`);
     
-    sortedTypeNames.forEach((typeName, index) => {
-      const typeInfo = schemaModel.types[typeName];
+    // Create nodes - no scalar types
+    const nodes = allTypeNames.map(typeName => {
+      const typeInfo = schemaModel.types[typeName] || {};
       const fields = schemaModel.fields[typeName] || [];
+      const isRootType = ['Query', 'Mutation', 'Subscription'].includes(typeName);
       
-      debugLog(`Processing type ${typeName} with ${fields.length} fields`);
+      const typeHeight = Math.max(MIN_TYPE_HEIGHT, HEADER_HEIGHT + fields.length * FIELD_HEIGHT + PADDING * 2);
       
-      // Calculate position with dynamic spacing
-      const col = index % GRID_COLS;
-      const row = Math.floor(index / GRID_COLS);
-      const x = col * (TYPE_WIDTH + BASE_SPACING_X) + 50;
-      
-      // Calculate y position based on previous row heights
-      let y = 50;
-      for (let r = 0; r < row; r++) {
-        y += rowHeights[r] + MIN_SPACING_BUFFER;
+      return {
+        id: typeName,
+        typeName: typeName,
+        fields: fields,
+        isRoot: isRootType,
+        width: TYPE_WIDTH,
+        height: typeHeight,
+        location: typeInfo.location,
+        x: width / 2 + (Math.random() - 0.5) * 200,
+        y: height / 2 + (Math.random() - 0.5) * 200
+      };
+    });
+    
+    // Create links - only between non-scalar types
+    const links = (schemaModel.relationships || [])
+      .filter(rel => allTypeNames.includes(rel.fromType) && allTypeNames.includes(rel.toType))
+      .map(rel => ({
+        source: rel.fromType,
+        target: rel.toType,
+        fieldName: rel.fieldName
+      }));
+    
+    debugLog(`Created ${nodes.length} nodes and ${links.length} links`);
+    
+    // Force simulation with improved collision detection
+    const simulation = d3.forceSimulation(nodes)
+      .force('link', d3.forceLink(links).id(d => d.id).distance(180).strength(0.2))
+      .force('charge', d3.forceManyBody().strength(-400))
+      .force('center', d3.forceCenter(width / 2, height / 2).strength(0.03))
+      .force('collision', d3.forceCollide().radius(d => Math.max(d.width, d.height) / 2 + 30).strength(0.9))
+      .alphaDecay(0.03)
+      .velocityDecay(0.4);
+    
+    // Stop simulation after initial layout to prevent redrawing on drag
+    let simulationStopped = false;
+    simulation.on('end', () => {
+      if (!simulationStopped) {
+        simulationStopped = true;
+        debugLog("Initial simulation completed - stopping auto-restart");
+        
+        // Auto-fit with padding after initial layout
+        setTimeout(() => {
+          autoFitWithPadding();
+        }, 100);
       }
+    });
+    
+    // Create links - field-to-type connections with curves and labels
+    const link = linkGroup.selectAll('path')
+      .data(links)
+      .enter().append('path')
+      .attr('fill', 'none')
+      .attr('stroke', isDarkTheme ? '#ff6b35' : '#e74c3c')
+      .attr('stroke-width', CONNECTION_STROKE_WIDTH)
+      .attr('stroke-opacity', CONNECTION_OPACITY)
+      .attr('marker-end', 'url(#arrowhead)')
+      .attr('marker-start', 'url(#startpoint)');
+    
+    // Add labels to connections
+    const linkLabels = linkLabelGroup.selectAll('text')
+      .data(links)
+      .enter().append('text')
+      .attr('class', 'link-label')
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'middle')
+      .attr('font-size', '10px')
+      .attr('font-weight', 'bold')
+      .attr('fill', isDarkTheme ? '#ffffff' : '#2c3e50')
+      .attr('stroke', isDarkTheme ? '#1e1e1e' : '#ffffff')
+      .attr('stroke-width', 2)
+      .attr('paint-order', 'stroke')
+      .text(d => d.fieldName || '');
+    
+    // Create markers
+    const defs = svg.append('defs');
+    
+    // Open arrowhead marker (easier to see)
+    defs.append('marker')
+      .attr('id', 'arrowhead')
+      .attr('viewBox', '0 -5 10 10')
+      .attr('refX', 8)
+      .attr('refY', 0)
+      .attr('markerWidth', 6)
+      .attr('markerHeight', 6)
+      .attr('orient', 'auto')
+      .append('path')
+      .attr('d', 'M0,-4L8,0L0,4')
+      .attr('fill', 'none')
+      .attr('stroke', isDarkTheme ? '#ff6b35' : '#e74c3c')
+      .attr('stroke-width', 2);
+    
+    // Start point marker (small circle)
+    defs.append('marker')
+      .attr('id', 'startpoint')
+      .attr('viewBox', '0 -4 8 8')
+      .attr('refX', 0)
+      .attr('refY', 0)
+      .attr('markerWidth', 4)
+      .attr('markerHeight', 4)
+      .attr('orient', 'auto')
+      .append('circle')
+      .attr('cx', 4)
+      .attr('cy', 0)
+      .attr('r', 3)
+      .attr('fill', isDarkTheme ? '#ff6b35' : '#e74c3c');
+    
+    // Auto-fit function with more generous padding
+    function autoFitWithPadding() {
+      if (nodes.length === 0) return;
       
-      // Get the calculated height for this type
-      const totalHeight = typeHeights.get(typeName);
+      // Calculate bounding box of all nodes
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       
-      // Create type element using standard rectangle
-      const typeElement = new joint.shapes.standard.Rectangle({
-        position: { x, y },
-        size: { width: TYPE_WIDTH, height: totalHeight },
-        attrs: {
-          root: {
-            title: typeName
-          },
-          body: {
-            fill: isDarkTheme ? '#2d2d2d' : '#ffffff',
-            stroke: isDarkTheme ? '#6b6b6b' : '#333333',
-            strokeWidth: 2,
-            rx: 8,
-            ry: 8
-          },
-          label: {
-            text: typeName,
-            fontSize: 16,
-            fontWeight: 'bold',
-            fill: isDarkTheme ? '#ffffff' : '#000000',
-            textAnchor: 'middle',
-            textVerticalAnchor: 'top',
-            y: 10
-          }
-        }
+      nodes.forEach(node => {
+        if (!node) return;
+        const left = (node.x || 0) - (node.width || TYPE_WIDTH) / 2;
+        const right = (node.x || 0) + (node.width || TYPE_WIDTH) / 2;
+        const top = (node.y || 0) - (node.height || MIN_TYPE_HEIGHT) / 2;
+        const bottom = (node.y || 0) + (node.height || MIN_TYPE_HEIGHT) / 2;
+        
+        minX = Math.min(minX, left);
+        maxX = Math.max(maxX, right);
+        minY = Math.min(minY, top);
+        maxY = Math.max(maxY, bottom);
       });
       
-              // Store type data for navigation
-        typeElement.prop('typeData', {
-          typeName: typeName,
-          location: typeInfo.location,
-          fields: fields
-        });
-        
-        // Add to graph
-        graph.addCell(typeElement);
-        typeElements.set(typeName, typeElement);
+      // Add more generous padding
+      minX -= AUTO_FIT_PADDING;
+      maxX += AUTO_FIT_PADDING;
+      minY -= AUTO_FIT_PADDING;
+      maxY += AUTO_FIT_PADDING;
       
-                      // Store field elements for this type
-        const fieldElements = [];
-        
-        // Create field labels as separate text elements
-        fields.forEach((field, fieldIndex) => {
-          const fieldText = `${field.name}: ${field.isList ? '[' : ''}${field.type}${field.isList ? ']' : ''}`;
-          const fieldY = y + HEADER_HEIGHT + (fieldIndex * FIELD_HEIGHT) + 10;
-          
-          const fieldElement = new joint.shapes.standard.TextBlock({
-            position: { x: x + 10, y: fieldY },
-            size: { width: TYPE_WIDTH - 20, height: FIELD_HEIGHT },
-            attrs: {
-              body: {
-                fill: 'transparent',
-                stroke: 'none'
-              },
-              label: {
-                text: fieldText,
-                fontSize: 12,
-                fontFamily: 'Monaco, Menlo, monospace',
-                fill: isDarkTheme ? '#e4e4e4' : '#333333',
-                textAnchor: 'start',
-                textVerticalAnchor: 'middle'
-              }
-            }
-          });
-          
-          // Store field data for navigation
-          fieldElement.prop('fieldData', {
-            fieldName: field.name,
-            location: field.location,
-            parentType: typeName,
-            parentTypeElement: typeElement,
-            relativePosition: { x: 10, y: HEADER_HEIGHT + (fieldIndex * FIELD_HEIGHT) + 10 }
-          });
-          
-          fieldElements.push(fieldElement);
-          graph.addCell(fieldElement);
-        });
-        
-        // Store field elements in the type element for easy access
-        typeElement.prop('fieldElements', fieldElements);
-    });
-    
-    debugLog("Creating relationship links");
-    
-    // Create links for relationships
-    schemaModel.relationships.forEach(rel => {
-      const sourceElement = typeElements.get(rel.fromType);
-      const targetElement = typeElements.get(rel.toType);
+      const contentWidth = maxX - minX;
+      const contentHeight = maxY - minY;
       
-      if (sourceElement && targetElement) {
-        const link = new joint.shapes.standard.Link({
-          source: { id: sourceElement.id },
-          target: { id: targetElement.id },
-          router: { name: 'orthogonal' },
-          connector: { name: 'rounded' },
-          attrs: {
-            line: {
-              stroke: isDarkTheme ? '#888888' : '#666666',
-              strokeWidth: 2,
-              strokeDasharray: '5,5',
-              targetMarker: {
-                'type': 'path',
-                'd': 'M 10 -5 0 0 10 5 z',
-                'fill': isDarkTheme ? '#888888' : '#666666'
-              }
-            }
-          },
-          labels: [{
-            position: 0.5,
-            attrs: {
-              text: {
-                text: rel.fieldName,
-                fill: isDarkTheme ? '#ffffff' : '#333333',
-                fontSize: 11,
-                fontWeight: 'bold'
-              },
-              rect: {
-                fill: isDarkTheme ? '#3d3d3d' : 'white',
-                stroke: isDarkTheme ? '#6b6b6b' : '#999999',
-                strokeWidth: 1,
-                rx: 3,
-                ry: 3
-              }
-            }
-          }]
-        });
-        
-        graph.addCell(link);
-      }
-    });
-    
-    debugLog("All relationships created");
-    
-    // Handle type box movement - move field elements with their parent
-    graph.on('change:position', function(element) {
-      const typeData = element.prop('typeData');
-      if (typeData) {
-        // This is a type element that moved
-        const fieldElements = element.prop('fieldElements') || [];
-        const newPosition = element.position();
-        
-        fieldElements.forEach(fieldElement => {
-          const fieldData = fieldElement.prop('fieldData');
-          if (fieldData && fieldData.relativePosition) {
-            const newFieldPosition = {
-              x: newPosition.x + fieldData.relativePosition.x,
-              y: newPosition.y + fieldData.relativePosition.y
-            };
-            fieldElement.position(newFieldPosition.x, newFieldPosition.y);
-          }
-        });
-      }
-    });
-    
-    // Function to navigate to a file location
-    function navigateToLocation(location) {
-      if (!location) return;
+      // Calculate scale to fit with more breathing room
+      const scaleX = width / contentWidth;
+      const scaleY = height / contentHeight;
+      const scale = Math.min(scaleX, scaleY, AUTO_FIT_MAX_SCALE);
       
-      vscode.postMessage({
-        command: 'navigateToLocation',
-        location: location
-      });
+      // Calculate translation to center content
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+      const tx = (width / 2) - (centerX * scale);
+      const ty = (height / 2) - (centerY * scale);
+      
+      // Apply transform
+      svg.transition()
+        .duration(750)
+        .call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+      
+      debugLog(`Auto-fit applied: scale=${scale.toFixed(3)}, padding=${AUTO_FIT_PADDING}px`);
     }
     
-    // Click handler for type and field navigation
-    paper.on('element:pointerclick', function(elementView, evt) {
-      const element = elementView.model;
+    // Function to calculate field position for connections with dual attachment points
+    function getFieldPosition(typeName, fieldName, targetPos) {
+      const node = nodes.find(n => n.typeName === typeName);
+      if (!node || !node.fields) return { x: 0, y: 0 };
       
-      // Check for field data first
-      const fieldData = element.prop('fieldData');
-      if (fieldData && fieldData.location) {
-        navigateToLocation(fieldData.location);
-        return;
-      }
+      const fieldIndex = node.fields.findIndex(f => f && f.name === fieldName);
+      if (fieldIndex === -1) return { x: node.x || 0, y: node.y || 0 }; // Default to type center
       
-      // Check for type data
-      const typeData = element.prop('typeData');
-      if (typeData && typeData.location) {
-        navigateToLocation(typeData.location);
-        return;
-      }
+      // Calculate field Y position
+      const fieldY = (node.y || 0) - (node.height || MIN_TYPE_HEIGHT) / 2 + HEADER_HEIGHT + (fieldIndex * FIELD_HEIGHT) + FIELD_HEIGHT / 2 + 5;
+      
+      // Choose left or right attachment point based on target position
+      const leftX = (node.x || 0) - (node.width || TYPE_WIDTH) / 2 + FIELD_BOX_PADDING;
+      const rightX = (node.x || 0) + (node.width || TYPE_WIDTH) / 2 - FIELD_BOX_PADDING;
+      
+      // If target is to the right, use right attachment; if to the left, use left attachment
+      const fieldX = targetPos && targetPos.x > (node.x || 0) ? rightX : leftX;
+      
+      return { x: fieldX, y: fieldY };
+    }
+    
+    // Function to calculate optimal type header attachment point
+    function getTypeHeaderPosition(typeName, sourcePos) {
+      const node = nodes.find(n => n.typeName === typeName);
+      if (!node) return { x: 0, y: 0 };
+      
+      const headerY = (node.y || 0) - (node.height || MIN_TYPE_HEIGHT) / 2 + HEADER_HEIGHT / 2;
+      
+      // Choose left or right attachment point based on source position
+      const leftX = (node.x || 0) - (node.width || TYPE_WIDTH) / 2;
+      const rightX = (node.x || 0) + (node.width || TYPE_WIDTH) / 2;
+      
+      // If source is to the left, use left attachment; if to the right, use right attachment
+      const headerX = sourcePos && sourcePos.x < (node.x || 0) ? leftX : rightX;
+      
+      return { x: headerX, y: headerY };
+    }
+    
+    // Function to calculate connection path with curves and dual attachment points
+    function calculateConnectionPath(d) {
+      const sourceNode = nodes.find(n => n.typeName === (d.source.id || d.source));
+      const targetNode = nodes.find(n => n.typeName === (d.target.id || d.target));
+      
+      if (!sourceNode || !targetNode || !d.fieldName) return '';
+      
+      // First pass: get rough target position to determine source attachment
+      const roughTargetPos = {
+        x: targetNode.x || 0,
+        y: (targetNode.y || 0) - (targetNode.height || MIN_TYPE_HEIGHT) / 2 + HEADER_HEIGHT / 2
+      };
+      
+      // Get optimal field position based on target
+      const sourcePos = getFieldPosition(sourceNode.typeName, d.fieldName, roughTargetPos);
+      
+      // Get optimal type header position based on source
+      const targetPos = getTypeHeaderPosition(targetNode.typeName, sourcePos);
+      
+      // Validate positions
+      if (!sourcePos || !targetPos) return '';
+      
+      // Calculate control points for smooth curve with minimum straight line at end
+      const dx = targetPos.x - sourcePos.x;
+      const dy = targetPos.y - sourcePos.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      if (distance === 0) return ''; // Avoid division by zero
+      
+      // Ensure at least STRAIGHT_LINE_LENGTH px straight line before the arrowhead
+      const angle = Math.atan2(dy, dx);
+      const adjustedTargetX = targetPos.x - Math.cos(angle) * STRAIGHT_LINE_LENGTH;
+      const adjustedTargetY = targetPos.y - Math.sin(angle) * STRAIGHT_LINE_LENGTH;
+      
+      // Create curved path with better routing
+      const controlOffset = Math.max(distance * CONTROL_OFFSET_RATIO, MIN_CONTROL_OFFSET);
+      
+      // Determine curve direction based on attachment points
+      const sourceIsLeft = sourcePos.x < (sourceNode.x || 0);
+      const targetIsLeft = targetPos.x < (targetNode.x || 0);
+      
+      // Control points that curve outward from attachment points
+      const controlX1 = sourceIsLeft ? sourcePos.x - controlOffset * 0.5 : sourcePos.x + controlOffset * 0.5;
+      const controlY1 = sourcePos.y;
+      const controlX2 = targetIsLeft ? adjustedTargetX - controlOffset * 0.5 : adjustedTargetX + controlOffset * 0.5;
+      const controlY2 = adjustedTargetY;
+      
+      return `M${sourcePos.x},${sourcePos.y} C${controlX1},${controlY1} ${controlX2},${controlY2} ${adjustedTargetX},${adjustedTargetY} L${targetPos.x},${targetPos.y}`;
+    }
+    
+    // Function to calculate label position along the curve
+    function calculateLabelPosition(d) {
+      const sourceNode = nodes.find(n => n.typeName === (d.source.id || d.source));
+      const targetNode = nodes.find(n => n.typeName === (d.target.id || d.target));
+      
+      if (!sourceNode || !targetNode || !d.fieldName) return { x: 0, y: 0 };
+      
+      // Use the same logic as calculateConnectionPath to get actual positions
+      const roughTargetPos = {
+        x: targetNode.x || 0,
+        y: (targetNode.y || 0) - (targetNode.height || MIN_TYPE_HEIGHT) / 2 + HEADER_HEIGHT / 2
+      };
+      
+      const sourcePos = getFieldPosition(sourceNode.typeName, d.fieldName, roughTargetPos);
+      const targetPos = getTypeHeaderPosition(targetNode.typeName, sourcePos);
+      
+      if (!sourcePos || !targetPos) return { x: 0, y: 0 };
+      
+      // Calculate the adjusted target position (before the straight line)
+      const dx = targetPos.x - sourcePos.x;
+      const dy = targetPos.y - sourcePos.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      if (distance === 0) return { x: sourcePos.x, y: sourcePos.y };
+      
+      const angle = Math.atan2(dy, dx);
+      const adjustedTargetX = targetPos.x - Math.cos(angle) * STRAIGHT_LINE_LENGTH;
+      const adjustedTargetY = targetPos.y - Math.sin(angle) * STRAIGHT_LINE_LENGTH;
+      
+      // Position label at LABEL_POSITION_RATIO along the curve
+      const t = LABEL_POSITION_RATIO;
+      const controlOffset = Math.max(distance * CONTROL_OFFSET_RATIO, MIN_CONTROL_OFFSET);
+      const sourceIsLeft = sourcePos.x < (sourceNode.x || 0);
+      const targetIsLeft = targetPos.x < (targetNode.x || 0);
+      
+      const controlX1 = sourceIsLeft ? sourcePos.x - controlOffset * 0.5 : sourcePos.x + controlOffset * 0.5;
+      const controlY1 = sourcePos.y;
+      const controlX2 = targetIsLeft ? adjustedTargetX - controlOffset * 0.5 : adjustedTargetX + controlOffset * 0.5;
+      const controlY2 = adjustedTargetY;
+      
+      // Calculate point on cubic bezier curve
+      const x = Math.pow(1-t, 3) * sourcePos.x + 
+                3 * Math.pow(1-t, 2) * t * controlX1 + 
+                3 * (1-t) * Math.pow(t, 2) * controlX2 + 
+                Math.pow(t, 3) * adjustedTargetX;
+      
+      const y = Math.pow(1-t, 3) * sourcePos.y + 
+                3 * Math.pow(1-t, 2) * t * controlY1 + 
+                3 * (1-t) * Math.pow(t, 2) * controlY2 + 
+                Math.pow(t, 3) * adjustedTargetY;
+      
+      return { x, y };
+    }
+    
+    // Create nodes
+    const node = nodeGroup.selectAll('g')
+      .data(nodes)
+      .enter().append('g')
+      .attr('class', 'node')
+      .call(d3.drag()
+        .on('start', dragstarted)
+        .on('drag', dragged)
+        .on('end', dragended));
+    
+    // Type boxes - main container
+    node.append('rect')
+      .attr('class', 'type-box')
+      .attr('width', d => d.width)
+      .attr('height', d => d.height)
+      .attr('x', d => -d.width / 2)
+      .attr('y', d => -d.height / 2)
+      .attr('rx', 8)
+      .attr('fill', isDarkTheme ? '#2d2d2d' : '#ffffff')
+      .attr('stroke', isDarkTheme ? '#6b6b6b' : '#333333')
+      .attr('stroke-width', 2)
+      .style('cursor', 'pointer')
+      .on('click', function(event, d) {
+        if (d.location) {
+          vscode.postMessage({
+            command: 'navigateToLocation',
+            location: d.location
+          });
+        }
+      });
+    
+    // Header section for all types
+    node.append('rect')
+      .attr('class', 'type-header')
+      .attr('width', d => d.width)
+      .attr('height', HEADER_HEIGHT)
+      .attr('x', d => -d.width / 2)
+      .attr('y', d => -d.height / 2)
+      .attr('rx', 8)
+      .attr('fill', d => {
+        if (d.isRoot) return isDarkTheme ? '#2d4a2d' : '#e8f5e8';
+        return isDarkTheme ? '#3d3d3d' : '#f5f5f5';
+      })
+      .attr('stroke', 'none')
+      .style('cursor', 'pointer')
+      .on('click', function(event, d) {
+        if (d.location) {
+          vscode.postMessage({
+            command: 'navigateToLocation',
+            location: d.location
+          });
+        }
+      });
+    
+    // Type names
+    node.append('text')
+      .attr('class', 'type-name')
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'middle')
+      .attr('y', d => -d.height / 2 + HEADER_HEIGHT / 2)
+      .attr('font-size', '16px')
+      .attr('font-weight', 'bold')
+      .attr('fill', d => {
+        if (d.isRoot) return isDarkTheme ? '#7dd87d' : '#2d7a2d';
+        return isDarkTheme ? '#ffffff' : '#000000';
+      })
+      .text(d => d.typeName)
+      .style('cursor', 'pointer')
+      .on('click', function(event, d) {
+        if (d.location) {
+          vscode.postMessage({
+            command: 'navigateToLocation',
+            location: d.location
+          });
+        }
+      });
+    
+    // Field separator line for types with fields
+    node.filter(d => d.fields.length > 0)
+      .append('line')
+      .attr('class', 'field-separator')
+      .attr('x1', d => -d.width / 2 + 5)
+      .attr('x2', d => d.width / 2 - 5)
+      .attr('y1', d => -d.height / 2 + HEADER_HEIGHT)
+      .attr('y2', d => -d.height / 2 + HEADER_HEIGHT)
+      .attr('stroke', isDarkTheme ? '#555555' : '#cccccc')
+      .attr('stroke-width', 1);
+    
+    // Field groups for types with fields
+    const fieldGroups = node.filter(d => d.fields.length > 0)
+      .selectAll('.field-group')
+      .data(d => d.fields.map((field, i) => ({ 
+        ...field, 
+        parentType: d.typeName, 
+        parentNode: d,
+        index: i,
+        yOffset: -d.height / 2 + HEADER_HEIGHT + (i * FIELD_HEIGHT) + FIELD_HEIGHT / 2 + 5
+      })))
+      .enter().append('g')
+      .attr('class', 'field-group')
+      .style('cursor', 'pointer');
+    
+    // Field background rectangles (for hover effects and connection points)
+    fieldGroups.append('rect')
+      .attr('class', 'field-bg')
+      .attr('x', d => -d.parentNode.width / 2 + 2)
+      .attr('y', d => d.yOffset - FIELD_HEIGHT / 2)
+      .attr('width', d => d.parentNode.width - 4)
+      .attr('height', FIELD_HEIGHT)
+      .attr('fill', 'transparent')
+      .attr('stroke', isDarkTheme ? '#555555' : '#cccccc')
+      .attr('stroke-width', 1)
+      .attr('stroke-opacity', 0.2)
+      .attr('rx', 3)
+      .style('cursor', 'pointer')
+      .on('mouseenter', function(event, d) {
+        d3.select(this)
+          .transition()
+          .duration(HOVER_TRANSITION_DURATION)
+          .attr('fill', isDarkTheme ? '#404040' : '#f0f0f0')
+          .attr('stroke-opacity', 1)
+          .attr('stroke-width', 2);
+      })
+      .on('mouseleave', function(event, d) {
+        d3.select(this)
+          .transition()
+          .duration(HOVER_TRANSITION_DURATION)
+          .attr('fill', 'transparent')
+          .attr('stroke-opacity', 0.2)
+          .attr('stroke-width', 1);
+      })
+      .on('click', function(event, d) {
+        event.stopPropagation(); // Prevent type click
+        if (d.location) {
+          vscode.postMessage({
+            command: 'navigateToLocation',
+            location: d.location
+          });
+        }
+      });
+    
+    // Field names
+    fieldGroups.append('text')
+      .attr('class', 'field-name')
+      .attr('x', d => -d.parentNode.width / 2 + 10)
+      .attr('y', d => d.yOffset)
+      .attr('dominant-baseline', 'middle')
+      .attr('font-size', '12px')
+      .attr('font-family', 'Monaco, Menlo, monospace')
+      .attr('font-weight', '500')
+      .attr('fill', isDarkTheme ? '#e4e4e4' : '#333333')
+      .text(d => d.name)
+      .on('click', function(event, d) {
+        event.stopPropagation(); // Prevent type click
+        if (d.location) {
+          vscode.postMessage({
+            command: 'navigateToLocation',
+            location: d.location
+          });
+        }
+      });
+    
+    // Field type colon
+    fieldGroups.append('text')
+      .attr('class', 'field-colon')
+      .attr('x', d => -d.parentNode.width / 2 + 10 + (d.name.length * 7.2)) // Approximate character width
+      .attr('y', d => d.yOffset)
+      .attr('dominant-baseline', 'middle')
+      .attr('font-size', '12px')
+      .attr('font-family', 'Monaco, Menlo, monospace')
+      .attr('fill', isDarkTheme ? '#888888' : '#666666')
+      .text(': ')
+      .on('click', function(event, d) {
+        event.stopPropagation(); // Prevent type click
+        if (d.location) {
+          vscode.postMessage({
+            command: 'navigateToLocation',
+            location: d.location
+          });
+        }
+      });
+    
+    // Field types
+    fieldGroups.append('text')
+      .attr('class', 'field-type')
+      .attr('x', d => -d.parentNode.width / 2 + 10 + (d.name.length * 7.2) + 15) // After name and colon
+      .attr('y', d => d.yOffset)
+      .attr('dominant-baseline', 'middle')
+      .attr('font-size', '12px')
+      .attr('font-family', 'Monaco, Menlo, monospace')
+      .attr('font-weight', '400')
+      .attr('fill', d => {
+        // Color-code different types
+        const baseType = d.type.replace(/[\[\]!]/g, ''); // Remove list/non-null markers
+        if (['String', 'Int', 'Float', 'Boolean', 'ID'].includes(baseType)) {
+          return isDarkTheme ? '#569cd6' : '#0066cc'; // Blue for scalars
+        } else if (d.isList) {
+          return isDarkTheme ? '#dcdcaa' : '#795e26'; // Yellow for lists
+        } else {
+          return isDarkTheme ? '#4ec9b0' : '#267f99'; // Teal for object types
+        }
+      })
+      .text(d => `${d.isList ? '[' : ''}${d.type}${d.isList ? ']' : ''}`)
+      .on('click', function(event, d) {
+        event.stopPropagation(); // Prevent type click
+        if (d.location) {
+          vscode.postMessage({
+            command: 'navigateToLocation',
+            location: d.location
+          });
+        }
+      });
+    
+    // Update on tick
+    simulation.on('tick', () => {
+      // Update curved connections from fields to types
+      link.attr('d', calculateConnectionPath);
+      
+      // Update link label positions
+      linkLabels
+        .attr('x', d => calculateLabelPosition(d).x)
+        .attr('y', d => calculateLabelPosition(d).y);
+      
+      node.attr('transform', d => `translate(${d.x},${d.y})`);
     });
     
-    // Zoom controls
+    // Drag functions - don't restart simulation
+    function dragstarted(event, d) {
+      // Don't restart simulation on drag
+      d.fx = d.x;
+      d.fy = d.y;
+    }
+    
+    function dragged(event, d) {
+      d.fx = event.x;
+      d.fy = event.y;
+      d.x = event.x;
+      d.y = event.y;
+      
+      // Update position immediately without simulation
+      d3.select(this).attr('transform', `translate(${d.x},${d.y})`);
+      
+      // Update connected links and labels
+      link.attr('d', calculateConnectionPath);
+      linkLabels
+        .attr('x', l => calculateLabelPosition(l).x)
+        .attr('y', l => calculateLabelPosition(l).y);
+    }
+    
+    function dragended(event, d) {
+      // Keep the node fixed at its new position
+      // Don't restart simulation
+    }
+    
+    // Controls
     document.getElementById('zoom-in').addEventListener('click', () => {
-      const currentScale = paper.scale();
-      paper.scale(currentScale.sx * 1.2, currentScale.sy * 1.2);
+      svg.transition().call(zoom.scaleBy, 1.2);
     });
     
     document.getElementById('zoom-out').addEventListener('click', () => {
-      const currentScale = paper.scale();
-      paper.scale(currentScale.sx / 1.2, currentScale.sy / 1.2);
+      svg.transition().call(zoom.scaleBy, 1 / 1.2);
     });
     
     document.getElementById('reset').addEventListener('click', () => {
-      paper.scale(1, 1);
-      paper.translate(0, 0);
-      
-      // Clear search
-      searchInput.value = '';
-      searchResults = [];
-      currentSearchIndex = 0;
-      const searchCount = document.getElementById('search-count');
-      if (searchCount) {
-        searchCount.style.display = 'none';
-      }
-      
-      // Reset all element styles
-      graph.getElements().forEach(element => {
-        element.attr('body/stroke', isDarkTheme ? '#6b6b6b' : '#333333');
-        element.attr('body/strokeWidth', 2);
-        element.attr('body/fillOpacity', 1);
-        element.attr('body/filter', null);
-      });
+      svg.transition().call(zoom.transform, d3.zoomIdentity);
+      simulation.alpha(1).restart();
     });
     
-    // Refresh functionality
     document.getElementById('refresh').addEventListener('click', () => {
-      debugLog('Refresh button clicked');
-      vscode.postMessage({
-        command: 'refresh-schema',
-        message: 'User requested schema refresh'
-      });
-    });
-    
-    // Simple panning implementation
-    let isPanning = false;
-    let startPoint = { x: 0, y: 0 };
-    let startTranslate = { tx: 0, ty: 0 };
-    
-    paper.on('blank:pointerdown', function(evt) {
-      isPanning = true;
-      startPoint = { x: evt.clientX, y: evt.clientY };
-      startTranslate = paper.translate();
-      paper.el.style.cursor = 'grabbing';
-    });
-    
-    document.addEventListener('pointermove', function(evt) {
-      if (!isPanning) return;
-      
-      const dx = evt.clientX - startPoint.x;
-      const dy = evt.clientY - startPoint.y;
-      
-      paper.translate(startTranslate.tx + dx, startTranslate.ty + dy);
-    });
-    
-    document.addEventListener('pointerup', function() {
-      if (isPanning) {
-        isPanning = false;
-        paper.el.style.cursor = 'default';
-      }
-    });
-    
-    // Mouse wheel zoom
-    paper.el.addEventListener('wheel', function(evt) {
-      evt.preventDefault();
-      
-      const currentScale = paper.scale();
-      const delta = evt.deltaY > 0 ? 0.9 : 1.1; // Zoom out or in
-      const newScale = Math.max(0.1, Math.min(3, currentScale.sx * delta)); // Limit zoom range
-      
-      // Get mouse position relative to paper
-      const rect = paper.el.getBoundingClientRect();
-      const mouseX = evt.clientX - rect.left;
-      const mouseY = evt.clientY - rect.top;
-      
-      // Calculate zoom center point
-      const currentTranslate = paper.translate();
-      const zoomCenterX = (mouseX - currentTranslate.tx) / currentScale.sx;
-      const zoomCenterY = (mouseY - currentTranslate.ty) / currentScale.sy;
-      
-      // Apply zoom
-      paper.scale(newScale, newScale);
-      
-      // Adjust translation to keep zoom centered on mouse
-      const newTranslateX = mouseX - zoomCenterX * newScale;
-      const newTranslateY = mouseY - zoomCenterY * newScale;
-      paper.translate(newTranslateX, newTranslateY);
+      vscode.postMessage({ command: 'refresh-schema' });
     });
     
     // Search functionality
@@ -462,9 +695,7 @@
     let searchResults = [];
     let currentSearchIndex = 0;
     
-    // Add search navigation buttons
-    if (!document.getElementById('search-next')) {
-      const toolbar = document.getElementById('toolbar');
+    if (searchInput && !document.getElementById('search-next')) {
       const searchContainer = searchInput.parentElement;
       
       const nextButton = document.createElement('button');
@@ -493,49 +724,35 @@
       const searchTerm = searchInput.value.trim().toLowerCase();
       const searchCount = document.getElementById('search-count');
       
-      // Reset previous highlights
-      graph.getElements().forEach(element => {
-        element.attr('body/stroke', isDarkTheme ? '#6b6b6b' : '#333333');
-        element.attr('body/strokeWidth', 2);
-        element.attr('body/fillOpacity', 1);
-        element.attr('body/filter', null); // Remove any glow effects
-      });
+      // Reset highlights
+      node.select('rect.type-box')
+        .attr('stroke-width', 2)
+        .attr('stroke', isDarkTheme ? '#6b6b6b' : '#333333');
       
       if (!searchTerm) {
         searchResults = [];
-        searchCount.style.display = 'none';
+        if (searchCount) searchCount.style.display = 'none';
         return;
       }
       
-      // Find matching elements
-      searchResults = graph.getElements().filter(element => {
-        const typeData = element.prop('typeData');
-        const fieldData = element.prop('fieldData');
-        
-        if (typeData) {
-          const typeName = typeData.typeName.toLowerCase();
-          if (typeName.includes(searchTerm)) return true;
-          
-          const fields = typeData.fields || [];
-          return fields.some(field => 
-            field.name.toLowerCase().includes(searchTerm) || 
-            field.type.toLowerCase().includes(searchTerm)
-          );
-        }
-        
-        if (fieldData) {
-          return fieldData.fieldName.toLowerCase().includes(searchTerm);
-        }
-        
-        return false;
+      searchResults = nodes.filter(d => {
+        if (!d || !d.typeName) return false;
+        const typeName = d.typeName.toLowerCase();
+        if (typeName.includes(searchTerm)) return true;
+        return (d.fields || []).some(field => 
+          field && (
+            (field.name || '').toLowerCase().includes(searchTerm) || 
+            (field.type || '').toLowerCase().includes(searchTerm)
+          )
+        );
       });
       
-      if (searchResults.length > 0) {
+      if (searchResults.length > 0 && searchCount) {
         searchCount.textContent = `${searchResults.length} match${searchResults.length === 1 ? '' : 'es'}`;
         searchCount.style.display = 'inline';
         currentSearchIndex = 0;
         highlightSearchResult(0);
-      } else {
+      } else if (searchCount) {
         searchCount.textContent = 'No matches';
         searchCount.style.display = 'inline';
       }
@@ -543,7 +760,6 @@
     
     function navigateSearch(direction) {
       if (searchResults.length === 0) return;
-      
       currentSearchIndex = (currentSearchIndex + direction + searchResults.length) % searchResults.length;
       highlightSearchResult(currentSearchIndex);
     }
@@ -551,117 +767,73 @@
     function highlightSearchResult(index) {
       if (index < 0 || index >= searchResults.length) return;
       
-      // Reset all highlights and filters
-      graph.getElements().forEach(element => {
-        element.attr('body/stroke', isDarkTheme ? '#6b6b6b' : '#333333');
-        element.attr('body/strokeWidth', 2);
-        element.attr('body/fillOpacity', 1);
-        element.attr('body/filter', null);
-      });
+      // Reset all highlights
+      node.select('rect.type-box')
+        .attr('stroke-width', 2)
+        .attr('stroke', isDarkTheme ? '#6b6b6b' : '#333333');
       
-      // Dim all non-matching elements
-      graph.getElements().forEach(element => {
-        if (!searchResults.includes(element)) {
-          element.attr('body/fillOpacity', 0.3);
-        }
-      });
+      // Highlight current result
+      const currentResult = searchResults[index];
+      if (currentResult) {
+        node.filter(d => d === currentResult)
+          .select('rect.type-box')
+          .attr('stroke', '#ff5722')
+          .attr('stroke-width', 4);
+        
+        // Center on result
+        const transform = d3.zoomTransform(svg.node());
+        const x = width / 2 - (currentResult.x || 0) * transform.k;
+        const y = height / 2 - (currentResult.y || 0) * transform.k;
+        
+        svg.transition().call(zoom.transform, d3.zoomIdentity.translate(x, y).scale(transform.k));
+      }
       
-      // Only highlight the current result (not all matches)
-      const currentElement = searchResults[index];
-      currentElement.attr('body/stroke', '#ff5722');
-      currentElement.attr('body/strokeWidth', 4);
-      currentElement.attr('body/fillOpacity', 1);
-      
-      // Add a subtle glow effect to current result
-      currentElement.attr('body/filter', 'drop-shadow(0 0 8px rgba(255, 87, 34, 0.6))');
-      
-      // Center on current element
-      const bbox = currentElement.getBBox();
-      const paperSize = paper.getComputedSize();
-      const scale = paper.scale();
-      
-      const tx = (paperSize.width / 2) - (bbox.x + bbox.width / 2) * scale.sx;
-      const ty = (paperSize.height / 2) - (bbox.y + bbox.height / 2) * scale.sy;
-      
-      paper.translate(tx, ty);
-      
-      // Update search count to show current position
       const searchCount = document.getElementById('search-count');
       if (searchCount) {
         searchCount.textContent = `${index + 1} of ${searchResults.length}`;
       }
     }
     
-    // Search input event
     let searchTimeout;
-    searchInput.addEventListener('input', () => {
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(performSearch, 300);
-    });
-    
-    // Keyboard shortcuts
-    searchInput.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') {
-        if (event.shiftKey) {
-          navigateSearch(-1);
-        } else {
-          navigateSearch(1);
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(performSearch, 300);
+      });
+      
+      searchInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          if (event.shiftKey) {
+            navigateSearch(-1);
+          } else {
+            navigateSearch(1);
+          }
+          event.preventDefault();
         }
-        event.preventDefault();
-      }
-    });
-    
-    // Initial layout and scaling
-    setTimeout(() => {
-      const bbox = graph.getBBox();
-      if (bbox.width > 0 && bbox.height > 0) {
-        const paperSize = paper.getComputedSize();
-        const padding = 100;
-        
-        const scaleX = (paperSize.width - padding) / bbox.width;
-        const scaleY = (paperSize.height - padding) / bbox.height;
-        const scale = Math.min(scaleX, scaleY, 1); // Don't scale up
-        
-        paper.scale(scale, scale);
-        
-        const scaledBBox = {
-          width: bbox.width * scale,
-          height: bbox.height * scale
-        };
-        
-        const tx = (paperSize.width - scaledBBox.width) / 2 - bbox.x * scale;
-        const ty = (paperSize.height - scaledBBox.height) / 2 - bbox.y * scale;
-        
-        paper.translate(tx, ty);
-        
-        debugLog(`Initial layout: scale=${scale.toFixed(2)}, translate=(${tx.toFixed(0)}, ${ty.toFixed(0)})`);
-      }
-    }, 100);
+      });
+    }
     
     // Focus on selected type if provided
     if (focusedType) {
-      setTimeout(() => {
-        const focusedElement = typeElements.get(focusedType);
-        if (focusedElement) {
-          focusedElement.attr('body/stroke', '#ff0000');
-          focusedElement.attr('body/strokeWidth', 4);
+      simulation.on('end', () => {
+        const focusedNode = nodes.find(d => d.typeName === focusedType);
+        if (focusedNode) {
+          node.filter(d => d === focusedNode)
+            .select('rect')
+            .attr('stroke', '#ff0000')
+            .attr('stroke-width', 4);
           
-          const bbox = focusedElement.getBBox();
-          const paperSize = paper.getComputedSize();
-          const scale = paper.scale();
-          
-          const tx = (paperSize.width / 2) - (bbox.x + bbox.width / 2) * scale.sx;
-          const ty = (paperSize.height / 2) - (bbox.y + bbox.height / 2) * scale.sy;
-          
-          paper.translate(tx, ty);
+          const x = width / 2 - focusedNode.x;
+          const y = height / 2 - focusedNode.y;
+          svg.transition().call(zoom.transform, d3.zoomIdentity.translate(x, y));
         }
-      }, 200);
+      });
     }
     
-    debugLog("Schema visualization completed successfully");
+    debugLog("Clean D3 visualization completed successfully");
     
-      } catch (error) {
-      debugLog(`Error in schema visualization: ${error.message}`);
-      displayErrorMessage(`Visualization error: ${error.message}`);
-    }
-})();
+  } catch (error) {
+    debugLog(`Error: ${error.message}`);
+    displayErrorMessage(`Visualization error: ${error.message}`);
+  }
+})(); 
