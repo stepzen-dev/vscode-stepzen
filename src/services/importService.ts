@@ -93,7 +93,7 @@ export class ImportService {
           success: true,
           targetDir: config.dir || './stepzen',
           schemaName: config.name,
-          files: [] // TODO: Parse CLI output to get generated files
+          files: [] // Note: CLI output parsing not implemented yet
         };
       } catch (cliError: any) {
         this.logger.error(`Import failed: ${cliError.message}`);

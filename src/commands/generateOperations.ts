@@ -134,7 +134,7 @@ export async function generateOperations() {
 
     // Update SDL directive in index.graphql
     if (generatedFiles.length > 0) {
-      updateSdlDirective(indexPath, generatedFiles); // TODO: cleanup when safe, projectRoot);
+      updateSdlDirective(indexPath, generatedFiles);
       vscode.window.showInformationMessage(
         `Generated ${generatedFiles.length} operation files in the operations directory.`,
       );
@@ -286,8 +286,6 @@ function updateSdlDirective(
     // Also check for SDL directive without executables
     const sdlRegex = /@sdl\(([^)]*)\)/gs;
     let sdlWithoutExecutablesMatch = null;
-    // TODO: remove
-    // let originalLineEnding = content.includes("\r\n") ? "\r\n" : "\n";
 
     // Find the schema directive that doesn't include executables
     let isSchemaDirective = false;

@@ -39,8 +39,6 @@ export async function importDatabase(): Promise<void> {
         `Database schema imported successfully to ${result.targetDir}/${result.schemaName}`
       );
       
-      // TODO: Offer Phase 2 functional enhancements
-      // await offerFunctionalEnhancements(result);
     } else {
       vscode.window.showErrorMessage(`Import failed: ${result.error}`);
     }

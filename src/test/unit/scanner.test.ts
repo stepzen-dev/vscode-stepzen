@@ -294,7 +294,7 @@ suite("StepZen Project Scanner Test Suite", () => {
 
       // Current behavior: findDefinition only works for root operation fields, not regular type fields
       // This is the current scanner behavior that we're capturing with golden-path tests
-      // TODO: In the future, findDefinition could be enhanced to also find fields within regular types
+      // Note: Current limitation - see issue #55 for enhancement to find fields within regular types
       const recentOrdersDefs = services.schemaIndex.findDefinition("recentOrders");
       assert.strictEqual(recentOrdersDefs, undefined, "Current scanner behavior: findDefinition doesn't find non-root fields");
 

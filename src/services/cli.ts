@@ -245,64 +245,6 @@ export class StepzenCliService {
     }
   }
   
-  // TODO: CLEANUP
-  //  /**
-  //  * Spawn a StepZen CLI process with inherited stdio
-  //  * 
-  //  * @param command The StepZen command to execute
-  //  * @param args Command arguments
-  //  * @param options Spawn options
-  //  * @returns Promise that resolves when the process completes
-  //  * @throws CliError if the process fails
-  //  */
-  // private async spawnProcess(
-  //   command: string,
-  //   args: string[] = [],
-  //   options: cp.SpawnOptions = {}
-  // ): Promise<void> {
-  //   return new Promise<void>((resolve, reject) => {
-  //     const fullArgs = [command, ...args];
-  //     const proc = cp.spawn('stepzen', fullArgs, {
-  //       shell: true,
-  //       ...options
-  //     });
-      
-  //     let stderr = '';
-      
-  //     if (proc.stderr) {
-  //       proc.stderr.on('data', (data) => {
-  //         const chunk = data.toString();
-  //         stderr += chunk;
-  //         logger.debug(`StepZen CLI stderr: ${chunk.trim()}`);
-  //       });
-  //     }
-      
-  //     proc.on('error', (err) => {
-  //       reject(new CliError(
-  //         `Failed to spawn StepZen CLI: ${err.message}`,
-  //         'SPAWN_FAILED',
-  //         err
-  //       ));
-  //     });
-      
-  //     proc.on('close', (code) => {
-  //       if (code !== 0) {
-  //         // Create a more descriptive error with exit code and stderr
-  //         const errorMsg = stderr.trim() 
-  //           ? `StepZen ${command} exited with code ${code}: ${stderr.trim()}`
-  //           : `StepZen ${command} exited with code ${code}`;
-            
-  //         reject(new CliError(
-  //           errorMsg,
-  //           'COMMAND_FAILED',
-  //           stderr ? new Error(stderr) : undefined
-  //         ));
-  //       } else {
-  //         resolve();
-  //       }
-  //     });
-  //   });
-  // }
   
   /**
    * Spawn a StepZen CLI process and capture output
