@@ -20,4 +20,6 @@ directives.graphql
 vsc-extension-quickstart.md
 
 # cursor rules
-.cursor
+.cursor/
+.cursorignore
+
