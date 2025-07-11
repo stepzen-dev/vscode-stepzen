@@ -7,6 +7,8 @@ import { ProjectResolver } from '../../../services/projectResolver';
 import { SchemaIndexService } from '../../../services/SchemaIndexService';
 import { RequestService } from '../../../services/request';
 import { ImportService } from '../../../services/importService';
+import { GraphQLLinterService } from '../../../services/graphqlLinter';
+import * as vscode from 'vscode';
 
 suite('Service Registry', () => {
   let originalServices: ServiceRegistry;
@@ -111,6 +113,14 @@ suite('Service Registry', () => {
       }),
       import: createMock<ImportService>({
         executeImport: async () => ({ success: true, targetDir: './stepzen', schemaName: 'test' })
+      }),
+      graphqlLinter: createMock<GraphQLLinterService>({
+        initialize: async () => {},
+        lintFile: async () => [],
+        lintProject: async () => {},
+        getDiagnosticCollection: () => vscode.languages.createDiagnosticCollection('test'),
+        clearDiagnostics: () => {},
+        dispose: () => {}
       })
     };
 
@@ -124,6 +134,7 @@ suite('Service Registry', () => {
     assert.strictEqual(services.schemaIndex, mockServices.schemaIndex, 'SchemaIndex service should be replaced with mock');
     assert.strictEqual(services.request, mockServices.request, 'Request service should be replaced with mock');
     assert.strictEqual(services.import, mockServices.import, 'Import service should be replaced with mock');
+    assert.strictEqual(services.graphqlLinter, mockServices.graphqlLinter, 'GraphQL Linter service should be replaced with mock');
     
     // Verify that previous contains all original services
     assert.strictEqual(previous.cli, originalServices.cli, 'previous should contain original CLI service');
@@ -132,6 +143,7 @@ suite('Service Registry', () => {
     assert.strictEqual(previous.schemaIndex, originalServices.schemaIndex, 'previous should contain original SchemaIndex service');
     assert.strictEqual(previous.request, originalServices.request, 'previous should contain original Request service');
     assert.strictEqual(previous.import, originalServices.import, 'previous should contain original Import service');
+    assert.strictEqual(previous.graphqlLinter, originalServices.graphqlLinter, 'previous should contain original GraphQL Linter service');
     
     // Reset to original services
     setMockServices(previous);
@@ -143,6 +155,7 @@ suite('Service Registry', () => {
     assert.strictEqual(services.schemaIndex, originalServices.schemaIndex, 'SchemaIndex service should be restored');
     assert.strictEqual(services.request, originalServices.request, 'Request service should be restored');
     assert.strictEqual(services.import, originalServices.import, 'Import service should be restored');
+    assert.strictEqual(services.graphqlLinter, originalServices.graphqlLinter, 'GraphQL Linter service should be restored');
   });
 
   test('mocked service should be usable in place of real service', async () => {

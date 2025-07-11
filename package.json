@@ -99,6 +99,11 @@
         "command": "stepzen.generateOperations",
         "title": "Generate Operations from Schema",
         "category": "StepZen"
+      },
+      {
+        "command": "stepzen.lintGraphql",
+        "title": "Lint GraphQL Schema",
+        "category": "StepZen"
       }
     ],
     "configuration": {
@@ -119,6 +124,11 @@
           "type": "boolean",
           "default": false,
           "description": "When enabled, logs will be written to disk (requires trusted workspace)"
+        },
+        "stepzen.autoLintGraphQL": {
+          "type": "boolean",
+          "default": false,
+          "description": "When enabled, GraphQL files will be automatically linted when saved"
         }
       }
     },
