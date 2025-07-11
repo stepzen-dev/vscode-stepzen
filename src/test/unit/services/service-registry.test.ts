@@ -7,6 +7,8 @@ import { ProjectResolver } from '../../../services/projectResolver';
 import { SchemaIndexService } from '../../../services/SchemaIndexService';
 import { RequestService } from '../../../services/request';
 import { ImportService } from '../../../services/importService';
+import { FieldPolicyParser } from '../../../services/fieldPolicyParser';
+import { PolicyTemplateService } from '../../../services/policyTemplateService';
 import { GraphQLLinterService } from '../../../services/graphqlLinter';
 import * as vscode from 'vscode';
 
@@ -28,13 +30,15 @@ suite('Service Registry', () => {
     setMockServices(originalServices);
   });
 
-  test('services should contain cli, logger, projectResolver, schemaIndex, request, and import by default', () => {
+  test('services should contain cli, logger, projectResolver, schemaIndex, request, import, fieldPolicyParser, and policyTemplate by default', () => {
     assert.ok(services.cli instanceof StepzenCliService, 'CLI service should be an instance of StepzenCliService');
     assert.ok(services.logger instanceof Logger, 'Logger should be an instance of Logger');
     assert.ok(services.projectResolver instanceof ProjectResolver, 'ProjectResolver should be an instance of ProjectResolver');
     assert.ok(services.schemaIndex instanceof SchemaIndexService, 'SchemaIndex service should be an instance of SchemaIndexService');
     assert.ok(services.request instanceof RequestService, 'Request service should be an instance of RequestService');
     assert.ok(services.import instanceof ImportService, 'Import service should be an instance of ImportService');
+    assert.ok(services.fieldPolicyParser instanceof FieldPolicyParser, 'FieldPolicyParser should be an instance of FieldPolicyParser');
+    assert.ok(services.policyTemplate instanceof PolicyTemplateService, 'PolicyTemplate should be an instance of PolicyTemplateService');
   });
 
   test('overrideServices should replace individual services', () => {
@@ -113,6 +117,21 @@ suite('Service Registry', () => {
       }),
       import: createMock<ImportService>({
         executeImport: async () => ({ success: true, targetDir: './stepzen', schemaName: 'test' })
+      }),
+      fieldPolicyParser: createMock<FieldPolicyParser>({
+        parse: async () => ({ isValid: true, policies: [], errors: [], conflicts: [] }),
+        validatePredicate: () => true,
+        extractJwtClaims: () => [],
+        analyzePredicate: () => ({ isValid: true, claims: [], variables: [], operators: [], errors: [] }),
+        analyzeCoverage: () => ({ types: [], totalFields: 0, coveredFields: 0, coveragePercentage: 0, securityLevel: 'low' })
+      }),
+      policyTemplate: createMock<PolicyTemplateService>({
+        getAllTemplates: () => [],
+        getTemplatesByCategory: () => [],
+        getTemplatesByType: () => [],
+        getTemplateById: () => undefined,
+        generatePolicyFromTemplate: () => null,
+        generatePoliciesFromTemplates: () => []
       }),
       graphqlLinter: createMock<GraphQLLinterService>({
         initialize: async () => {},

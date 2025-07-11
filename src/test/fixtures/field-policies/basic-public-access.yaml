@@ -1,0 +1,30 @@
+configurationset:
+  - configuration:
+      name: postgresql_config
+      uri: STEPZEN_POSTGRESDB_URI
+
+access:
+  policies:
+    - type: Query
+      rules:
+        - condition: true
+          name: public fields
+          fields:
+            [
+              "hello",
+              "user",
+              "users",
+              "product",
+              "products",
+              "productsByIds",
+              "searchProducts",
+              "order",
+              "ordersByUserId",
+              "getProductRating",
+              "getShippingInfo",
+            ]
+      policyDefault:
+        condition: false
+    - type: Mutation
+      policyDefault:
+        condition: false

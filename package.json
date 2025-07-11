@@ -101,6 +101,23 @@
         "category": "StepZen"
       },
       {
+        "command": "stepzen.createFieldPolicy",
+        "title": "Create Field Policy",
+        "category": "StepZen"
+      },
+      {
+        "command": "stepzen.fieldAccessReport",
+        "title": "Generate Field Access Report",
+        "category": "StepZen"
+      },
+      {
+        "command": "stepzen.openPolicyEditor",
+        "title": "Open Policy Editor",
+        "category": "StepZen"
+      },
+      {
+        "command": "stepzen.createFieldPolicyFromPattern",
+        "title": "Create Field Policy from Pattern",
         "command": "stepzen.lintGraphql",
         "title": "Lint GraphQL Schema",
         "category": "StepZen"
@@ -250,6 +267,8 @@
     }
   },
   "dependencies": {
-    "graphql": "^16.11.0"
+    "@types/js-yaml": "^4.0.9",
+    "graphql": "^16.11.0",
+    "js-yaml": "^4.1.0"
   }
 }

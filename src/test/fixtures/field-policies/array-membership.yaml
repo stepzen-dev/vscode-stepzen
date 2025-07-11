@@ -1,0 +1,30 @@
+configurationset:
+  - configuration:
+      name: postgresql_config
+      uri: STEPZEN_POSTGRESDB_URI
+
+access:
+  policies:
+    - type: Query
+      rules:
+        - condition: true
+          name: public fields
+          fields: ["contents", "pages"]
+        - condition: $jwt.groups:String has "admin"
+          name: admin group access
+          fields: ["adminData", "userManagement"]
+        - condition: $jwt.groups:String has "moderator" || $jwt.groups:String has "admin"
+          name: moderator access
+          fields: ["moderateContent", "reviewSubmissions"]
+        - condition: $jwt.permissions:String has "read"
+          name: read access
+          fields: ["readData", "exportData"]
+      policyDefault:
+        condition: ?$jwt
+    - type: Product
+      rules:
+        - condition: $jwt.department:String == $variables.department:String
+          name: department access
+          fields: ["price", "inventory", "supplier"]
+      policyDefault:
+        condition: $jwt.groups:String has "admin"

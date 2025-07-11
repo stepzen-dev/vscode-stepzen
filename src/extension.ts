@@ -281,6 +281,22 @@ export async function activate(context: vscode.ExtensionContext) {
       const { generateOperations } = await import("./commands/generateOperations.js");
       return generateOperations();
     }),
+    safeRegisterCommand(COMMANDS.CREATE_FIELD_POLICY, async () => {
+      const { createFieldPolicy } = await import("./commands/createFieldPolicy.js");
+      return createFieldPolicy();
+    }),
+    safeRegisterCommand(COMMANDS.FIELD_ACCESS_REPORT, async () => {
+      const { generateFieldAccessReport } = await import("./commands/generateFieldAccessReport.js");
+      return generateFieldAccessReport();
+    }),
+    safeRegisterCommand(COMMANDS.OPEN_POLICY_EDITOR, async () => {
+      const { openPolicyEditor } = await import("./commands/openPolicyEditor.js");
+      return openPolicyEditor();
+    }),
+    safeRegisterCommand(COMMANDS.CREATE_FIELD_POLICY_FROM_PATTERN, async () => {
+      const { createFieldPolicyFromPattern } = await import("./commands/createFieldPolicyFromPattern.js");
+      return createFieldPolicyFromPattern();
+    }),
     safeRegisterCommand(COMMANDS.LINT_GRAPHQL, async () => {
       const { lintGraphQL } = await import("./commands/lintGraphQL.js");
       return lintGraphQL();

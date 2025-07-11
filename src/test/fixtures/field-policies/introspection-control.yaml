@@ -1,0 +1,20 @@
+configurationset:
+  - configuration:
+      name: postgresql_config
+      uri: STEPZEN_POSTGRESDB_URI
+
+access:
+  policies:
+    - type: Query
+      rules:
+        - condition: true
+          name: public fields
+          fields: ["contents", "pages"]
+        - condition: $jwt.role:String == "admin"
+          name: admin introspection
+          fields: ["__type", "__schema", "__typename", "_service"]
+      policyDefault:
+        condition: ?$jwt
+    - type: Mutation
+      policyDefault:
+        condition: false

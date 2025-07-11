@@ -1,0 +1,295 @@
+/*
+ * Copyright IBM Corp. 2025
+ * Assisted by CursorAI
+ */
+
+body {
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  color: var(--vscode-foreground);
+  background-color: var(--vscode-editor-background);
+  margin: 0;
+  padding: 0;
+  line-height: 1.5;
+}
+
+#fieldAccessReportRoot {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.insights-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin: 18px 0 0 0;
+  font-size: 14px;
+  align-items: center;
+}
+.insight-count {
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-right: 4px;
+}
+.insight-open {
+  background: var(--vscode-testing-iconPassed);
+  color: var(--vscode-editor-background);
+}
+.insight-protected {
+  background: var(--vscode-warningForeground);
+  color: var(--vscode-editor-background);
+}
+.insight-restricted {
+  background: var(--vscode-testing-iconFailed);
+  color: var(--vscode-editor-background);
+}
+.insight-default {
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+}
+
+.access-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid var(--vscode-panel-border);
+}
+.access-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+}
+.access-legend-item .badge {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+.access-legend-item .badge.open {
+  background-color: var(--vscode-testing-iconPassed);
+}
+.access-legend-item .badge.protected {
+  background-color: var(--vscode-warningForeground);
+}
+.access-legend-item .badge.restricted {
+  background-color: var(--vscode-testing-iconFailed);
+}
+
+.section {
+  margin-bottom: 32px;
+  background: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.section-header {
+  background: var(--vscode-editor-inactiveSelectionBackground);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+}
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  margin: 0;
+}
+.section-content {
+  padding: 20px;
+}
+.type-section {
+  margin-bottom: 24px;
+}
+.type-section:last-child {
+  margin-bottom: 0;
+}
+.type-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+.type-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  font-family: var(--vscode-editor-font-family);
+}
+.type-stats {
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+}
+.fields-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.fields-table th {
+  background: var(--vscode-editor-inactiveSelectionBackground);
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--vscode-descriptionForeground);
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+.fields-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  vertical-align: top;
+}
+.fields-table tr:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+.field-name {
+  font-family: var(--vscode-editor-font-family);
+  font-weight: 500;
+  color: var(--vscode-foreground);
+}
+.access-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.access-open {
+  background: var(--vscode-testing-iconPassed);
+  color: var(--vscode-editor-background);
+}
+.access-protected {
+  background: var(--vscode-warningForeground);
+  color: var(--vscode-editor-background);
+}
+.access-restricted {
+  background: var(--vscode-testing-iconFailed);
+  color: var(--vscode-editor-background);
+}
+.rule-name {
+  font-weight: 500;
+  color: var(--vscode-textLink-foreground);
+  font-family: var(--vscode-editor-font-family);
+}
+.effective-access {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.effective-blocked {
+  background: var(--vscode-testing-iconFailed);
+  color: var(--vscode-editor-background);
+}
+.effective-controlled {
+  background: var(--vscode-warningForeground);
+  color: var(--vscode-editor-background);
+}
+.effective-inherited {
+  background: var(--vscode-textLink-foreground);
+  color: var(--vscode-editor-background);
+}
+.custom-types-explanation {
+  margin: 0 0 18px 0;
+  font-size: 13px;
+  color: var(--vscode-descriptionForeground);
+}
+.access-paths {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+.access-path {
+  display: inline-block;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  margin-right: 4px;
+  margin-bottom: 4px;
+}
+.access-path.accessible {
+  background: var(--vscode-testing-iconPassed);
+  color: var(--vscode-editor-background);
+}
+.access-path.blocked {
+  background: var(--vscode-testing-iconFailed);
+  color: var(--vscode-editor-background);
+}
+.ap-gap {
+  background: #e53935;
+  color: #fff;
+}
+.ap-public {
+  background: #ffd600;
+  color: #222;
+}
+.ap-secure {
+  background: #43a047;
+  color: #fff;
+}
+.ap-blocked {
+  background: #888;
+  color: #fff;
+}
+.access-path-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin: 12px 0 18px 0;
+  font-size: 13px;
+  align-items: center;
+}
+.access-path-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.access-badge.open-default {
+  background: #ffd600;
+  color: #222;
+  border: 2px solid #e53935;
+}
+.access-badge.open-public {
+  background: #ffd600;
+  color: #222;
+}
+.access-badge.open-secure {
+  background: #43a047;
+  color: #fff;
+}
+.access-badge.restricted {
+  background: #888;
+  color: #fff;
+  border: 1px solid #444;
+}
+
+/* Make sure legend matches */
+.badge.open-default {
+  background: #ffd600;
+  border: 2px solid #e53935;
+}
+.badge.open-public {
+  background: #ffd600;
+}
+.badge.open-secure {
+  background: #43a047;
+}
+.badge.restricted {
+  background: #888;
+  border: 1px solid #444;
+} 
