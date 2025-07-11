@@ -182,6 +182,40 @@ export class GraphQLLinterService {
           });
           return issues;
         }
+      },
+
+      // Rule: Enforce camelCase for field names
+      {
+        name: 'field-naming-convention',
+        severity: 'warn',
+        check: (ast: DocumentNode): GraphQLLintIssue[] => {
+          const issues: GraphQLLintIssue[] = [];
+          
+          // Helper function to check if string is camelCase
+          const isCamelCase = (str: string): boolean => {
+            return /^[a-z][a-zA-Z0-9]*$/.test(str);
+          };
+
+          visit(ast, {
+            FieldDefinition(node: FieldDefinitionNode) {
+              const fieldName = node.name.value;
+              
+              // Skip if it's already camelCase or if it's a special field (like __typename)
+              if (!isCamelCase(fieldName) && !fieldName.startsWith('__') && node.loc) {
+                issues.push({
+                  message: `Field '${fieldName}' should use camelCase naming convention`,
+                  line: node.loc.startToken.line,
+                  column: node.loc.startToken.column,
+                  endLine: node.loc.endToken.line,
+                  endColumn: node.loc.endToken.column,
+                  rule: 'field-naming-convention',
+                  severity: 'warn'
+                });
+              }
+            }
+          });
+          return issues;
+        }
       }
     ];
   }

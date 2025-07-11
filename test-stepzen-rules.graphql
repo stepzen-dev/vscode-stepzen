@@ -1,0 +1,39 @@
+# Test file for StepZen directive rules
+
+type Query {
+  # ✅ Good - proper @rest directive configuration
+  users: [User!]! @rest(endpoint: "https://api.example.com/users", method: GET)
+
+  # ❌ Bad - missing endpoint argument
+  posts: [Post!]! @rest(method: GET)
+
+  # ❌ Bad - missing method argument
+  comments: [Comment!]! @rest(endpoint: "https://api.example.com/comments")
+
+  # ❌ Bad - missing both arguments
+  likes: [Like!]! @rest
+}
+
+type User {
+  id: ID!
+  name: String!
+  email: String!
+}
+
+type Post {
+  id: ID!
+  title: String!
+  content: String!
+}
+
+type Comment {
+  id: ID!
+  text: String!
+  author: String!
+}
+
+type Like {
+  id: ID!
+  userId: ID!
+  postId: ID!
+}

@@ -1,0 +1,18 @@
+# Test file for the new field naming convention rule
+
+type User {
+  id: ID! # ✅ Good - camelCase
+  firstName: String! # ✅ Good - camelCase
+  last_name: String! # ❌ Bad - snake_case (will trigger warning)
+  FullName: String! # ❌ Bad - PascalCase (will trigger warning)
+  email: String! # ✅ Good - camelCase
+  phone_number: String! # ❌ Bad - snake_case (will trigger warning)
+  __typename: String! # ✅ Good - special field (ignored)
+}
+
+type Product {
+  productId: ID! # ✅ Good - camelCase
+  product_name: String! # ❌ Bad - snake_case (will trigger warning)
+  Price: Float! # ❌ Bad - PascalCase (will trigger warning)
+  description: String! # ✅ Good - camelCase
+}
