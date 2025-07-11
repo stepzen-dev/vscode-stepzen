@@ -15,7 +15,7 @@ export interface PolicyRule {
   fields: string[];
 }
 
-export interface PolicyDefault {
+interface PolicyDefault {
   condition: string;
 }
 
@@ -63,7 +63,7 @@ export interface PredicateAnalysis {
   errors: string[];
 }
 
-export interface JwtClaim {
+interface JwtClaim {
   path: string;
   type: string;
 }
@@ -94,7 +94,7 @@ export interface PolicyTemplatePattern {
   pattern: PolicyPattern;
 }
 
-export interface PolicyPattern {
+interface PolicyPattern {
   structure: PatternRule[];
   defaultCondition: string;
   guidance: string;
@@ -108,7 +108,7 @@ export interface PatternRule {
   example?: string;
 }
 
-export interface FieldSelector {
+interface FieldSelector {
   type: 'public' | 'user-specific' | 'admin-only' | 'role-based' | 'department-specific' | 'custom';
   namingPatterns?: string[];
   description: string;
