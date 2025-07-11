@@ -216,6 +216,45 @@ export class GraphQLLinterService {
           });
           return issues;
         }
+      },
+
+      // Rule: Require nullable fields in root operation types
+      {
+        name: 'root-fields-nullable',
+        severity: 'warn',
+        check: (ast: DocumentNode): GraphQLLintIssue[] => {
+          const issues: GraphQLLintIssue[] = [];
+          
+          visit(ast, {
+            ObjectTypeDefinition(node: ObjectTypeDefinitionNode) {
+              // Check if this is a root operation type (Query, Mutation, Subscription)
+              const typeName = node.name.value;
+              const isRootType = typeName === 'Query' || typeName === 'Mutation' || typeName === 'Subscription';
+              
+              if (isRootType && node.fields) {
+                node.fields.forEach(field => {
+                  // Check if the field type is non-nullable (ends with !)
+                  const fieldType = field.type;
+                  
+                  // If the field type is a NonNullType, it should be nullable and should be flagged
+                  if (fieldType.kind === 'NonNullType' && field.loc) {
+                    issues.push({
+                      message: `Field '${field.name.value}' in root type '${typeName}' should be nullable for better error handling`,
+                      line: field.loc.startToken.line,
+                      column: field.loc.startToken.column,
+                      endLine: field.loc.endToken.line,
+                      endColumn: field.loc.endToken.column,
+                      rule: 'root-fields-nullable',
+                      severity: 'warn'
+                    });
+                  }
+                });
+              }
+            }
+          });
+          
+          return issues;
+        }
       }
     ];
   }
