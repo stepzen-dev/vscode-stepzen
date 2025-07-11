@@ -1,0 +1,20 @@
+configurationset:
+  - configuration:
+      name: postgresql_config
+      uri: STEPZEN_POSTGRESDB_URI
+
+access:
+  policies:
+    - type: Query
+      rules:
+        - condition: $jwt.role # Missing type annotation
+          name: invalid condition
+          fields: ["testField"]
+        - condition: $jwt.role:String == admin # Missing quotes around admin
+          name: missing quotes
+          fields: ["testField2"]
+        - condition: $jwt.role:String == "admin" || # Incomplete condition
+          name: incomplete condition
+          fields: ["testField3"]
+      policyDefault:
+        condition: ?$jwt

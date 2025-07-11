@@ -79,6 +79,9 @@ The StepZen VS Code extension follows a layered architecture with clear separati
 - **SDL Linking**: Traverse `@sdl(files: [...])` directives safely
 - **AST Processing**: Parse and analyze GraphQL documents
 
+> **Note:**
+> The logic for traversing the schema graph to determine all access paths to a type (used in the Field Access Report) is currently implemented as a utility in the report service. In the future, this may be refactored into the SchemaIndexer or a dedicated schema traversal service for broader reuse and testability. (TODO)
+
 #### 4. VS Code API Layer
 
 - **Integration Points**: Commands, CodeLens, WebViews, Diagnostics

@@ -27,6 +27,10 @@ export const COMMANDS = {
   IMPORT_OPENAPI: "stepzen.importOpenapi",
   IMPORT_GRAPHQL: "stepzen.importGraphql",
   IMPORT_DATABASE: "stepzen.importDatabase",
+  CREATE_FIELD_POLICY: "stepzen.createFieldPolicy",
+  CREATE_FIELD_POLICY_FROM_PATTERN: "stepzen.createFieldPolicyFromPattern",
+  FIELD_ACCESS_REPORT: "stepzen.fieldAccessReport",
+  OPEN_POLICY_EDITOR: "stepzen.openPolicyEditor",
 } as const;
 
 // Configuration keys

@@ -4,6 +4,8 @@ import { ProjectResolver } from './projectResolver';
 import { SchemaIndexService } from './SchemaIndexService';
 import { RequestService } from './request';
 import { ImportService } from './importService';
+import { FieldPolicyParser } from './fieldPolicyParser';
+import { PolicyTemplateService } from './policyTemplateService';
 
 /**
  * Service registry for dependency injection of application services
@@ -16,6 +18,8 @@ export interface ServiceRegistry {
   schemaIndex: SchemaIndexService;
   request: RequestService;
   import: ImportService;
+  fieldPolicyParser: FieldPolicyParser;
+  policyTemplate: PolicyTemplateService;
 }
 
 /**
@@ -26,6 +30,8 @@ const projectResolver = new ProjectResolver(logger);
 const schemaIndex = new SchemaIndexService();
 const request = new RequestService(logger);
 const importService = new ImportService(logger, cli, projectResolver);
+const fieldPolicyParser = new FieldPolicyParser();
+const policyTemplate = new PolicyTemplateService();
 
 export const services: ServiceRegistry = {
   cli,
@@ -34,6 +40,8 @@ export const services: ServiceRegistry = {
   schemaIndex,
   request,
   import: importService,
+  fieldPolicyParser,
+  policyTemplate,
 };
 
 /**

@@ -1,0 +1,37 @@
+configurationset:
+  - configuration:
+      name: postgresql_config
+      uri: STEPZEN_POSTGRESDB_URI
+
+access:
+  policies:
+    - type: Query
+      rules:
+        - condition: true
+          name: public fields
+          fields: ["contents", "pages"]
+        - condition: $jwt.role:String == "admin"
+          name: admin access
+          fields: ["adminData", "userManagement", "systemStats"]
+        - condition: $jwt.role:String == "editor" || $jwt.role:String == "admin"
+          name: editor access
+          fields: ["editContent", "publishContent"]
+      policyDefault:
+        condition: ?$jwt
+    - type: Mutation
+      rules:
+        - condition: $jwt.role:String == "admin"
+          name: admin mutations
+          fields: ["createUser", "deleteUser", "updateSystemConfig"]
+        - condition: $jwt.role:String == "editor"
+          name: editor mutations
+          fields: ["updateContent", "publishContent"]
+      policyDefault:
+        condition: false
+    - type: User
+      rules:
+        - condition: $jwt.sub:String == $variables.userId:String
+          name: own user data
+          fields: ["email", "profile", "preferences"]
+      policyDefault:
+        condition: $jwt.role:String == "admin"

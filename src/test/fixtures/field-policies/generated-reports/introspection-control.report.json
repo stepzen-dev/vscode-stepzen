@@ -1,0 +1,1256 @@
+{
+  "summary": {
+    "totalRootFields": 11,
+    "accessibleRootFields": 0,
+    "protectedRootFields": 11,
+    "totalCustomTypes": 12,
+    "customTypesWithPolicies": 0
+  },
+  "rootTypeAccess": {
+    "Mutation": [
+      {
+        "field": "updateUser",
+        "access": "denied",
+        "ruleName": null,
+        "condition": "false",
+        "reason": "Policy default: denied (condition: false)"
+      }
+    ],
+    "Query": [
+      {
+        "field": "hello",
+        "access": "denied",
+        "ruleName": null,
+        "condition": "?$jwt",
+        "reason": "Policy default: denied (condition: ?$jwt)"
+      },
+      {
+        "field": "user",
+        "access": "denied",
+        "ruleName": null,
+        "condition": "?$jwt",
+        "reason": "Policy default: denied (condition: ?$jwt)"
+      },
+      {
+        "field": "order",
+        "access": "denied",
+        "ruleName": null,
+        "condition": "?$jwt",
+        "reason": "Policy default: denied (condition: ?$jwt)"
+      },
+      {
+        "field": "ordersByUserId",
+        "access": "denied",
+        "ruleName": null,
+        "condition": "?$jwt",
+        "reason": "Policy default: denied (condition: ?$jwt)"
+      },
+      {
+        "field": "getProductRating",
+        "access": "denied",
+        "ruleName": null,
+        "condition": "?$jwt",
+        "reason": "Policy default: denied (condition: ?$jwt)"
+      },
+      {
+        "field": "getShippingInfo",
+        "access": "denied",
+        "ruleName": null,
+        "condition": "?$jwt",
+        "reason": "Policy default: denied (condition: ?$jwt)"
+      },
+      {
+        "field": "product",
+        "access": "denied",
+        "ruleName": null,
+        "condition": "?$jwt",
+        "reason": "Policy default: denied (condition: ?$jwt)"
+      },
+      {
+        "field": "products",
+        "access": "denied",
+        "ruleName": null,
+        "condition": "?$jwt",
+        "reason": "Policy default: denied (condition: ?$jwt)"
+      },
+      {
+        "field": "productsByIds",
+        "access": "denied",
+        "ruleName": null,
+        "condition": "?$jwt",
+        "reason": "Policy default: denied (condition: ?$jwt)"
+      },
+      {
+        "field": "searchProducts",
+        "access": "denied",
+        "ruleName": null,
+        "condition": "?$jwt",
+        "reason": "Policy default: denied (condition: ?$jwt)"
+      }
+    ]
+  },
+  "customTypeAccess": {
+    "AverageRating": {
+      "hasPolicy": false,
+      "accessPaths": [
+        {
+          "rootField": "Mutation.updateUser",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: false)"
+        },
+        {
+          "rootField": "Query.hello",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.user",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.order",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.ordersByUserId",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getProductRating",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getShippingInfo",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.product",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.products",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.productsByIds",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.searchProducts",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        }
+      ],
+      "effectiveAccess": "blocked",
+      "fields": [
+        {
+          "field": "averageRating",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        }
+      ]
+    },
+    "Category": {
+      "hasPolicy": false,
+      "accessPaths": [
+        {
+          "rootField": "Mutation.updateUser",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: false)"
+        },
+        {
+          "rootField": "Query.hello",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.user",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.order",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.ordersByUserId",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getProductRating",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getShippingInfo",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.product",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.products",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.productsByIds",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.searchProducts",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        }
+      ],
+      "effectiveAccess": "blocked",
+      "fields": [
+        {
+          "field": "id",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "name",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "slug",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "parent",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        }
+      ]
+    },
+    "Money": {
+      "hasPolicy": false,
+      "accessPaths": [
+        {
+          "rootField": "Mutation.updateUser",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: false)"
+        },
+        {
+          "rootField": "Query.hello",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.user",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.order",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.ordersByUserId",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getProductRating",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getShippingInfo",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.product",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.products",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.productsByIds",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.searchProducts",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        }
+      ],
+      "effectiveAccess": "blocked",
+      "fields": [
+        {
+          "field": "amount",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "currency",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        }
+      ]
+    },
+    "NotificationSettings": {
+      "hasPolicy": false,
+      "accessPaths": [
+        {
+          "rootField": "Mutation.updateUser",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: false)"
+        },
+        {
+          "rootField": "Query.hello",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.user",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.order",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.ordersByUserId",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getProductRating",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getShippingInfo",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.product",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.products",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.productsByIds",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.searchProducts",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        }
+      ],
+      "effectiveAccess": "blocked",
+      "fields": [
+        {
+          "field": "email",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "push",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "sms",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        }
+      ]
+    },
+    "Order": {
+      "hasPolicy": false,
+      "accessPaths": [
+        {
+          "rootField": "Mutation.updateUser",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: false)"
+        },
+        {
+          "rootField": "Query.hello",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.user",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.order",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.ordersByUserId",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getProductRating",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getShippingInfo",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.product",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.products",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.productsByIds",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.searchProducts",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        }
+      ],
+      "effectiveAccess": "blocked",
+      "fields": [
+        {
+          "field": "id",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "userId",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "items",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "total",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "status",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "createdAt",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "tracking",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        }
+      ]
+    },
+    "OrderItem": {
+      "hasPolicy": false,
+      "accessPaths": [
+        {
+          "rootField": "Mutation.updateUser",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: false)"
+        },
+        {
+          "rootField": "Query.hello",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.user",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.order",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.ordersByUserId",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getProductRating",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getShippingInfo",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.product",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.products",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.productsByIds",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.searchProducts",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        }
+      ],
+      "effectiveAccess": "blocked",
+      "fields": [
+        {
+          "field": "id",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "productId",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "quantity",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "price",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        }
+      ]
+    },
+    "Product": {
+      "hasPolicy": false,
+      "accessPaths": [
+        {
+          "rootField": "Mutation.updateUser",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: false)"
+        },
+        {
+          "rootField": "Query.hello",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.user",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.order",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.ordersByUserId",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getProductRating",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getShippingInfo",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.product",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.products",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.productsByIds",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.searchProducts",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        }
+      ],
+      "effectiveAccess": "blocked",
+      "fields": [
+        {
+          "field": "id",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "name",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "description",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "price",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "category",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "tags",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "inStock",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "variants",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "averageRating",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        }
+      ]
+    },
+    "ProductVariant": {
+      "hasPolicy": false,
+      "accessPaths": [
+        {
+          "rootField": "Mutation.updateUser",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: false)"
+        },
+        {
+          "rootField": "Query.hello",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.user",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.order",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.ordersByUserId",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getProductRating",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getShippingInfo",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.product",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.products",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.productsByIds",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.searchProducts",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        }
+      ],
+      "effectiveAccess": "blocked",
+      "fields": [
+        {
+          "field": "id",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "name",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "sku",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "price",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "color",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "size",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        }
+      ]
+    },
+    "ShippingInfo": {
+      "hasPolicy": false,
+      "accessPaths": [
+        {
+          "rootField": "Mutation.updateUser",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: false)"
+        },
+        {
+          "rootField": "Query.hello",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.user",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.order",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.ordersByUserId",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getProductRating",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getShippingInfo",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.product",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.products",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.productsByIds",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.searchProducts",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        }
+      ],
+      "effectiveAccess": "blocked",
+      "fields": [
+        {
+          "field": "trackingNumber",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "carrier",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "status",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "estimatedDelivery",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        }
+      ]
+    },
+    "User": {
+      "hasPolicy": false,
+      "accessPaths": [
+        {
+          "rootField": "Mutation.updateUser",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: false)"
+        },
+        {
+          "rootField": "Query.hello",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.user",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.order",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.ordersByUserId",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getProductRating",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getShippingInfo",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.product",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.products",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.productsByIds",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.searchProducts",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        }
+      ],
+      "effectiveAccess": "blocked",
+      "fields": [
+        {
+          "field": "id",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "email",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "username",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "role",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "profile",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "favoriteProductIds",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "isActive",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "createdAt",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "recentOrders",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "favoriteProducts",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        }
+      ]
+    },
+    "UserPreferences": {
+      "hasPolicy": false,
+      "accessPaths": [
+        {
+          "rootField": "Mutation.updateUser",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: false)"
+        },
+        {
+          "rootField": "Query.hello",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.user",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.order",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.ordersByUserId",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getProductRating",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getShippingInfo",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.product",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.products",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.productsByIds",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.searchProducts",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        }
+      ],
+      "effectiveAccess": "blocked",
+      "fields": [
+        {
+          "field": "newsletter",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "notifications",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "theme",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        }
+      ]
+    },
+    "UserProfile": {
+      "hasPolicy": false,
+      "accessPaths": [
+        {
+          "rootField": "Mutation.updateUser",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: false)"
+        },
+        {
+          "rootField": "Query.hello",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.user",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.order",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.ordersByUserId",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getProductRating",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.getShippingInfo",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.product",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.products",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.productsByIds",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        },
+        {
+          "rootField": "Query.searchProducts",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: ?$jwt)"
+        }
+      ],
+      "effectiveAccess": "blocked",
+      "fields": [
+        {
+          "field": "firstName",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "lastName",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "avatar",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "bio",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        },
+        {
+          "field": "preferences",
+          "access": "inherited",
+          "ruleName": null,
+          "condition": null,
+          "reason": "No policy - access depends on root type access"
+        }
+      ]
+    }
+  }
+}
