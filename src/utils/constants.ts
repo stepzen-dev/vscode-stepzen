@@ -7,7 +7,7 @@
  * Constants used throughout the StepZen Tools extension
  */
 
-// Command IDs
+// Command identifiers
 export const COMMANDS = {
   INITIALIZE_PROJECT: "stepzen.initializeProject",
   DEPLOY: "stepzen.deploy",
@@ -18,21 +18,24 @@ export const COMMANDS = {
   ADD_MATERIALIZER: "stepzen.addMaterializer",
   ADD_VALUE: "stepzen.addValue",
   ADD_TOOL: "stepzen.addTool",
-  RUN_OPERATION: "stepzen.runOperation",
-  RUN_PERSISTED: "stepzen.runPersisted",
-  CLEAR_RESULTS: "stepzen.clearResults",
-  OPEN_SCHEMA_VISUALIZER: "stepzen.openSchemaVisualizer",
-  GENERATE_OPERATIONS: "stepzen.generateOperations",
   IMPORT_CURL: "stepzen.importCurl",
   IMPORT_OPENAPI: "stepzen.importOpenapi",
   IMPORT_GRAPHQL: "stepzen.importGraphql",
   IMPORT_DATABASE: "stepzen.importDatabase",
+  OPEN_SCHEMA_VISUALIZER: "stepzen.openSchemaVisualizer",
+  GENERATE_OPERATIONS: "stepzen.generateOperations",
+  LINT_GRAPHQL: "stepzen.lintGraphql",
+  CONFIGURE_LINT_RULES: "stepzen.configureLintRules",
+  RUN_OPERATION: "stepzen.runOperation",
+  RUN_PERSISTED: "stepzen.runPersisted",
+  CLEAR_RESULTS: "stepzen.clearResults",
 } as const;
 
 // Configuration keys
 export const CONFIG_KEYS = {
   LOG_LEVEL: "stepzen.logLevel",
   LOG_TO_FILE: "stepzen.logToFile",
+  GRAPHQL_LINT_RULES: "stepzen.graphqlLintRules",
 } as const;
 
 // UI component names and identifiers

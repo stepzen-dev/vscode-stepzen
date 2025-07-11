@@ -1,0 +1,36 @@
+# Test GraphQL file with intentional linting issues
+
+# Issue 1: Anonymous operation (should have a name)
+query {
+  user {
+    id
+    name
+  }
+}
+
+# Issue 2: Duplicate field
+type User {
+  id: ID!
+  name: String!
+  id: ID! # Duplicate field
+}
+
+# Issue 3: Missing descriptions
+type Product {
+  id: ID!
+  name: String!
+  price: Float!
+}
+
+# Issue 4: Deprecated field without reason
+type Order {
+  id: ID! @deprecated
+  oldStatus: String!
+  status: OrderStatus!
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}

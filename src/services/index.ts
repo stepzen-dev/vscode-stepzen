@@ -4,6 +4,7 @@ import { ProjectResolver } from './projectResolver';
 import { SchemaIndexService } from './SchemaIndexService';
 import { RequestService } from './request';
 import { ImportService } from './importService';
+import { GraphQLLinterService } from './graphqlLinter';
 
 /**
  * Service registry for dependency injection of application services
@@ -16,6 +17,7 @@ export interface ServiceRegistry {
   schemaIndex: SchemaIndexService;
   request: RequestService;
   import: ImportService;
+  graphqlLinter: GraphQLLinterService;
 }
 
 /**
@@ -26,6 +28,7 @@ const projectResolver = new ProjectResolver(logger);
 const schemaIndex = new SchemaIndexService();
 const request = new RequestService(logger);
 const importService = new ImportService(logger, cli, projectResolver);
+const graphqlLinter = new GraphQLLinterService();
 
 export const services: ServiceRegistry = {
   cli,
@@ -34,6 +37,7 @@ export const services: ServiceRegistry = {
   schemaIndex,
   request,
   import: importService,
+  graphqlLinter,
 };
 
 /**
