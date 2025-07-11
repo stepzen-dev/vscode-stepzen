@@ -1,0 +1,29 @@
+# This file contains intentional linting issues for testing
+
+# Missing description - should trigger require-description warning
+type User {
+  id: ID!
+  name: String!
+  email: String!
+}
+
+# Anonymous operation - should trigger no-anonymous-operations error
+query {
+  users {
+    id
+    name
+  }
+}
+
+# Duplicate field - should trigger no-duplicate-fields error
+type Product {
+  id: ID!
+  name: String!
+  name: String! # Duplicate field
+}
+
+# Deprecated field without reason - should trigger require-deprecation-reason warning
+type Order {
+  id: ID! @deprecated
+  oldField: String!
+}

@@ -118,6 +118,13 @@
       {
         "command": "stepzen.createFieldPolicyFromPattern",
         "title": "Create Field Policy from Pattern",
+        "command": "stepzen.lintGraphql",
+        "title": "Lint GraphQL Schema",
+        "category": "StepZen"
+      },
+      {
+        "command": "stepzen.configureLintRules",
+        "title": "Configure GraphQL Lint Rules",
         "category": "StepZen"
       }
     ],
@@ -139,6 +146,55 @@
           "type": "boolean",
           "default": false,
           "description": "When enabled, logs will be written to disk (requires trusted workspace)"
+        },
+        "stepzen.autoLintGraphQL": {
+          "type": "boolean",
+          "default": false,
+          "description": "When enabled, GraphQL files will be automatically linted when saved"
+        },
+        "stepzen.graphqlLintRules": {
+          "type": "object",
+          "default": {
+            "no-anonymous-operations": true,
+            "no-duplicate-fields": true,
+            "require-description": true,
+            "require-deprecation-reason": true,
+            "field-naming-convention": true,
+            "root-fields-nullable": true
+          },
+          "description": "Configure which GraphQL linting rules to enable",
+          "properties": {
+            "no-anonymous-operations": {
+              "type": "boolean",
+              "default": true,
+              "description": "Prevent anonymous GraphQL operations"
+            },
+            "no-duplicate-fields": {
+              "type": "boolean",
+              "default": true,
+              "description": "Prevent duplicate field definitions"
+            },
+            "require-description": {
+              "type": "boolean",
+              "default": true,
+              "description": "Require descriptions for types and fields"
+            },
+            "require-deprecation-reason": {
+              "type": "boolean",
+              "default": true,
+              "description": "Require reason for deprecated fields"
+            },
+            "field-naming-convention": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enforce camelCase for field names"
+            },
+            "root-fields-nullable": {
+              "type": "boolean",
+              "default": true,
+              "description": "Require nullable fields in root operation types"
+            }
+          }
         }
       }
     },

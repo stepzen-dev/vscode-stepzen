@@ -157,6 +157,23 @@ async function initialiseFor(folder: vscode.WorkspaceFolder) {
         
         // Update hash after successful scan
         lastSchemaHash = currentHash;
+
+        // Auto-lint GraphQL files if enabled
+        const autoLintEnabled = vscode.workspace.getConfiguration('stepzen').get('autoLintGraphQL', false);
+        if (autoLintEnabled && uri.fsPath.endsWith('.graphql')) {
+          services.logger.debug(`Auto-linting GraphQL file: ${uri.fsPath}`);
+          try {
+            await services.graphqlLinter.initialize();
+            const diagnostics = await services.graphqlLinter.lintFile(uri.fsPath);
+            if (diagnostics.length > 0) {
+              services.graphqlLinter.getDiagnosticCollection().set(uri, diagnostics);
+            } else {
+              services.graphqlLinter.getDiagnosticCollection().delete(uri);
+            }
+          } catch (lintError) {
+            services.logger.error(`Auto-linting failed for ${uri.fsPath}:`, lintError);
+          }
+        }
       } catch (err) {
         const error = new StepZenError(
           `Error rescanning project after change in ${uri.fsPath}`,
@@ -280,6 +297,14 @@ export async function activate(context: vscode.ExtensionContext) {
       const { createFieldPolicyFromPattern } = await import("./commands/createFieldPolicyFromPattern.js");
       return createFieldPolicyFromPattern();
     }),
+    safeRegisterCommand(COMMANDS.LINT_GRAPHQL, async () => {
+      const { lintGraphQL } = await import("./commands/lintGraphQL.js");
+      return lintGraphQL();
+    }),
+    safeRegisterCommand(COMMANDS.CONFIGURE_LINT_RULES, async () => {
+      const { configureLintRules } = await import("./commands/configureLintRules.js");
+      return configureLintRules();
+    }),
   );
 
   // Register the codelens provider
@@ -341,6 +366,13 @@ export async function activate(context: vscode.ExtensionContext) {
           e.affectsConfiguration(CONFIG_KEYS.LOG_TO_FILE)) {
         services.logger.updateConfigFromSettings();
       }
+      
+      // Listen for GraphQL lint rules configuration changes
+      if (e.affectsConfiguration(CONFIG_KEYS.GRAPHQL_LINT_RULES)) {
+        services.logger.info('GraphQL lint rules configuration changed, reinitializing linter');
+        // Reinitialize the linter with new rules
+        services.graphqlLinter.initialize();
+      }
     })
   );
   
@@ -353,7 +385,8 @@ export async function activate(context: vscode.ExtensionContext) {
  */
 // ts-prune-ignore-next
 export function deactivate() {
+  // Clean up resources
   watcher?.dispose();
-  stepzenTerminal?.dispose();
-  services.logger.dispose();
+  runtimeDiag?.dispose();
+  services.graphqlLinter.dispose();
 }

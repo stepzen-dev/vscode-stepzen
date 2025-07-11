@@ -6,6 +6,7 @@ import { RequestService } from './request';
 import { ImportService } from './importService';
 import { FieldPolicyParser } from './fieldPolicyParser';
 import { PolicyTemplateService } from './policyTemplateService';
+import { GraphQLLinterService } from './graphqlLinter';
 
 /**
  * Service registry for dependency injection of application services
@@ -20,6 +21,7 @@ export interface ServiceRegistry {
   import: ImportService;
   fieldPolicyParser: FieldPolicyParser;
   policyTemplate: PolicyTemplateService;
+  graphqlLinter: GraphQLLinterService;
 }
 
 /**
@@ -32,6 +34,7 @@ const request = new RequestService(logger);
 const importService = new ImportService(logger, cli, projectResolver);
 const fieldPolicyParser = new FieldPolicyParser();
 const policyTemplate = new PolicyTemplateService();
+const graphqlLinter = new GraphQLLinterService();
 
 export const services: ServiceRegistry = {
   cli,
@@ -42,6 +45,7 @@ export const services: ServiceRegistry = {
   import: importService,
   fieldPolicyParser,
   policyTemplate,
+  graphqlLinter,
 };
 
 /**

@@ -31,6 +31,7 @@ A comprehensive VS Code extension for developing GraphQL APIs with StepZen, feat
 - **Auto-completion** - Intelligent suggestions for StepZen directives
 - **Syntax Highlighting** - Enhanced GraphQL syntax support
 - **Schema Validation** - Real-time validation of schema files
+- **GraphQL Linting** - Comprehensive GraphQL schema linting with custom rules
 - **Quick Actions** - Context-aware commands and shortcuts
 
 ## Quick Start
@@ -90,12 +91,42 @@ https://petstore.swagger.io/v2/swagger.json
 - `StepZen: Deploy Schema` - Deploy your schema to StepZen
 - `StepZen: Run GraphQL Request` - Execute GraphQL operations
 - `StepZen: Open Schema Visualizer` - Visualize your schema structure
+- `StepZen: Lint GraphQL Schema` - Lint GraphQL schema files with custom rules
 
 ### Utility Commands
 
 - `StepZen: Generate Operations` - Create sample GraphQL operations
 - `StepZen: Validate Schema` - Check schema for errors
 - `StepZen: Show Logs` - View extension logs and debugging info
+
+## GraphQL Linting
+
+The extension includes comprehensive GraphQL schema linting with custom rules:
+
+### Features
+
+- **Real-time Linting** - Automatically lint GraphQL files as you type (optional)
+- **Comprehensive Rules** - Built-in GraphQL best practices and StepZen-specific rules
+- **VS Code Integration** - Linting errors and warnings appear in the Problems panel
+- **Customizable Rules** - Configure linting rules through VS Code settings
+
+### Configuration
+
+Enable automatic linting in your VS Code settings:
+
+```json
+{
+  "stepzen.autoLintGraphQL": true
+}
+```
+
+### Manual Linting
+
+Use the command palette to manually lint your GraphQL schema:
+
+1. Open Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
+2. Run `StepZen: Lint GraphQL Schema`
+3. View results in the Problems panel
 
 ## Import Features
 
@@ -135,7 +166,7 @@ The extension follows a layered architecture with clear separation of concerns:
 ```
 Extension Layer (Commands, Panels, Utils)
     ↓
-Service Registry (CLI, Logger, Import, SchemaIndex, Request)
+Service Registry (CLI, Logger, Import, SchemaIndex, Request, GraphQLLinter)
     ↓
 Schema Processing Layer (Indexer, Linker, Parser)
     ↓
@@ -146,6 +177,7 @@ Types (Pure data structures)
 
 - **ImportService** - Handles all import operations with type-specific builders
 - **SchemaIndexService** - Real-time schema analysis and indexing
+- **GraphQLLinterService** - GraphQL schema linting with graphql-eslint
 - **StepzenCliService** - CLI integration and command execution
 - **Logger** - Comprehensive logging and debugging
 - **RequestService** - GraphQL request execution
@@ -159,7 +191,8 @@ Types (Pure data structures)
   "stepzen.cliPath": "/path/to/stepzen",
   "stepzen.logLevel": "info",
   "stepzen.autoValidate": true,
-  "stepzen.defaultWorkingDir": "./stepzen"
+  "stepzen.defaultWorkingDir": "./stepzen",
+  "stepzen.autoLintGraphQL": false
 }
 ```
 
@@ -220,6 +253,12 @@ npm run test:integration   # Integration tests only
 - Ensure GraphQL syntax is correct
 - Check StepZen directive usage
 - Validate file paths and references
+
+**GraphQL Linting Issues**
+
+- Check that GraphQL files have valid syntax
+- Verify VS Code settings are correct
+- Review extension output for error messages
 
 ### Getting Help
 

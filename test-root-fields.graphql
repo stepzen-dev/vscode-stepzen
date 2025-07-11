@@ -1,0 +1,58 @@
+# Test file for root fields nullable rule
+
+# ✅ Good - nullable fields in root types
+type Query {
+  user(id: ID!): User # ✅ Nullable return type
+  users: [User] # ✅ Nullable list
+  currentUser: User # ✅ Nullable return type
+  searchUsers(query: String): [User] # ✅ Nullable return type
+}
+
+type Mutation {
+  createUser(input: UserInput!): User # ✅ Nullable return type
+  updateUser(id: ID!, input: UserInput!): User # ✅ Nullable return type
+  deleteUser(id: ID!): Boolean # ✅ Nullable return type
+}
+
+type Subscription {
+  userUpdated(id: ID!): User # ✅ Nullable return type
+  newUser: User # ✅ Nullable return type
+}
+
+# ❌ Bad - non-nullable fields in root types (will trigger warnings)
+type Query {
+  user(id: ID!): User! # ❌ Non-nullable return type
+  users: [User!]! # ❌ Non-nullable list of non-nullable users
+  currentUser: User! # ❌ Non-nullable return type
+}
+
+type Mutation {
+  createUser(input: UserInput!): User! # ❌ Non-nullable return type
+  updateUser(id: ID!, input: UserInput!): User! # ❌ Non-nullable return type
+  deleteUser(id: ID!): Boolean! # ❌ Non-nullable return type
+}
+
+type Subscription {
+  userUpdated(id: ID!): User! # ❌ Non-nullable return type
+  newUser: User! # ❌ Non-nullable return type
+}
+
+# Regular types (not root types) - these won't trigger warnings
+type User {
+  id: ID! # ✅ Non-nullable
+  name: String # ✅ Can be nullable in regular types
+  email: String # ✅ Can be nullable in regular types
+  profile: Profile # ✅ Can be nullable in regular types
+}
+
+type Profile {
+  id: ID!
+  bio: String
+  avatar: String
+}
+
+input UserInput {
+  name: String!
+  email: String!
+  bio: String
+}
