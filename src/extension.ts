@@ -285,6 +285,10 @@ export async function activate(context: vscode.ExtensionContext) {
       const { lintGraphQL } = await import("./commands/lintGraphQL.js");
       return lintGraphQL();
     }),
+    safeRegisterCommand(COMMANDS.CONFIGURE_LINT_RULES, async () => {
+      const { configureLintRules } = await import("./commands/configureLintRules.js");
+      return configureLintRules();
+    }),
   );
 
   // Register the codelens provider
@@ -345,6 +349,13 @@ export async function activate(context: vscode.ExtensionContext) {
       if (e.affectsConfiguration(CONFIG_KEYS.LOG_LEVEL) || 
           e.affectsConfiguration(CONFIG_KEYS.LOG_TO_FILE)) {
         services.logger.updateConfigFromSettings();
+      }
+      
+      // Listen for GraphQL lint rules configuration changes
+      if (e.affectsConfiguration(CONFIG_KEYS.GRAPHQL_LINT_RULES)) {
+        services.logger.info('GraphQL lint rules configuration changed, reinitializing linter');
+        // Reinitialize the linter with new rules
+        services.graphqlLinter.initialize();
       }
     })
   );

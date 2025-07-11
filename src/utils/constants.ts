@@ -25,6 +25,7 @@ export const COMMANDS = {
   OPEN_SCHEMA_VISUALIZER: "stepzen.openSchemaVisualizer",
   GENERATE_OPERATIONS: "stepzen.generateOperations",
   LINT_GRAPHQL: "stepzen.lintGraphql",
+  CONFIGURE_LINT_RULES: "stepzen.configureLintRules",
   RUN_OPERATION: "stepzen.runOperation",
   RUN_PERSISTED: "stepzen.runPersisted",
   CLEAR_RESULTS: "stepzen.clearResults",
@@ -34,6 +35,7 @@ export const COMMANDS = {
 export const CONFIG_KEYS = {
   LOG_LEVEL: "stepzen.logLevel",
   LOG_TO_FILE: "stepzen.logToFile",
+  GRAPHQL_LINT_RULES: "stepzen.graphqlLintRules",
 } as const;
 
 // UI component names and identifiers

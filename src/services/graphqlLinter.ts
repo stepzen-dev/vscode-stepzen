@@ -49,11 +49,24 @@ export class GraphQLLinterService {
    * Initialize built-in GraphQL linting rules
    */
   private initializeRules(): void {
-    this.rules = [
-      // Rule: No anonymous operations
-      {
+    // Get enabled rules from configuration
+    const config = vscode.workspace.getConfiguration('stepzen');
+    const enabledRules = config.get('graphqlLintRules', {
+      'no-anonymous-operations': true,
+      'no-duplicate-fields': true,
+      'require-description': true,
+      'require-deprecation-reason': true,
+      'field-naming-convention': true,
+      'root-fields-nullable': true
+    });
+
+    const allRules: GraphQLLintRule[] = [];
+
+    // Rule: No anonymous operations
+    if (enabledRules['no-anonymous-operations']) {
+      allRules.push({
         name: 'no-anonymous-operations',
-        severity: 'error',
+        severity: 'error' as const,
         check: (ast: DocumentNode): GraphQLLintIssue[] => {
           const issues: GraphQLLintIssue[] = [];
           visit(ast, {
@@ -73,12 +86,14 @@ export class GraphQLLinterService {
           });
           return issues;
         }
-      },
+      });
+    }
 
-      // Rule: No duplicate fields
-      {
+    // Rule: No duplicate fields
+    if (enabledRules['no-duplicate-fields']) {
+      allRules.push({
         name: 'no-duplicate-fields',
-        severity: 'error',
+        severity: 'error' as const,
         check: (ast: DocumentNode): GraphQLLintIssue[] => {
           const issues: GraphQLLintIssue[] = [];
           visit(ast, {
@@ -114,12 +129,14 @@ export class GraphQLLinterService {
           });
           return issues;
         }
-      },
+      });
+    }
 
-      // Rule: Require descriptions for types and fields
-      {
+    // Rule: Require descriptions for types and fields
+    if (enabledRules['require-description']) {
+      allRules.push({
         name: 'require-description',
-        severity: 'warn',
+        severity: 'warn' as const,
         check: (ast: DocumentNode): GraphQLLintIssue[] => {
           const issues: GraphQLLintIssue[] = [];
           visit(ast, {
@@ -153,12 +170,14 @@ export class GraphQLLinterService {
           });
           return issues;
         }
-      },
+      });
+    }
 
-      // Rule: Check for deprecated fields without reason
-      {
+    // Rule: Check for deprecated fields without reason
+    if (enabledRules['require-deprecation-reason']) {
+      allRules.push({
         name: 'require-deprecation-reason',
-        severity: 'warn',
+        severity: 'warn' as const,
         check: (ast: DocumentNode): GraphQLLintIssue[] => {
           const issues: GraphQLLintIssue[] = [];
           visit(ast, {
@@ -182,12 +201,14 @@ export class GraphQLLinterService {
           });
           return issues;
         }
-      },
+      });
+    }
 
-      // Rule: Enforce camelCase for field names
-      {
+    // Rule: Enforce camelCase for field names
+    if (enabledRules['field-naming-convention']) {
+      allRules.push({
         name: 'field-naming-convention',
-        severity: 'warn',
+        severity: 'warn' as const,
         check: (ast: DocumentNode): GraphQLLintIssue[] => {
           const issues: GraphQLLintIssue[] = [];
           
@@ -216,12 +237,14 @@ export class GraphQLLinterService {
           });
           return issues;
         }
-      },
+      });
+    }
 
-      // Rule: Require nullable fields in root operation types
-      {
+    // Rule: Require nullable fields in root operation types
+    if (enabledRules['root-fields-nullable']) {
+      allRules.push({
         name: 'root-fields-nullable',
-        severity: 'warn',
+        severity: 'warn' as const,
         check: (ast: DocumentNode): GraphQLLintIssue[] => {
           const issues: GraphQLLintIssue[] = [];
           
@@ -255,20 +278,22 @@ export class GraphQLLinterService {
           
           return issues;
         }
-      }
-    ];
+      });
+    }
+
+    this.rules = allRules;
   }
 
   /**
    * Initialize the GraphQL linter service
    */
   async initialize(): Promise<void> {
-    if (this.isInitialized) {
-      return;
-    }
-
     try {
       logger.info('Initializing GraphQL linter service');
+      
+      // Reinitialize rules when called (for configuration changes)
+      this.initializeRules();
+      
       this.isInitialized = true;
       logger.info('GraphQL linter service initialized successfully');
     } catch (error) {
