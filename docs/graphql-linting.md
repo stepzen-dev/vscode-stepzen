@@ -83,6 +83,17 @@ The custom GraphQL linter includes the following built-in rules:
 | `no-duplicate-fields`        | error    | Prevent duplicate field definitions   |
 | `require-description`        | warn     | Require descriptions for types/fields |
 | `require-deprecation-reason` | warn     | Require reason for deprecated fields  |
+| `field-naming-convention`    | warn     | Enforce camelCase field naming        |
+| `root-fields-nullable`       | warn     | Suggest nullable root field types     |
+
+### Pagination Rules
+
+| Rule                           | Severity | Description                                    |
+| ------------------------------ | -------- | ---------------------------------------------- |
+| `connection-structure`         | error    | Ensure Connection types have edges/pageInfo    |
+| `edge-structure`               | error    | Ensure Edge types have node/cursor fields      |
+| `connection-arguments`         | warn     | Suggest pagination arguments for connections   |
+| `pagination-argument-types`    | error    | Enforce correct types for pagination arguments |
 
 ### Rule Details
 
@@ -90,6 +101,12 @@ The custom GraphQL linter includes the following built-in rules:
 - **no-duplicate-fields**: Prevents duplicate field definitions within the same type
 - **require-description**: Suggests adding descriptions to types and fields for better documentation
 - **require-deprecation-reason**: Ensures deprecated fields include a reason for deprecation
+- **field-naming-convention**: Enforces camelCase naming for field names (ignores special fields like `__typename`)
+- **root-fields-nullable**: Suggests making root type fields nullable for better error handling
+- **connection-structure**: Ensures Connection types follow the Relay pagination pattern with `edges` and `pageInfo` fields
+- **edge-structure**: Ensures Edge types have the required `node` and `cursor` fields
+- **connection-arguments**: Suggests adding `first` and `after` arguments to fields returning Connection types
+- **pagination-argument-types**: Enforces correct types for pagination arguments (`first: Int!`, `after: String`)
 
 ## Usage
 
