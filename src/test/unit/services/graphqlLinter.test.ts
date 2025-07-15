@@ -3,8 +3,8 @@
  * Assisted by CursorAI
  */
 
-import * as assert from 'assert';
-import { GraphQLLinterService } from '../../../services/graphqlLinter';
+import * as assert from "assert";
+import { GraphQLLinterService } from "../../../services/graphqlLinter";
 
 suite("GraphQL Linter Test Suite", () => {
   let linter: GraphQLLinterService;
@@ -19,12 +19,19 @@ suite("GraphQL Linter Test Suite", () => {
 
   test("should initialize GraphQL linter service", async () => {
     await linter.initialize();
-    assert.ok(linter.getDiagnosticCollection(), "Diagnostic collection should be created");
+    assert.ok(
+      linter.getDiagnosticCollection(),
+      "Diagnostic collection should be created",
+    );
   });
 
   test("should create diagnostic collection with correct name", () => {
     const collection = linter.getDiagnosticCollection();
-    assert.strictEqual(collection.name, 'stepzen-graphql-lint', "Diagnostic collection should have correct name");
+    assert.strictEqual(
+      collection.name,
+      "stepzen-graphql-lint",
+      "Diagnostic collection should have correct name",
+    );
   });
 
   test("should clear diagnostics", () => {
@@ -43,25 +50,28 @@ suite("GraphQL Linter Test Suite", () => {
     assert.ok(true, "Dispose should complete without errors");
   });
 
-
-
   test("should detect Node interface with wrong field name", async () => {
     await linter.initialize();
-    const testFile = 'test-node-wrong-field.graphql';
-    const content = 'interface Node { identifier: ID! }';
-    
-    const fs = require('fs');
+    const testFile = "test-node-wrong-field.graphql";
+    const content = "interface Node { identifier: ID! }";
+
+    const fs = require("fs");
     fs.writeFileSync(testFile, content);
-    
+
     try {
       const diagnostics = await linter.lintFile(testFile);
 
-      const nodeInterfaceErrors = diagnostics.filter(d => 
-        d.message.includes("Node interface must have a field named 'id'") && 
-        d.code === "node-interface-structure"
+      const nodeInterfaceErrors = diagnostics.filter(
+        (d) =>
+          d.message.includes("Node interface must have a field named 'id'") &&
+          d.code === "node-interface-structure",
       );
-      
-      assert.strictEqual(nodeInterfaceErrors.length, 1, "Should detect Node interface with wrong field name");
+
+      assert.strictEqual(
+        nodeInterfaceErrors.length,
+        1,
+        "Should detect Node interface with wrong field name",
+      );
     } finally {
       fs.unlinkSync(testFile);
     }
@@ -69,21 +79,27 @@ suite("GraphQL Linter Test Suite", () => {
 
   test("should detect Node interface with wrong field type", async () => {
     await linter.initialize();
-    const testFile = 'test-node-wrong-type.graphql';
-    const content = 'interface Node { id: String! }';
-    
-    const fs = require('fs');
+    const testFile = "test-node-wrong-type.graphql";
+    const content = "interface Node { id: String! }";
+
+    const fs = require("fs");
     fs.writeFileSync(testFile, content);
-    
+
     try {
       const diagnostics = await linter.lintFile(testFile);
 
-      const nodeInterfaceErrors = diagnostics.filter(d => 
-        d.message.includes("Node interface 'id' field must be of type 'ID!'") && 
-        d.code === "node-interface-structure"
+      const nodeInterfaceErrors = diagnostics.filter(
+        (d) =>
+          d.message.includes(
+            "Node interface 'id' field must be of type 'ID!'",
+          ) && d.code === "node-interface-structure",
       );
-      
-      assert.strictEqual(nodeInterfaceErrors.length, 1, "Should detect Node interface with wrong field type");
+
+      assert.strictEqual(
+        nodeInterfaceErrors.length,
+        1,
+        "Should detect Node interface with wrong field type",
+      );
     } finally {
       fs.unlinkSync(testFile);
     }
@@ -91,17 +107,23 @@ suite("GraphQL Linter Test Suite", () => {
 
   test("should accept correct Node interface", async () => {
     await linter.initialize();
-    const testFile = 'test-node-correct.graphql';
-    const content = 'interface Node { id: ID! }';
-    
-    const fs = require('fs');
+    const testFile = "test-node-correct.graphql";
+    const content = "interface Node { id: ID! }";
+
+    const fs = require("fs");
     fs.writeFileSync(testFile, content);
-    
+
     try {
       const diagnostics = await linter.lintFile(testFile);
-      const nodeInterfaceErrors = diagnostics.filter(d => d.code === "node-interface-structure");
-      
-      assert.strictEqual(nodeInterfaceErrors.length, 0, "Should accept correct Node interface");
+      const nodeInterfaceErrors = diagnostics.filter(
+        (d) => d.code === "node-interface-structure",
+      );
+
+      assert.strictEqual(
+        nodeInterfaceErrors.length,
+        0,
+        "Should accept correct Node interface",
+      );
     } finally {
       fs.unlinkSync(testFile);
     }
@@ -109,7 +131,7 @@ suite("GraphQL Linter Test Suite", () => {
 
   test("should not affect other interfaces", async () => {
     await linter.initialize();
-    const testFile = 'test-other-interfaces.graphql';
+    const testFile = "test-other-interfaces.graphql";
     const content = `
       interface User {
         id: ID!
@@ -123,17 +145,51 @@ suite("GraphQL Linter Test Suite", () => {
         price: Float!
       }
     `;
-    
-    const fs = require('fs');
+
+    const fs = require("fs");
     fs.writeFileSync(testFile, content);
-    
+
     try {
       const diagnostics = await linter.lintFile(testFile);
-      const nodeInterfaceErrors = diagnostics.filter(d => d.code === "node-interface-structure");
-      
-      assert.strictEqual(nodeInterfaceErrors.length, 0, "Should not affect other interfaces");
+      const nodeInterfaceErrors = diagnostics.filter(
+        (d) => d.code === "node-interface-structure",
+      );
+
+      assert.strictEqual(
+        nodeInterfaceErrors.length,
+        0,
+        "Should not affect other interfaces",
+      );
     } finally {
       fs.unlinkSync(testFile);
     }
   });
-}); 
+
+  test("should detect Node defined as object type instead of interface", async () => {
+    await linter.initialize();
+    const testFile = "test-node-as-type.graphql";
+    const content = "type Node { id: ID! }";
+
+    const fs = require("fs");
+    fs.writeFileSync(testFile, content);
+
+    try {
+      const diagnostics = await linter.lintFile(testFile);
+
+      const nodeInterfaceErrors = diagnostics.filter(
+        (d) =>
+          d.message.includes(
+            "Node must be defined as an interface, not a type",
+          ) && d.code === "node-interface-structure",
+      );
+
+      assert.strictEqual(
+        nodeInterfaceErrors.length,
+        1,
+        "Should detect Node defined as object type instead of interface",
+      );
+    } finally {
+      fs.unlinkSync(testFile);
+    }
+  });
+});
