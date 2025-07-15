@@ -27,7 +27,19 @@ suite("Field Policy Parser Tests", () => {
     assert.strictEqual(queryPolicy.rules.length, 1);
     assert.strictEqual(queryPolicy.rules[0].condition, "true");
     assert.strictEqual(queryPolicy.rules[0].name, "public fields");
-    assert.deepStrictEqual(queryPolicy.rules[0].fields, ["contents", "pages", "publicData"]);
+    assert.deepStrictEqual(queryPolicy.rules[0].fields, [
+      "hello",
+      "user",
+      "users",
+      "product",
+      "products",
+      "productsByIds",
+      "searchProducts",
+      "order",
+      "ordersByUserId",
+      "getProductRating",
+      "getShippingInfo"
+    ]);
     assert.strictEqual(queryPolicy.policyDefault.condition, "false");
   });
 
