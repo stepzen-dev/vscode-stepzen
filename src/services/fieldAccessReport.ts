@@ -174,8 +174,12 @@ export async function generateFieldAccessReportData(
           } else {
             // No rule found, deny by default
             access = "denied";
-            condition = "false";
-            reason = `No rule found for field ${field.name} in policy for root type ${typeName}: denied by default`;
+            condition = policy && policy.policyDefault ? policy.policyDefault.condition : "false";
+            if (policy && policy.policyDefault) {
+              reason = `Policy default: denied (condition: ${policy.policyDefault.condition})`;
+            } else {
+              reason = `No rule found for field ${field.name} in policy for root type ${typeName}: denied by default`;
+            }
           }
         }
       }

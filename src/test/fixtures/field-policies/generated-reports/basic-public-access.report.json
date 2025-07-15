@@ -94,59 +94,11 @@
       "hasPolicy": false,
       "accessPaths": [
         {
-          "rootField": "Mutation.updateUser",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.user",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.order",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.ordersByUserId",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
           "rootField": "Query.getProductRating",
           "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.product",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.products",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.productsByIds",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         }
       ],
       "effectiveAccess": "inherited",
@@ -166,57 +118,37 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.order",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.ordersByUserId",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.getProductRating",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
           "rootField": "Query.product",
           "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
           "rootField": "Query.products",
           "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
           "rootField": "Query.productsByIds",
           "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         }
       ],
       "effectiveAccess": "inherited",
@@ -257,57 +189,128 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
-          "rootField": "Query.hello",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "rootField": "Mutation.updateUser",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
+        },
+        {
+          "rootField": "Mutation.updateUser",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
+        },
+        {
+          "rootField": "Mutation.updateUser",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
+        },
+        {
+          "rootField": "Query.user",
+          "status": "accessible",
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
+        },
+        {
+          "rootField": "Query.user",
+          "status": "accessible",
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
+        },
+        {
+          "rootField": "Query.user",
+          "status": "accessible",
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
           "rootField": "Query.order",
           "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
+        },
+        {
+          "rootField": "Query.order",
+          "status": "accessible",
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
           "rootField": "Query.ordersByUserId",
           "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
-          "rootField": "Query.getProductRating",
+          "rootField": "Query.ordersByUserId",
           "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
           "rootField": "Query.product",
           "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
+        },
+        {
+          "rootField": "Query.product",
+          "status": "accessible",
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
           "rootField": "Query.products",
           "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
+        },
+        {
+          "rootField": "Query.products",
+          "status": "accessible",
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
           "rootField": "Query.productsByIds",
           "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
-          "rootField": "Query.searchProducts",
+          "rootField": "Query.productsByIds",
           "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         }
       ],
       "effectiveAccess": "inherited",
@@ -334,57 +337,16 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.order",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.ordersByUserId",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.getProductRating",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.product",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.products",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.productsByIds",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         }
       ],
       "effectiveAccess": "inherited",
@@ -418,57 +380,30 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
           "rootField": "Query.order",
           "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
           "rootField": "Query.ordersByUserId",
           "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.getProductRating",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.product",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.products",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.productsByIds",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         }
       ],
       "effectiveAccess": "inherited",
@@ -530,57 +465,30 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
           "rootField": "Query.order",
           "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
           "rootField": "Query.ordersByUserId",
           "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.getProductRating",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.product",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.products",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.productsByIds",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         }
       ],
       "effectiveAccess": "inherited",
@@ -621,57 +529,37 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.order",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.ordersByUserId",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.getProductRating",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
           "rootField": "Query.product",
           "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
           "rootField": "Query.products",
           "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
           "rootField": "Query.productsByIds",
           "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         }
       ],
       "effectiveAccess": "inherited",
@@ -747,57 +635,37 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.order",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.ordersByUserId",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.getProductRating",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
           "rootField": "Query.product",
           "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
           "rootField": "Query.products",
           "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
           "rootField": "Query.productsByIds",
           "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         }
       ],
       "effectiveAccess": "inherited",
@@ -852,57 +720,37 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
           "rootField": "Query.order",
           "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
           "rootField": "Query.ordersByUserId",
           "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.getProductRating",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         },
         {
           "rootField": "Query.getShippingInfo",
           "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.product",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.products",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.productsByIds",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         }
       ],
       "effectiveAccess": "inherited",
@@ -943,57 +791,16 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.order",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.ordersByUserId",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.getProductRating",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.product",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.products",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.productsByIds",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         }
       ],
       "effectiveAccess": "inherited",
@@ -1076,57 +883,16 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.order",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.ordersByUserId",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.getProductRating",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.product",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.products",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.productsByIds",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         }
       ],
       "effectiveAccess": "inherited",
@@ -1160,57 +926,16 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.order",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.ordersByUserId",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.getProductRating",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.product",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.products",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.productsByIds",
-          "status": "accessible",
-          "reason": "Rule: public fields"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "accessible",
-          "reason": "Rule: public fields"
+          "reason": "Rule: public fields",
+          "ruleName": "public fields",
+          "condition": "true"
         }
       ],
       "effectiveAccess": "inherited",

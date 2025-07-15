@@ -94,59 +94,11 @@
       "hasPolicy": false,
       "accessPaths": [
         {
-          "rootField": "Mutation.updateUser",
-          "status": "blocked",
-          "reason": "No policy for root type Mutation: denied by default"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.user",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.order",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.ordersByUserId",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
           "rootField": "Query.getProductRating",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.product",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.products",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.productsByIds",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         }
       ],
       "effectiveAccess": "blocked",
@@ -166,57 +118,37 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "No policy for root type Mutation: denied by default"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "No policy for root type Mutation: denied by default",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.order",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.ordersByUserId",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.getProductRating",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.product",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.products",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.productsByIds",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         }
       ],
       "effectiveAccess": "blocked",
@@ -257,57 +189,128 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "No policy for root type Mutation: denied by default"
+          "reason": "No policy for root type Mutation: denied by default",
+          "ruleName": null,
+          "condition": "false"
         },
         {
-          "rootField": "Query.hello",
+          "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "No policy for root type Mutation: denied by default",
+          "ruleName": null,
+          "condition": "false"
+        },
+        {
+          "rootField": "Mutation.updateUser",
+          "status": "blocked",
+          "reason": "No policy for root type Mutation: denied by default",
+          "ruleName": null,
+          "condition": "false"
+        },
+        {
+          "rootField": "Mutation.updateUser",
+          "status": "blocked",
+          "reason": "No policy for root type Mutation: denied by default",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
+        },
+        {
+          "rootField": "Query.user",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
+        },
+        {
+          "rootField": "Query.user",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
+        },
+        {
+          "rootField": "Query.user",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.order",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
+        },
+        {
+          "rootField": "Query.order",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.ordersByUserId",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
-          "rootField": "Query.getProductRating",
+          "rootField": "Query.ordersByUserId",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.product",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
+        },
+        {
+          "rootField": "Query.product",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.products",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
+        },
+        {
+          "rootField": "Query.products",
+          "status": "blocked",
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.productsByIds",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
-          "rootField": "Query.searchProducts",
+          "rootField": "Query.productsByIds",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         }
       ],
       "effectiveAccess": "blocked",
@@ -334,57 +337,16 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "No policy for root type Mutation: denied by default"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "No policy for root type Mutation: denied by default",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.order",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.ordersByUserId",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.getProductRating",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.product",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.products",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.productsByIds",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         }
       ],
       "effectiveAccess": "blocked",
@@ -418,57 +380,30 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "No policy for root type Mutation: denied by default"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "No policy for root type Mutation: denied by default",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.order",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.ordersByUserId",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.getProductRating",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.product",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.products",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.productsByIds",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         }
       ],
       "effectiveAccess": "blocked",
@@ -530,57 +465,30 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "No policy for root type Mutation: denied by default"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "No policy for root type Mutation: denied by default",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.order",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.ordersByUserId",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.getProductRating",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.product",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.products",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.productsByIds",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         }
       ],
       "effectiveAccess": "blocked",
@@ -621,57 +529,37 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "No policy for root type Mutation: denied by default"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "No policy for root type Mutation: denied by default",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.order",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.ordersByUserId",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.getProductRating",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.product",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.products",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.productsByIds",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         }
       ],
       "effectiveAccess": "blocked",
@@ -747,57 +635,37 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "No policy for root type Mutation: denied by default"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "No policy for root type Mutation: denied by default",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.order",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.ordersByUserId",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.getProductRating",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.product",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.products",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.productsByIds",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         }
       ],
       "effectiveAccess": "blocked",
@@ -852,57 +720,37 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "No policy for root type Mutation: denied by default"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "No policy for root type Mutation: denied by default",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.order",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.ordersByUserId",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.getProductRating",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.getShippingInfo",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.product",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.products",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.productsByIds",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         }
       ],
       "effectiveAccess": "blocked",
@@ -943,57 +791,16 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "No policy for root type Mutation: denied by default"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "No policy for root type Mutation: denied by default",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.order",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.ordersByUserId",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.getProductRating",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.product",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.products",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.productsByIds",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         }
       ],
       "effectiveAccess": "controlled",
@@ -1076,57 +883,16 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "No policy for root type Mutation: denied by default"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "No policy for root type Mutation: denied by default",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.order",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.ordersByUserId",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.getProductRating",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.product",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.products",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.productsByIds",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         }
       ],
       "effectiveAccess": "blocked",
@@ -1160,57 +926,16 @@
         {
           "rootField": "Mutation.updateUser",
           "status": "blocked",
-          "reason": "No policy for root type Mutation: denied by default"
-        },
-        {
-          "rootField": "Query.hello",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "No policy for root type Mutation: denied by default",
+          "ruleName": null,
+          "condition": "false"
         },
         {
           "rootField": "Query.user",
           "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.order",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.ordersByUserId",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.getProductRating",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.getShippingInfo",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.product",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.products",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.productsByIds",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
-        },
-        {
-          "rootField": "Query.searchProducts",
-          "status": "blocked",
-          "reason": "Policy default: denied (condition: false)"
+          "reason": "Policy default: denied (condition: false)",
+          "ruleName": null,
+          "condition": "false"
         }
       ],
       "effectiveAccess": "blocked",
