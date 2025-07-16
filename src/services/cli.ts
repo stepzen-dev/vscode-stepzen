@@ -64,10 +64,11 @@ export class StepzenCliService {
    * @param vars Optional variables to pass to the query
    * @param operationName Optional name of the operation to execute
    * @param debugLevel Optional debug level (defaults to 1)
+   * @param customHeaders Optional custom headers to inject as --header
    * @returns Promise resolving to the response string
    * @throws CliError if the operation fails
    */
-  async request(query: string, vars?: object, operationName?: string, debugLevel: number = 1): Promise<string> {
+  async request(query: string, vars?: object, operationName?: string, debugLevel: number = 1, customHeaders?: Record<string, string>): Promise<string> {
     let tmpFile = '';
     let varsFile = '';
     
@@ -111,7 +112,8 @@ export class StepzenCliService {
         'request',
         '--file', tmpFile,
         ...(operationName ? ['--operation-name', operationName] : []),
-        '--header', `"stepzen-debug-level: ${debugLevel}"`,
+        // Add each header as its own --header argument, value wrapped in double quotes
+        ...(customHeaders ? Object.entries(customHeaders).flatMap(([k, v]) => ['--header', `"${k}: ${v}"`]) : ['--header', `"stepzen-debug-level: ${debugLevel}"`]),
         ...varArgs
       ];
       

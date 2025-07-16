@@ -123,6 +123,46 @@ async function collectVariableArgs(query: string, chosenOp?: string): Promise<st
   }
 }
 
+// Key for persisting last auth selection and JWT
+const JWT_STATE_KEY = 'stepzen.lastJwtToken';
+
+/**
+ * Prompts the user to select the authorization type and (if needed) enter a JWT.
+ * Always prompts for the type, but prepopulates JWT with last-used value.
+ * Returns an object with the selected type and token (if JWT).
+ */
+async function promptForAuthorization(context: vscode.ExtensionContext): Promise<{ type: 'admin' | 'jwt', jwt?: string } | undefined> {
+  // Retrieve last JWT
+  const lastJwt = context.globalState.get<string>(JWT_STATE_KEY);
+
+  const options = [
+    { label: 'Default (Admin Key)', value: 'admin', description: 'Use your StepZen admin API key (default)' },
+    { label: 'Bearer Token (JWT)', value: 'jwt', description: 'Use a Bearer JWT for Authorization header' },
+  ];
+
+  const pick = await vscode.window.showQuickPick(options, {
+    placeHolder: 'Select authorization type for this request',
+    canPickMany: false,
+    ignoreFocusOut: true,
+  });
+  if (!pick) {return undefined;}
+
+  if (pick.value === 'jwt') {
+    const jwt = await vscode.window.showInputBox({
+      prompt: 'Enter your Bearer JWT',
+      value: lastJwt || '',
+      password: true,
+      ignoreFocusOut: true,
+    });
+    if (!jwt) {return undefined;}
+    // Persist JWT
+    context.globalState.update(JWT_STATE_KEY, jwt);
+    return { type: 'jwt', jwt };
+  } else {
+    return { type: 'admin' };
+  }
+}
+
 /* -------------------------------------------------------------
  * Common execution function with support for persisted documents
  * ------------------------------------------------------------*/
@@ -137,7 +177,7 @@ async function collectVariableArgs(query: string, chosenOp?: string): Promise<st
  * Runs the GraphQL request in the active editor
  * If multiple operations are found, prompts the user to select one
  */
-export async function runGraphQLRequest() {
+export async function runGraphQLRequest(context: vscode.ExtensionContext) {
   try {
     services.logger.info("Starting Run GraphQL Request command");
     
@@ -193,11 +233,19 @@ export async function runGraphQLRequest() {
       return; // user cancelled
     }
 
-    // Execute using file-based approach
+    // Prompt for authorization type and JWT
+    const auth = await promptForAuthorization(context);
+    if (!auth) {
+      services.logger.info("Run GraphQL Request cancelled by user during auth selection");
+      return;
+    }
+
+    // Execute using file-based approach, passing auth info (to be used in next step)
     await executeStepZenRequest({
       queryText: query,
       operationName,
-      varArgs
+      varArgs,
+      auth // <-- pass auth info for header construction
     });
     
     services.logger.info("Run GraphQL Request completed successfully");
@@ -210,9 +258,10 @@ export async function runGraphQLRequest() {
  * Executes a specific operation from a GraphQL file
  * Used by the "▶ Run" codelens button in the editor
  * 
+ * @param context The extension context
  * @param operation The operation entry to run
  */
-export async function runOperation(operation: OperationEntry) {
+export async function runOperation(context: vscode.ExtensionContext, operation: OperationEntry) {
   // Check workspace trust first
   if (!vscode.workspace.isTrusted) {
     vscode.window.showWarningMessage(MESSAGES.GRAPHQL_OPERATIONS_NOT_AVAILABLE_UNTRUSTED);
@@ -239,27 +288,33 @@ export async function runOperation(operation: OperationEntry) {
     }
     const content = document.getText();
   
-  // Validate operation range
-  if (!operation.range || typeof operation.range.start !== 'number' || typeof operation.range.end !== 'number') {
-    vscode.window.showErrorMessage(MESSAGES.INVALID_OPERATION_RANGE);
-    return;
-  }
+    // Validate operation range
+    if (!operation.range || typeof operation.range.start !== 'number' || typeof operation.range.end !== 'number') {
+      vscode.window.showErrorMessage(MESSAGES.INVALID_OPERATION_RANGE);
+      return;
+    }
 
-  // Extract just this operation's text based on range
-  const operationText = content.substring(operation.range.start, operation.range.end);
-  
-  // Collect variable args for the operation
-  const varArgs = await collectVariableArgs(operationText, operation.name);
-  if (varArgs === undefined) {
-    return; // user cancelled
-  }
-  
-  // Execute using file-based approach
-  await executeStepZenRequest({
-    queryText: operationText,
-    operationName: operation.name,
-    varArgs
-  });
+    // Extract just this operation's text based on range
+    const operationText = content.substring(operation.range.start, operation.range.end);
+    
+    // Collect variable args for the operation
+    const varArgs = await collectVariableArgs(operationText, operation.name);
+    if (varArgs === undefined) {
+      return; // user cancelled
+    }
+
+    // Prompt for authorization type and JWT
+    const auth = await promptForAuthorization(context);
+    if (!auth) {
+      return;
+    }
+    // Execute using file-based approach
+    await executeStepZenRequest({
+      queryText: operationText,
+      operationName: operation.name,
+      varArgs,
+      auth
+    });
   } catch (error: unknown) {
     handleError(error);
   }
@@ -269,10 +324,11 @@ export async function runOperation(operation: OperationEntry) {
  * Executes a persisted operation using its document ID
  * Used by the "▶ Run (persisted)" codelens button in the editor
  * 
+ * @param context The extension context
  * @param documentId The persisted document ID
  * @param operationName The name of the operation within the document
  */
-export async function runPersisted(documentId: string, operationName: string) {
+export async function runPersisted(context: vscode.ExtensionContext, documentId: string, operationName: string) {
   // Check workspace trust first
   if (!vscode.workspace.isTrusted) {
     vscode.window.showWarningMessage(MESSAGES.PERSISTED_OPERATIONS_NOT_AVAILABLE_UNTRUSTED);
@@ -344,12 +400,17 @@ export async function runPersisted(documentId: string, operationName: string) {
     if (varArgs === undefined) {
       return; // user cancelled
     }
-    
+    // Prompt for authorization type and JWT
+    const auth = await promptForAuthorization(context);
+    if (!auth) {
+      return;
+    }
     // Execute using persisted document approach with the full document content
     await executeStepZenRequest({
       documentContent: content,
       operationName,
-      varArgs
+      varArgs,
+      auth
     });
   } catch (error: unknown) {
     handleError(error);
