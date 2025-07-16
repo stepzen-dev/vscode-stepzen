@@ -12,6 +12,7 @@ import { safeRegisterCommand } from "./utils/safeRegisterCommand";
 // Removed import - now using services.schemaIndex directly
 import { StepZenCodeLensProvider } from "./utils/codelensProvider";
 import { services } from "./services";
+import { runGraphQLRequest } from "./commands/runRequest";
 
 
 let stepzenTerminal: vscode.Terminal | undefined;
@@ -213,10 +214,7 @@ export async function activate(context: vscode.ExtensionContext) {
       const { deployStepZen } = await import("./commands/deploy.js");
       return deployStepZen();
     }),
-    safeRegisterCommand(COMMANDS.RUN_REQUEST, async () => {
-      const { runGraphQLRequest } = await import("./commands/runRequest.js");
-      return runGraphQLRequest();
-    }),
+    safeRegisterCommand(COMMANDS.RUN_REQUEST, () => runGraphQLRequest(context)),
     safeRegisterCommand(COMMANDS.OPEN_EXPLORER, async () => {
       const { openQueryExplorer } = await import("./commands/openExplorer.js");
       return openQueryExplorer(context);
@@ -260,11 +258,11 @@ export async function activate(context: vscode.ExtensionContext) {
     }),
     safeRegisterCommand(COMMANDS.RUN_OPERATION, async (...args: unknown[]) => {
       const { runOperation } = await import("./commands/runRequest.js");
-      return runOperation(args[0] as any);
+      return runOperation(context, args[0] as any);
     }),
     safeRegisterCommand(COMMANDS.RUN_PERSISTED, async (...args: unknown[]) => {
       const { runPersisted } = await import("./commands/runRequest.js");
-      return runPersisted(args[0] as string, args[1] as string);
+      return runPersisted(context, args[0] as string, args[1] as string);
     }),
     safeRegisterCommand(COMMANDS.CLEAR_RESULTS, async () => {
       const { clearResults } = await import("./commands/runRequest.js");

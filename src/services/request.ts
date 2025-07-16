@@ -228,7 +228,7 @@ export class RequestService {
    * @param documentContent The GraphQL document content (used to calculate hash)
    * @param variables Request variables
    * @param operationName Optional operation name
-   * @param debugLevel Debug level for the request
+   * @param headers Optional custom headers
    * @returns Promise resolving to StepZen response
    */
   public async executePersistedDocumentRequest(
@@ -236,6 +236,7 @@ export class RequestService {
     documentContent: string,
     variables: Record<string, any>,
     operationName?: string,
+    headers?: Record<string, string>,
   ): Promise<StepZenResponse> {
     this.logger.info("Making HTTP request to StepZen API for persisted document");
 
@@ -251,28 +252,25 @@ export class RequestService {
 
     return new Promise<StepZenResponse>((resolve, reject) => {
       const postData = JSON.stringify(requestBody);
-      
-      const options = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(postData),
-          'Authorization': endpointConfig.apiKey ? `Apikey ${endpointConfig.apiKey}` : ''
-        }
+      // Use custom headers if provided, otherwise default
+      const requestHeaders = headers ? { ...headers, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(postData) } : {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData),
+        'Authorization': endpointConfig.apiKey ? `Apikey ${endpointConfig.apiKey}` : ''
       };
-
       // debug log the request details
-      this.logger.debug(`Request details: ${JSON.stringify(options)}`);
+      this.logger.debug(`Request details: ${JSON.stringify({ headers: requestHeaders })}`);
       this.logger.debug(`Request body: ${postData}`);
       this.logger.debug(`Request URL: ${endpointConfig.graphqlUrl}`);
-      
+      const options = {
+        method: 'POST',
+        headers: requestHeaders
+      };
       const req = https.request(endpointConfig.graphqlUrl, options, (res) => {
         let responseData = '';
-        
         res.on('data', (chunk) => {
           responseData += chunk;
         });
-        
         res.on('end', () => {
           try {
             const json = JSON.parse(responseData);
@@ -286,7 +284,6 @@ export class RequestService {
           }
         });
       });
-      
       req.on('error', (err) => {
         reject(new NetworkError(
           "Failed to connect to StepZen API",
@@ -294,7 +291,6 @@ export class RequestService {
           err
         ));
       });
-      
       req.write(postData);
       req.end();
     });

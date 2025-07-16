@@ -23,6 +23,7 @@ import { ValidationError, handleError } from "../errors";
  * @param options.documentId Optional document ID for persisted document requests
  * @param options.operationName Optional name of the operation to execute
  * @param options.varArgs Optional variable arguments (--var, --var-file)
+ * @param options.auth Optional authorization info (admin or jwt)
  * @returns Promise that resolves when execution completes
  */
 export async function executeStepZenRequest(options: {
@@ -30,8 +31,9 @@ export async function executeStepZenRequest(options: {
   documentContent?: string;
   operationName?: string;
   varArgs?: string[];
+  auth?: { type: 'admin' | 'jwt', jwt?: string };
 }): Promise<void> {
-  const { queryText, documentContent, operationName, varArgs = [] } = options;
+  const { queryText, documentContent, operationName, varArgs = [], auth } = options;
 
   // Validate request options using the request service
   try {
@@ -53,15 +55,33 @@ export async function executeStepZenRequest(options: {
   const cfg = vscode.workspace.getConfiguration("stepzen");
   const debugLevel = cfg.get<number>("request.debugLevel", 1);
 
+  // Prepare headers based on auth selection
+  let customHeaders: Record<string, string> = {};
+  let adminKey: string | undefined;
+  if (auth?.type === 'jwt') {
+    // Always need the admin key for debug header
+    adminKey = await services.request.getApiKey();
+    customHeaders = {
+      'Authorization': `Bearer ${auth.jwt}`,
+      'StepZen-Debug-Authorization': `apikey ${adminKey}`,
+      'stepzen-debug-level': String(debugLevel),
+    };
+  } else {
+    // Default: admin key in Authorization
+    adminKey = await services.request.getApiKey();
+    customHeaders = {
+      'Authorization': `Apikey ${adminKey}`,
+      'stepzen-debug-level': String(debugLevel),
+    };
+  }
+
   // For persisted documents, we need to make an HTTP request directly
   if (documentContent) {
     try {
       // Load endpoint configuration using the request service
       const endpointConfig = await services.request.loadEndpointConfig(projectRoot);
-
       // Parse variables using the request service
       const { variables } = services.request.parseVariables(varArgs);
-
       // Show a progress notification
       await vscode.window.withProgress(
         {
@@ -70,25 +90,23 @@ export async function executeStepZenRequest(options: {
           cancellable: false
         },
         async () => {
-          // Execute the persisted document request using the request service
+          // Execute the persisted document request using the request service, passing custom headers
           const result = await services.request.executePersistedDocumentRequest(
             endpointConfig,
             documentContent,
             variables,
-            operationName
-            );
-          
+            operationName,
+            customHeaders
+          );
           // Process results
           const rawDiags = (result.extensions?.stepzen?.diagnostics ?? []) as StepZenDiagnostic[];
           services.logger.info("Processing diagnostics for persisted operation...");
           const summaries = summariseDiagnostics(rawDiags);
           publishDiagnostics(summaries, runtimeDiag);
-          
           services.logger.info("Persisted document request completed successfully");
           await openResultsPanel(result);
         }
       );
-      
       return;
     } catch (err: unknown) {
       handleError(err);
@@ -104,7 +122,6 @@ export async function executeStepZenRequest(options: {
 
   // Create a temp file for the query, which we'll need for Terminal mode
   let tmpFile: string | undefined;
-  
   try {
     // Terminal output mode with debug level 0
     if (debugLevel === 0) {
@@ -112,32 +129,27 @@ export async function executeStepZenRequest(options: {
         tmpFile = createTempGraphQLFile(queryText);
         const term = vscode.window.createTerminal(UI.TERMINAL_NAME);
         term.show();
-        
         // Build CLI command for terminal
         const parts = [
           "stepzen request",
-          `--file "${tmpFile}"`,
+          `--file \"${tmpFile}\"`,
         ];
-        
         // Add operation name if specified
-        // Log operation name
         if (operationName) {
-          services.logger.info(`Using specified operation: "${operationName}"`);
+          services.logger.info(`Using specified operation: \"${operationName}\"`);
         } else {
           services.logger.debug('No operation name specified, letting StepZen select the default operation');
         }
-        
-        // Add debug level header - properly escape quotes for shell
-        parts.push('--header', `"stepzen-debug-level: ${debugLevel}"`);
-        
+        // Add custom headers
+        for (const [key, value] of Object.entries(customHeaders)) {
+          parts.push('--header', `\"${key}: ${value}\"`);
+        }
         // Add variable arguments
         parts.push(...varArgs);
-        
         const cmd = parts.filter(Boolean).join(" ");
-        services.logger.info(`Executing StepZen request in terminal${operationName ? ` for operation "${operationName}"` : ' (anonymous operation)'}`);
+        services.logger.info(`Executing StepZen request in terminal${operationName ? ` for operation \"${operationName}\"` : ' (anonymous operation)'}`);
         services.logger.debug(`Terminal command: ${cmd}`);
-        term.sendText(`cd "${projectRoot}" && ${cmd}`);
-        
+        term.sendText(`cd \"${projectRoot}\" && ${cmd}`);
         // Cleanup temp file later
         cleanupLater(tmpFile);
       } catch (err) {
@@ -145,7 +157,6 @@ export async function executeStepZenRequest(options: {
       }
       return;
     }
-
     // JSON result mode with progress notification
     services.logger.info("Executing StepZen request with CLI service...");
     await vscode.window.withProgress(
@@ -158,17 +169,15 @@ export async function executeStepZenRequest(options: {
         try {
           // Parse variables using the request service
           const { variables } = services.request.parseVariables(varArgs);
-          
-          // Use the CLI service to execute the request
-          services.logger.info(`Executing StepZen request${operationName ? ` for operation "${operationName}"` : ' (anonymous operation)'} with debug level ${debugLevel}`);
-          services.logger.debug(`Calling CLI service with request${operationName ? ` for operation "${operationName}"` : ' (no operation specified)'}`);
-          const stdout = await services.cli.request(queryText, variables, operationName, debugLevel);
+          // Use the CLI service to execute the request, passing custom headers
+          services.logger.info(`Executing StepZen request${operationName ? ` for operation \"${operationName}\"` : ' (anonymous operation)'} with debug level ${debugLevel}`);
+          services.logger.debug(`Calling CLI service with request${operationName ? ` for operation \"${operationName}\"` : ' (no operation specified)'}`);
+          const stdout = await services.cli.request(queryText, variables, operationName, debugLevel, customHeaders);
           services.logger.debug("Received response from StepZen CLI service");
-          
           let json: StepZenResponse;
           try {
             // Parse the response as JSON
-            services.logger.debug(`Parsing JSON response${operationName ? ` for operation "${operationName}"` : ''}`);
+            services.logger.debug(`Parsing JSON response${operationName ? ` for operation \"${operationName}\"` : ''}`);
             json = JSON.parse(stdout) as StepZenResponse;
           } catch (parseErr) {
             throw new ValidationError(
@@ -177,15 +186,13 @@ export async function executeStepZenRequest(options: {
               parseErr
             );
           }
-
           // Process results
           const rawDiags = (json.extensions?.stepzen?.diagnostics ?? []) as StepZenDiagnostic[];
           services.logger.info("Processing diagnostics for file-based request...");
           const summaries = summariseDiagnostics(rawDiags);
           publishDiagnostics(summaries, runtimeDiag);
-
           await openResultsPanel(json);
-          services.logger.info(`StepZen request completed successfully${operationName ? ` for operation "${operationName}"` : ''}`);
+          services.logger.info(`StepZen request completed successfully${operationName ? ` for operation \"${operationName}\"` : ''}`);
         } catch (err) {
           handleError(err);
           // Clear any partial results
