@@ -560,6 +560,7 @@ suite("GraphQL Linter Test Suite", () => {
                 "edge-structure": false,
                 "connection-arguments": false,
                 "pagination-argument-types": false,
+                "node-interface-structure": false,
               };
             }
             return defaultValue;

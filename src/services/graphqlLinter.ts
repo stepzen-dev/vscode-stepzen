@@ -12,6 +12,7 @@ import {
   ObjectTypeDefinitionNode,
   FieldDefinitionNode,
   OperationDefinitionNode,
+  InterfaceTypeDefinitionNode,
 } from "graphql";
 import { logger } from "./logger";
 import { StepZenError } from "../errors";
@@ -60,7 +61,7 @@ export class GraphQLLinterService {
   private initializeRules(): void {
     // Get enabled rules from configuration
     const config = vscode.workspace.getConfiguration("stepzen");
-    const enabledRules = config.get("graphqlLintRules", {
+    const defaultRules = {
       "no-anonymous-operations": true,
       "no-duplicate-fields": true,
       "require-description": true,
@@ -71,7 +72,15 @@ export class GraphQLLinterService {
       "edge-structure": true,
       "connection-arguments": true,
       "pagination-argument-types": true,
-    });
+      "node-interface-structure": true,
+    };
+
+    // In test environment, config might be undefined, so use defaults
+    let enabledRules = defaultRules;
+    if (config) {
+      const configRules = config.get("graphqlLintRules", {});
+      enabledRules = { ...defaultRules, ...configRules };
+    }
 
     const allRules: GraphQLLintRule[] = [];
 
@@ -528,6 +537,92 @@ export class GraphQLLinterService {
                   }
                 }
               });
+            },
+          });
+          return issues;
+        },
+      });
+    }
+
+    // Rule: Node interface must have exactly one field: id: ID!
+    if (enabledRules["node-interface-structure"]) {
+      allRules.push({
+        name: "node-interface-structure",
+        severity: "error" as const,
+        check: (ast: DocumentNode): GraphQLLintIssue[] => {
+          const issues: GraphQLLintIssue[] = [];
+
+          visit(ast, {
+            // Check for Node defined as object type (should be interface)
+            ObjectTypeDefinition(node: ObjectTypeDefinitionNode) {
+              if (node.name.value === "Node" && node.loc) {
+                issues.push({
+                  message: "Node must be defined as an interface, not a type",
+                  line: node.loc.startToken.line,
+                  column: node.loc.startToken.column,
+                  endLine: node.loc.endToken.line,
+                  endColumn: node.loc.endToken.column,
+                  rule: "node-interface-structure",
+                  severity: "error",
+                });
+              }
+            },
+            // Check for Node interface structure
+            InterfaceTypeDefinition(node: InterfaceTypeDefinitionNode) {
+              if (node.name.value === "Node") {
+                const fields = node.fields || [];
+
+                // Not exactly one field: error
+                if (fields.length !== 1 && node.loc) {
+                  issues.push({
+                    message:
+                      "Node interface must have exactly one field: id: ID!",
+                    line: node.loc.startToken.line,
+                    column: node.loc.startToken.column,
+                    endLine: node.loc.endToken.line,
+                    endColumn: node.loc.endToken.column,
+                    rule: "node-interface-structure",
+                    severity: "error",
+                  });
+                }
+
+                // Check the field name and type
+                if (fields.length >= 1) {
+                  const idField = fields[0];
+
+                  if (idField.name.value !== "id" && idField.loc) {
+                    issues.push({
+                      message: "Node interface must have a field named 'id'",
+                      line: idField.loc.startToken.line,
+                      column: idField.loc.startToken.column,
+                      endLine: idField.loc.endToken.line,
+                      endColumn: idField.loc.endToken.column,
+                      rule: "node-interface-structure",
+                      severity: "error",
+                    });
+                  }
+
+                  // Check if the field type is ID!
+                  const fieldType = idField.type;
+
+                  const isNonNullID =
+                    fieldType.kind === "NonNullType" &&
+                    fieldType.type.kind === "NamedType" &&
+                    fieldType.type.name.value === "ID";
+                  if (!isNonNullID && idField.loc) {
+                    issues.push({
+                      message:
+                        "Node interface 'id' field must be of type 'ID!'",
+                      line: idField.loc.startToken.line,
+                      column: idField.loc.startToken.column,
+                      endLine: idField.loc.endToken.line,
+                      endColumn: idField.loc.endToken.column,
+                      rule: "node-interface-structure",
+                      severity: "error",
+                    });
+                  }
+                }
+              }
             },
           });
           return issues;

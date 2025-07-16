@@ -1,0 +1,45 @@
+# Test file for Node interface rule
+
+# ❌ Wrong: Node interface with no fields
+interface Node {
+}
+
+# ❌ Wrong: Node interface with wrong field name
+interface Node {
+  identifier: ID!
+}
+
+# ❌ Wrong: Node interface with wrong field type
+interface Node {
+  id: String!
+}
+
+# ❌ Wrong: Node interface with nullable ID
+interface Node {
+  id: ID
+}
+
+# ❌ Wrong: Node interface with multiple fields
+interface Node {
+  id: ID!
+  name: String!
+}
+
+# ✅ Correct: Node interface with exactly id: ID!
+interface Node {
+  id: ID!
+}
+
+# Test that other interfaces are not affected
+interface User {
+  id: ID!
+  name: String!
+  email: String!
+}
+
+# Test that types are not affected
+type Product {
+  id: ID!
+  name: String!
+  price: Float!
+} 
