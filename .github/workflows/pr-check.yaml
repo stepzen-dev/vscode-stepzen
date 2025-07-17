@@ -20,8 +20,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - run: |
-        npm ci
+      - name: install
+        run: |
+          npm ci
       - run: xvfb-run -a npm test
         if: runner.os == 'Linux'
       - name: tests
