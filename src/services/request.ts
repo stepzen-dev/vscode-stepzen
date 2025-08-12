@@ -113,6 +113,32 @@ export class RequestService {
   }
 
   /**
+   * Get the admin key from StepZen CLI
+   * 
+   * @returns Promise resolving to the admin key
+   */
+  public async getAdminKey(): Promise<string> {
+    try {
+      this.logger.debug("Retrieving admin key from StepZen CLI");
+      
+      // Import services here to avoid circular dependency
+      const { services } = await import('./index.js');
+      
+      // Use the CLI service's getAdminKey method
+      const adminKey = await services.cli.getAdminKey();
+      
+      this.logger.debug("Successfully retrieved admin key from CLI service");
+      return adminKey;
+    } catch (err) {
+      throw new ValidationError(
+        "Failed to retrieve admin key from StepZen CLI",
+        "ADMIN_KEY_RETRIEVAL_FAILED",
+        err
+      );
+    }
+  }
+
+  /**
    * Get the API key from StepZen CLI
    * 
    * @returns Promise resolving to the API key
@@ -191,11 +217,11 @@ export class RequestService {
     // Import services here to avoid circular dependency
     const { services } = await import('./index.js');
     
-    // Get account, domain, and API key from the CLI
+    // Get account, domain, and admin key from the CLI
     const [account, domain, apiKey] = await Promise.all([
       services.cli.getAccount(),
       services.cli.getDomain(),
-      this.getApiKey()
+      this.getAdminKey()
     ]);
     
     // Construct the GraphQL endpoint URL using the correct pattern
