@@ -59,19 +59,19 @@ export async function executeStepZenRequest(options: {
   let customHeaders: Record<string, string> = {};
   let adminKey: string | undefined;
   if (auth?.type === 'jwt') {
-    // Always need the admin key for debug header
-    adminKey = await services.request.getApiKey();
+    // JWT auth: use JWT for Authorization, admin key for debug
+    adminKey = await services.request.getAdminKey();
     customHeaders = {
       'Authorization': `Bearer ${auth.jwt}`,
       'StepZen-Debug-Authorization': `apikey ${adminKey}`,
-      'stepzen-debug-level': String(debugLevel),
+      'Stepzen-Debug-Level': String(debugLevel),
     };
   } else {
-    // Default: admin key in Authorization
-    adminKey = await services.request.getApiKey();
+    // Admin auth: use admin key for Authorization
+    adminKey = await services.request.getAdminKey();
     customHeaders = {
       'Authorization': `Apikey ${adminKey}`,
-      'stepzen-debug-level': String(debugLevel),
+      'Stepzen-Debug-Level': String(debugLevel),
     };
   }
 
@@ -98,9 +98,17 @@ export async function executeStepZenRequest(options: {
             operationName,
             customHeaders
           );
-          // Process results
+          // Process results and validate debug data
           const rawDiags = (result.extensions?.stepzen?.diagnostics ?? []) as StepZenDiagnostic[];
           services.logger.info("Processing diagnostics for persisted operation...");
+          services.logger.debug(`Received ${rawDiags.length} diagnostic entries from StepZen`);
+          
+          if (debugLevel > 0 && rawDiags.length === 0) {
+            services.logger.warn(`Expected debug data with debug level ${debugLevel}, but received no diagnostics. Check if headers were sent correctly.`);
+          } else if (debugLevel > 0) {
+            services.logger.info(`Successfully received debug data: ${rawDiags.length} diagnostic entries`);
+          }
+          
           const summaries = summariseDiagnostics(rawDiags);
           publishDiagnostics(summaries, runtimeDiag);
           services.logger.info("Persisted document request completed successfully");
@@ -186,9 +194,17 @@ export async function executeStepZenRequest(options: {
               parseErr
             );
           }
-          // Process results
+          // Process results and validate debug data
           const rawDiags = (json.extensions?.stepzen?.diagnostics ?? []) as StepZenDiagnostic[];
           services.logger.info("Processing diagnostics for file-based request...");
+          services.logger.debug(`Received ${rawDiags.length} diagnostic entries from StepZen`);
+          
+          if (debugLevel > 0 && rawDiags.length === 0) {
+            services.logger.warn(`Expected debug data with debug level ${debugLevel}, but received no diagnostics. Check if Stepzen-Debug-Level header was sent correctly.`);
+          } else if (debugLevel > 0) {
+            services.logger.info(`Successfully received debug data: ${rawDiags.length} diagnostic entries`);
+          }
+          
           const summaries = summariseDiagnostics(rawDiags);
           publishDiagnostics(summaries, runtimeDiag);
           await openResultsPanel(json);

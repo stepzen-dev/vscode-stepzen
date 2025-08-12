@@ -107,18 +107,32 @@ export class StepzenCliService {
         }, TIMEOUTS.FILE_CLEANUP_DELAY_MS);
       }
       
+      // Build headers array - always include debug level, plus any custom headers
+      const headerArgs: string[] = [];
+      if (customHeaders && Object.keys(customHeaders).length > 0) {
+        // Add custom headers
+        Object.entries(customHeaders).forEach(([k, v]) => {
+          headerArgs.push('--header', `"${k}: ${v}"`);
+        });
+      } else {
+        // Fallback: just add debug level header
+        headerArgs.push('--header', `"Stepzen-Debug-Level: ${debugLevel}"`);
+      }
+      
       // Build args array for the request command
       const args = [
         'request',
         '--file', tmpFile,
         ...(operationName ? ['--operation-name', operationName] : []),
-        // Add each header as its own --header argument, value wrapped in double quotes
-        ...(customHeaders ? Object.entries(customHeaders).flatMap(([k, v]) => ['--header', `"${k}: ${v}"`]) : ['--header', `"stepzen-debug-level: ${debugLevel}"`]),
+        ...headerArgs,
         ...varArgs
       ];
       
-      // Execute the request
-      logger.debug(`Executing StepZen request with args: ${args.join(' ')}${operationName ? ` (operation: ${operationName})` : ''}, debug level: ${debugLevel}`);
+      // Log the full command for debugging
+      const fullCommand = `stepzen ${args.join(' ')}`;
+      logger.info(`Executing StepZen CLI command: ${fullCommand}`);
+      logger.debug(`Command details: operation=${operationName || 'default'}, debugLevel=${debugLevel}, headers=${JSON.stringify(customHeaders || {})}`);
+      
       let stdout;
       try {
         stdout = await this.spawnProcessWithOutput(args, {
@@ -160,6 +174,34 @@ export class StepzenCliService {
         err
       );
       throw error;
+    }
+  }
+
+  /**
+   * Get the admin key from StepZen CLI
+   * 
+   * @returns Promise resolving to the admin key
+   * @throws CliError if the operation fails
+   */
+  async getAdminKey(): Promise<string> {
+    try {
+      logger.debug('Retrieving admin key from StepZen CLI');
+      
+      const result = await this.spawnProcessWithOutput(['whoami', '--adminkey']);
+      const adminKey = result.trim();
+      
+      if (!adminKey) {
+        throw new CliError("Empty admin key returned from StepZen CLI", "EMPTY_ADMIN_KEY");
+      }
+      
+      logger.debug("Successfully retrieved admin key from CLI");
+      return adminKey;
+    } catch (err) {
+      throw new CliError(
+        "Failed to retrieve admin key from StepZen CLI",
+        "ADMIN_KEY_RETRIEVAL_FAILED",
+        err
+      );
     }
   }
 
