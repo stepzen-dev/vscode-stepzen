@@ -19,6 +19,18 @@ export function handleError(error: unknown): StepZenError {
   // Step 2: Log the full error with stack trace
   logger.error(`${normalizedError.name}[${normalizedError.code}]: ${normalizedError.message}`, normalizedError);
   
+  // For CLI errors with details, log the structured information
+  if (normalizedError instanceof CliError && normalizedError.details) {
+    if (normalizedError.details.errorType === 'authorization') {
+      logger.error(`Authorization Error: ${normalizedError.details.authError || 'Access denied'}`);
+    } else if (normalizedError.details.errorType === 'graphql' && normalizedError.details.graphqlErrors) {
+      logger.error('GraphQL Errors:');
+      normalizedError.details.graphqlErrors.forEach(err => {
+        logger.error(`- ${err}`);
+      });
+    }
+  }
+  
   // Step 3: Show VS Code notification with friendly message
   showErrorNotification(normalizedError);
   
@@ -109,16 +121,46 @@ function showErrorNotification(error: StepZenError): void {
   // Generate a user-friendly message based on error type
   let friendlyMessage = getFriendlyErrorMessage(error);
   
+  // For CLI errors with details, add more context to the notification
+  let detailMessage = error.message;
+  if (error instanceof CliError && error.details) {
+    detailMessage = getDetailedErrorMessage(error);
+  }
+  
   // Show notification with "Show Logs" action
   vscode.window.showErrorMessage(
     friendlyMessage,
-    { modal: false, detail: error.message },
+    { modal: false, detail: detailMessage },
     'Show Logs'
   ).then(selection => {
     if (selection === 'Show Logs') {
       logger.showOutput();
     }
   });
+}
+
+/**
+ * Get a detailed error message for CLI errors with structured details
+ * 
+ * @param error The CliError with details
+ * @returns A detailed error message
+ */
+function getDetailedErrorMessage(error: CliError): string {
+  if (!error.details) {
+    return error.message;
+  }
+
+  let detailMessage = error.message;
+
+  // Add specific details based on error type
+  if (error.details.errorType === 'authorization') {
+    detailMessage = `Authorization Error: ${error.details.authError || 'Access denied'}`;
+  } 
+  else if (error.details.errorType === 'graphql' && error.details.graphqlErrors) {
+    detailMessage = 'GraphQL Errors:\n' + error.details.graphqlErrors.map(err => `- ${err}`).join('\n');
+  }
+
+  return detailMessage;
 }
 
 /**
@@ -130,6 +172,15 @@ function showErrorNotification(error: StepZenError): void {
 function getFriendlyErrorMessage(error: StepZenError): string {
   // Customize message based on error type
   if (error instanceof CliError) {
+    // For CLI errors with details, provide more specific messages
+    if (error.details) {
+      if (error.details.errorType === 'authorization') {
+        return `StepZen Authorization Error: ${error.details.authError || 'Access denied'}`;
+      } 
+      else if (error.details.errorType === 'graphql') {
+        return 'StepZen GraphQL Error: The request contains errors';
+      }
+    }
     return `StepZen CLI Error: ${error.message}`;
   }
   
@@ -144,3 +195,5 @@ function getFriendlyErrorMessage(error: StepZenError): string {
   // Default message for base StepZenError
   return `StepZen Error: ${error.message}`;
 }
+
+// Made with Bob
