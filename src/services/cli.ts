@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import { logger } from './logger';
-import { CliError } from '../errors';
+import { CliError, StepZenCliErrorDetails } from '../errors';
 import { TEMP_FILE_PATTERNS, TIMEOUTS } from "../utils/constants";
 
 /**
@@ -289,6 +289,50 @@ export class StepzenCliService {
     }
   }
   
+  /**
+   * Parse StepZen CLI error output to extract structured error information
+   * 
+   * @param stderr The stderr output from the CLI
+   * @returns Structured error details
+   */
+  private parseCliErrorOutput(stderr: string): StepZenCliErrorDetails {
+    const details: StepZenCliErrorDetails = {
+      originalMessage: stderr
+    };
+
+    // Check for authorization errors
+    if (stderr.includes('Action denied: You are not authorized')) {
+      details.errorType = 'authorization';
+      // Extract the specific auth error message
+      const authMatch = stderr.match(/Action denied: ([^\n]+)/);
+      if (authMatch && authMatch[1]) {
+        details.authError = authMatch[1].trim();
+      }
+    }
+    // Check for GraphQL errors
+    else if (stderr.includes('Errors returned by the GraphQL server:')) {
+      details.errorType = 'graphql';
+      details.graphqlErrors = [];
+      
+      // Extract GraphQL errors - they typically appear after this line
+      const lines = stderr.split('\n');
+      let collectingErrors = false;
+      
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (collectingErrors && trimmedLine.startsWith('-')) {
+          // This is a GraphQL error line, extract the error message
+          details.graphqlErrors.push(trimmedLine.substring(1).trim());
+        }
+        
+        if (trimmedLine.includes('Errors returned by the GraphQL server:')) {
+          collectingErrors = true;
+        }
+      }
+    }
+    
+    return details;
+  }
   
   /**
    * Spawn a StepZen CLI process and capture output
@@ -350,15 +394,21 @@ export class StepzenCliService {
       
       proc.on('close', (code) => {
         if (code !== 0) {
-          // Create a more descriptive error with both exit code and stderr content
-          const errorMsg = stderr.trim() 
-            ? `StepZen CLI exited with code ${code}: ${stderr.trim()}`
-            : `StepZen CLI exited with code ${code}`;
-            
+          // Parse the stderr to extract structured error information
+          const errorDetails = this.parseCliErrorOutput(stderr.trim());
+          
+          // Create a more descriptive error message
+          let errorMsg = `StepZen CLI exited with code ${code}`;
+          if (stderr.trim()) {
+            errorMsg += `: ${stderr.trim()}`;
+          }
+          
+          // Create a CliError with the structured error details
           reject(new CliError(
             errorMsg,
             'COMMAND_FAILED',
-            stderr ? new Error(stderr) : undefined
+            stderr ? new Error(stderr) : undefined,
+            errorDetails
           ));
         } else {
           logger.debug(`StepZen CLI process completed with exit code 0`);
@@ -368,3 +418,5 @@ export class StepzenCliService {
     });
   }
 }
+
+// Made with Bob
