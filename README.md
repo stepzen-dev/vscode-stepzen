@@ -1,10 +1,10 @@
 # StepZen VS Code Extension
 
-A comprehensive VS Code extension for developing GraphQL APIs with StepZen, featuring intelligent schema management, import capabilities, and development tools.
+A VS Code extension for developing GraphQL APIs with StepZen, featuring intelligent schema management, import capabilities, and development tools.
 
 ## Features
 
-### 🚀 Import & Integration
+### Import and Integration
 
 - **cURL Import** - Convert REST endpoints to GraphQL with smart cURL parsing
 - **OpenAPI Import** - Generate schemas from OpenAPI specifications
@@ -12,21 +12,21 @@ A comprehensive VS Code extension for developing GraphQL APIs with StepZen, feat
 - **Database Import** - Connect PostgreSQL, MySQL, Oracle, Snowflake, and more
 - **Smart Configuration** - Auto-detect secrets, generate names, validate inputs
 
-### 📊 Schema Management
+### Schema Management
 
 - **Schema Indexing** - Real-time analysis of GraphQL schemas and directives
 - **Type Definitions** - Navigate and explore your schema structure
 - **Directive Support** - Full support for StepZen directives (@rest, @dbquery, @graphql, etc.)
 - **File Watching** - Automatic updates when schema files change
 
-### 🛠️ Development Tools
+### Development Tools
 
 - **CLI Integration** - Seamless StepZen CLI command execution
 - **Project Management** - Initialize and manage StepZen projects
 - **Request Testing** - Execute GraphQL operations directly from VS Code
 - **Error Handling** - Comprehensive error reporting and validation
 
-### 🎯 Smart Features
+### Smart Features
 
 - **Auto-completion** - Intelligent suggestions for StepZen directives
 - **Syntax Highlighting** - Enhanced GraphQL syntax support
@@ -38,43 +38,22 @@ A comprehensive VS Code extension for developing GraphQL APIs with StepZen, feat
 
 ### Installation
 
-1. Install the extension from the VS Code Marketplace
-2. Ensure you have the [StepZen CLI](https://stepzen.com/docs/quick-start) installed
-3. Open a workspace and start building GraphQL APIs
+This extension is not published to the VS Code Marketplace. To install it:
+
+1. Download the latest `.vsix` file from the [GitHub Releases](https://github.com/stepzen-dev/vscode-stepzen/releases) page
+2. Install it in VS Code using one of these methods:
+   - **Command line:** `code --install-extension vscode-stepzen-<version>.vsix`
+   - **VS Code UI:** Open the Extensions view, click the `...` menu, and select "Install from VSIX..."
+3. Ensure you have the [StepZen CLI](https://stepzen.com/docs/quick-start) installed
 
 ### Import Your First API
 
-#### Import a REST API
+Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and run any of the import commands:
 
-```bash
-# Command Palette: "StepZen: Import cURL"
-# Paste your cURL command or endpoint URL
-curl -H "Authorization: Bearer token" https://api.github.com/user
-```
-
-#### Import a Database
-
-```bash
-# Command Palette: "StepZen: Import Database"
-# Select database type and provide connection details
-postgresql://user:pass@localhost:5432/mydb
-```
-
-#### Import GraphQL Endpoint
-
-```bash
-# Command Palette: "StepZen: Import GraphQL"
-# Provide endpoint and authentication
-https://api.github.com/graphql
-```
-
-#### Import OpenAPI Specification
-
-```bash
-# Command Palette: "StepZen: Import OpenAPI"
-# Select local file or provide URL
-https://petstore.swagger.io/v2/swagger.json
-```
+- **StepZen: Import cURL** - Paste a cURL command or endpoint URL
+- **StepZen: Import Database** - Select a database type and provide connection details
+- **StepZen: Import GraphQL** - Provide an endpoint URL and authentication
+- **StepZen: Import OpenAPI** - Select a local file or provide a URL
 
 ## Commands
 
@@ -101,16 +80,7 @@ https://petstore.swagger.io/v2/swagger.json
 
 ## GraphQL Linting
 
-The extension includes comprehensive GraphQL schema linting with custom rules:
-
-### Features
-
-- **Real-time Linting** - Automatically lint GraphQL files as you type (optional)
-- **Comprehensive Rules** - Built-in GraphQL best practices and StepZen-specific rules
-- **VS Code Integration** - Linting errors and warnings appear in the Problems panel
-- **Customizable Rules** - Configure linting rules through VS Code settings
-
-### Configuration
+The extension includes GraphQL schema linting with custom rules. Linting errors and warnings appear in the Problems panel.
 
 Enable automatic linting in your VS Code settings:
 
@@ -120,67 +90,7 @@ Enable automatic linting in your VS Code settings:
 }
 ```
 
-### Manual Linting
-
-Use the command palette to manually lint your GraphQL schema:
-
-1. Open Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
-2. Run `StepZen: Lint GraphQL Schema`
-3. View results in the Problems panel
-
-## Import Features
-
-### Smart cURL Parsing
-
-- **Auto-detection** of authentication headers and secrets
-- **Path parameter** extraction and configuration
-- **Query name generation** from URL paths
-- **Schema naming** from hostnames
-
-### Database Integration
-
-- **Multiple database types**: PostgreSQL, MySQL, IBM Db2, Oracle, Snowflake, Presto
-- **Flexible connection**: Connection strings or individual parameters
-- **Auto-linking**: Automatic `@materializer` relationships
-- **Advanced options**: Schema selection, table filtering, custom naming
-
-### Authentication Support
-
-- **Bearer tokens** for API authentication
-- **API key headers** with custom header names
-- **Basic authentication** with username/password
-- **Custom headers** for proprietary auth schemes
-- **Secret management** with automatic detection and secure storage
-
-### Configuration Options
-
-- **Working directories** for organized project structure
-- **Schema naming** with validation and suggestions
-- **Type prefixes** to avoid naming conflicts
-- **Advanced settings** for fine-tuned control
-
-## Architecture
-
-The extension follows a layered architecture with clear separation of concerns:
-
-```
-Extension Layer (Commands, Panels, Utils)
-    ↓
-Service Registry (CLI, Logger, Import, SchemaIndex, Request, GraphQLLinter)
-    ↓
-Schema Processing Layer (Indexer, Linker, Parser)
-    ↓
-Types (Pure data structures)
-```
-
-### Key Services
-
-- **ImportService** - Handles all import operations with type-specific builders
-- **SchemaIndexService** - Real-time schema analysis and indexing
-- **GraphQLLinterService** - GraphQL schema linting with graphql-eslint
-- **StepzenCliService** - CLI integration and command execution
-- **Logger** - Comprehensive logging and debugging
-- **RequestService** - GraphQL request execution
+You can also lint manually via the Command Palette with `StepZen: Lint GraphQL Schema`.
 
 ## Configuration
 
@@ -254,12 +164,6 @@ npm run test:integration   # Integration tests only
 - Check StepZen directive usage
 - Validate file paths and references
 
-**GraphQL Linting Issues**
-
-- Check that GraphQL files have valid syntax
-- Verify VS Code settings are correct
-- Review extension output for error messages
-
 ### Getting Help
 
 - Check the [StepZen Documentation](https://stepzen.com/docs)
@@ -269,7 +173,3 @@ npm run test:integration   # Integration tests only
 ## License
 
 This extension is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
----
-
-_Portions of the Content may be generated with the assistance of CursorAI_
